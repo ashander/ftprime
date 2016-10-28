@@ -1,51 +1,7 @@
-from numpy.random import randint, random, poisson
-from collections import namedtuple
+from .chromosome import Chromosome, Segment
+from numpy.random import randint, random, poisson, permutation
 from itertools import count
-
-
-Chromosome = namedtuple('Chromosome',
-                        'identity breakpoint lparent rparent left_end right_end')
-default_chromosome_values = (-1, -2, 0.0, 1.0)
-Chromosome.__new__.__defaults__ = default_chromosome_values
-Chromosome.__doc__ = \
-    '''a chromosome is produced by recombination between two parents
-
-        Args:
-            identity: integer ID for this chromosome
-            breakpoint: separates the right from left parts
-            lparent: integer ID for the parent of the left part
-            rparent: integer ID for the parent of the left part
-
-        Optional args:
-            left_end
-            right_end -- NOTE no error checking to make sure bp is between these
-    '''
-
-
-def chromosome_str(self):
-    if self.breakpoint is not None:
-        bp = "{breakpoint:.{bpdigits}f})(".format(breakpoint=self.breakpoint,
-                                                 bpdigits=2)
-        info = "{lp:<4}~ {breakpoint} ~{rp:>4}".format(lp=self.lparent,
-                                                       rp=self.rparent,
-                                                       breakpoint=bp,)
-    elif self.breakpoint is None:
-        if self.rparent != self.lparent:
-            raise ValueError("R parent and L parent must be equal if None break")
-        info = "     {}       ".format(self.rparent)
-    else:
-        raise TypeError("Illegal type of breakpoint")
-
-    output = "{id:8}: {le:.{epdigits}f}.[" + info + "]{re:.{epdigits}f}."
-    return output.format(
-        id=self.identity,
-        le=self.left_end,
-        re=self.right_end,
-        epdigits=0,
-    )
-
-Chromosome.__str__ = chromosome_str
-Chromosome.__repr__ = Chromosome.__str__
+from .merge import merge_records, SortedList, NodeItems, CoalescenceRecord
 
 
 class Individual(object):
@@ -56,7 +12,9 @@ class Individual(object):
                 it = iter(chromosomes)
             except Exception as e:
                 raise TypeError(e.value.message)
-            self._cs = tuple([next(it).identity for i in range(2)])
+            self._cs = tuple([next(it) for i in range(2)])
+            self._cs[0].identity
+            self._cs[1].identity
         except Exception:
             raise ValueError("Can't initialize with with non-Chromosomes" +
                              " -- must have identity set!")
@@ -68,17 +26,17 @@ class Individual(object):
     def age(self) -> int:
         return self._a
 
-    def chromosomes(self) -> tuple:
+    def __iter__(self) -> tuple:
         '''the chromosomes
 
         return:
             chromosomes: tuple of Chromosomes
         '''
-        return self._cs
+        return iter(self._cs)
 
     def __str__(self):
         return "Individual(" + \
-            ", ".join((str(c) for c in self.chromosomes())) + \
+            ",".join((str(c) for c in iter(self))) + \
             ")"
 
     def __repr__(self):
@@ -96,7 +54,10 @@ class Individual(object):
             lp_id (int)
             rp_id (int)
         '''
-        parents_and_breakpoints = ((bp, self._cs[ind], self._sc[ind])
+        parents_and_breakpoints = ((bp,
+                                    self._cs[ind].identity,
+                                    self._sc[ind].identity,
+                                    )
                                    for ind in randint(2, size=number)
                                    for bp in random(size=number))
         for r in range(number):
@@ -116,41 +77,217 @@ class Population(object):
         if verbose:
             if type(size) is not int:
                 raise Warning("size", size, "coerced to integer")
-
+        self._time = 0.0
         self._total_size = self._size = int(size)
-        self._counter = count()
-        self._chromosomes = dict()
-        initial_chroms = ((i, Chromosome(i, bp))
-                          for i, bp in zip(self._counter, random(size=size * 2)))
-        self._chromosomes.update(initial_chroms)
-        self._individuals = [Individual(chromosomes=(c1, c2)) for c1, c2 in
-                             zip(*[self.chromosomes()] * 2)]  # takes 2
+        self._chromosome_ids = count()
+        self._final = False
+        # decreasing 'infinite' count(__import__('sys').maxsize, -1)
+        self._records = SortedList([], key=lambda rec: rec.time)
+        self._nc = NodeItems()
+        initial_chroms = (Chromosome(id)
+                          for ct, id in zip(range(size * 2),
+                                            self._chromosome_ids))
+        initial_inds = (Individual(chromosomes=(c1, c2)) for c1, c2 in
+                        zip(*[initial_chroms] * 2))   # takes 2
+        self._individuals = [i for i in initial_inds]  # self._store_inds()
+
+    def __str__(self):
+        return "size: {} & time: {}\n".format(self.size(), self.time()) +\
+            "\n".join((str(r) for r in self._records))
+
+    def __repr__(self):
+        return str(self)
+
+    def time(self):
+        return self._time
+
+    def _updatetime(self, increment=0.5):
+        self._time += increment
+
+    def __iter__(self):
+        return iter(self._individuals)
 
     def chromosomes(self):
-        return iter(self._chromosomes.values())
+        return (c for i in iter(self) for c in i)
 
-    def individuals(self):
-        return iter(self._individuals)
+    def individuals_randomized(self):
+        return iter(permutation(self._individuals))
 
     def size(self):
         return self._size
 
-    def _mating_pairs(self, average_offspring):
-        offspring_it = iter(poisson(average_offspring, self.size()))
-        for i1, i2, on in zip(*[self.individuals()] * 2, offspring_it):
-            yield i1, i2, on
+    def _maxtime(self):
+        ''' the last time that is stored in a record'''
+        if not self._final:
+            raise ValueError("should not be called outside finalize")
+        last_rec = self._records.pop()
+        self._records.append(last_rec)
+        return min(last_rec.time, self._time)
 
-    def _gametes_from_pairs(self, average_offspring):
-        for i1, i2, on in self._mating_pairs(average_offspring):
-            yield zip(i1.gametes(on, tagger=self._counter),
-                      i2.gametes(on, tagger=self._counter))
+    def _maxnode(self):
+        if not self._final:
+            raise ValueError("should not be called outside finalize")
+        return next(self._chromosome_ids) - 1
 
-    def generation(self, average_offspring=1.5):
+    def generation(self, average_offspring: float):
+        ''' make one generation and store the resulting segments,
+
+        then merge these to complete records information'''
+        new_inds = self._store_inds(self._next_generation(average_offspring))
+        self._updatetime()
+        self._individuals = new_inds  # non-overlapping gens
+        self._total_size = self.size() + len(self._individuals)
+        self._size = len(self._individuals)
+        self._merge_segs_to_records()
+
+    def _store_inds(self, iterable_of_individuals):
+        new_inds = []
+        for ind in iterable_of_individuals:
+            new_inds.append(ind)
+            for c in ind:
+                if c.breakpoint is None:
+                    s = Segment(left=c.left_end,
+                                right=c.right_end,
+                                node=c.lparent,
+                                children=(c.identity,),
+                                time=self.time())
+                    self._nc[s.node] = s
+                else:
+                    sl = Segment(left=c.left_end,
+                                 right=c.breakpoint,
+                                 node=c.lparent,
+                                 children=(c.identity,),
+                                 time=self.time())
+                    sr = Segment(left=c.breakpoint,
+                                 right=c.right_end,
+                                 node=c.rparent,
+                                 children=(c.identity,),
+                                 time=self.time())
+                    self._nc[sl.node] = sl
+                    self._nc[sr.node] = sr
+        return new_inds
+
+    def records(self):
+        return iter(self._records)
+
+    def unmerged_records(self):
+        yield from self._nc.items()
+
+    def finalize(self):
+        self._final = True
+        maxn = self._maxnode()
+        maxt = self._maxtime()
+        self._records = self._finalize(self.records(), maxt=maxt, maxn=maxn)
+#        for k, v in self.unmerged_records():
+#            for r in self._finalize(v, maxt=maxt, maxn=maxn):
+#                self._nc[k] = r
+
+    def _finalize(self, iterable, maxt, maxn):
+        recs = SortedList([], key=lambda rec: rec.time)
+        for r in iterable:
+            time = maxt - r.time
+            node = maxn - r.node
+            recs.add(CoalescenceRecord(
+                    time=time,
+                    node=node,
+                    children=[maxn - c for c in r.children],
+                    population=r.population,
+                    left=r.left,
+                    right=r.right,
+                ))
+        return recs
+
+    def _merge_singletons(self):
+        unmerged = (s for s in self._unmerged_children(segments))
+        children = (c for s in segments for c in s.children)
+        for c in children:
+            try:
+                for s in self._nc.pop(c):
+                    yield s
+            except:
+                pass
+
+    def _merge_segs_to_records(self, debug=False):
+        for k in self._nc.keys():
+            segments = self._nc.pop(k)
+            comp, incomp = merge_records(segments)
+            for c in comp:
+                self._records.add(c)
+
+            for i in incomp:
+                self._nc[k] = i
+
+    # helpers to advance generation
+    def _next_generation(self, average_offspring):
         for childs in self._gametes_from_pairs(average_offspring):
             for cc in childs:
                 yield Individual(cc)
 
+    def _gametes_from_pairs(self, average_offspring):
+        for i1, i2, on in self._mating_pairs(average_offspring):
+            yield zip(i1.gametes(on, tagger=self._chromosome_ids),
+                      i2.gametes(on, tagger=self._chromosome_ids))
+
+    def _mating_pairs(self, average_offspring):
+        offspring_it = iter(poisson(average_offspring, self.size()))
+        for i1, i2, on in zip(*[self.individuals_randomized()] * 2, offspring_it):
+            yield i1, i2, on
+
+    def write_records(self, output, header=True, precision=6):
+        """
+        Writes the records for this tree sequence to the specified file in a
+        tab-separated format. If ``header`` is True, the first line of this
+        file contains the names of the columns, i.e., ``left``, ``right``,
+        ``node``, ``children``, ``time`` and ``population``. After the
+        optional header, the records are written to the file in
+        tab-separated form in order of non-decreasing time. The ``left``,
+        ``right`` and ``time`` fields are base 10 floating point values
+        printed to the specified ``precision``. The ``node`` and
+        ``population`` fields are base 10 integers. The ``children`` column
+        is a comma-separated list of base 10 integers, which must contain at
+        least two values.
+
+        Example usage:
+
+        >>> with open("records.txt", "w") as records_file:
+        >>>     tree_sequence.write_records(records_file)
+
+        :param File output: The file-like object to write the tab separated
+        output.
+        :param bool header: If True, write a header describing the column
+        names in the output.
+        :param int precision: The number of decimal places to print out for
+        floating point columns.
+
+        License:
+            this function is Copyright (C) 2015 Jerome Kelleher and reused
+            under the GPLv3
+        """
+        if not self._final:
+            raise ValueError("need to finalize records first")
+        if header:
+            print(
+                "left", "right", "node", "children",
+                "time", "population", sep="\t", file=output)
+
+        for record in self.records():
+            children = ",".join(str(c) for c in record.children)
+            row = (
+                "{left:.{precision}f}\t"
+                "{right:.{precision}f}\t"
+                "{node}\t"
+                "{children}\t"
+                "{time:.{precision}f}\t"
+                "{population}\t").format(
+                    precision=precision,
+                    left=record.left, right=record.right,
+                    node=record.node, children=children,
+                    time=record.time, population=record.population)
+            print(row, file=output)
+
 if __name__ == "__main__":
     size = 5
     p = Population(size=size)
-    p.generation(average_offspring=2.5)
+    for g in p.generation(average_offspring=2.5):
+        print(g)
+

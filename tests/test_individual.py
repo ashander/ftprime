@@ -8,7 +8,7 @@ def test_making_and_using():
     with pytest.raises(Exception) as e_info:
         Individual((None, None))
 
-    c = Chromosome(1, .5)
+    c = Chromosome(1, .5, 0, 2)
     with pytest.raises(Exception) as e_info:
         Individual((c, ))
     with pytest.raises(Exception) as e_info:
@@ -16,7 +16,7 @@ def test_making_and_using():
 
     i = Individual((c, c))
     i.age()
-    print([ch for ch in i.chromosomes()])
+    print([ch for ch in i])
     print([g for g in i.raw_gametes(5)])
     with pytest.raises(Exception) as e_info:
         print([g for g in i.raw_gametes(4.5)])
@@ -25,8 +25,8 @@ def test_making_and_using():
 def test_raw_gametes_and_gametes():
     p1_id = 1
     p2_id = 3
-    c1 = Chromosome(p1_id, .5)
-    c2 = Chromosome(p2_id, .5)
+    c1 = Chromosome(p1_id, .5, 0, 2)
+    c2 = Chromosome(p2_id, .5, 0, 2)
     i = Individual((c1, c2))
     i_rgams = [g for g in i.raw_gametes(5)]
     assert len(i_rgams) == 5
