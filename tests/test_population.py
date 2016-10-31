@@ -50,7 +50,7 @@ def test_generation_working():
     msprime.load_txt('working.tsv')
 
 
-def run_notworking_generation():
+def test_notworking_generation():
     __import__("numpy").random.seed(1221)
     p = Population(size=2)
     for i in p:
@@ -75,6 +75,6 @@ def run_notworking_generation():
     p.finalize()
     with open('notworking.tsv', 'w') as f:
         p.write_records(f)
-    msprime.load_txt('notworking.tsv')
 
-    return p
+    with pytest.raises(Exception) as e_info:
+        msprime.load_txt('notworking.tsv')
