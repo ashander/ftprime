@@ -1,0 +1,6 @@
+- require the children are sorted at each node
+- do not require the nodes appear in order
+- events -can- happen at the same time
+- the -entire- segment must be covered
+- the
+
