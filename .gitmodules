@@ -1,0 +1,3 @@
+[submodule "lib/msprime"]
+	path = lib/msprime
+	url = git@github.com:jeromekelleher/msprime.git
