@@ -136,6 +136,17 @@ def merge_records(l: list, debug: bool=False):
     return comp, incomp
 
 
+def fix_incomplete(record, added_child=None):
+    children = sorted(record.children + [added_child, ])
+    return CoalescenceRecord(time=record.time,
+                             left=record.left,
+                             right=record.right,
+                             node=record.node,
+                             children=children,
+                             population=record.population,
+                             )
+
+
 def _complete_records(records):
     '''complete (children > 1)'''
     for record in records:

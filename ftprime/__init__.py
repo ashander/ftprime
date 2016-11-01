@@ -1,8 +1,16 @@
 from .chromosome import Chromosome, Segment
 from numpy.random import randint, random, poisson, permutation
 from itertools import count
-from .merge import merge_records, SortedList, NodeItems, CoalescenceRecord
+from .merge import (
+    merge_records,
+    SortedList,
+    NodeItems,
+    CoalescenceRecord,
+    fix_incomplete,
+)
 
+PHANTOM_NODE_FWD = -1
+PHANTOM_NODE_BKWD = 0
 
 class Individual(object):
     def __init__(self, chromosomes: tuple, age: int=0):
@@ -79,7 +87,7 @@ class Population(object):
                 raise Warning("size", size, "coerced to integer")
         self._time = 0.0
         self._total_size = self._size = int(size)
-        self._chromosome_ids = count()
+        self._chromosome_ids = count(1)
         self._final = False
         # decreasing 'infinite' count(__import__('sys').maxsize, -1)
         self._records = SortedList([], key=lambda rec: rec.time)
@@ -125,11 +133,14 @@ class Population(object):
         return min(last_rec.time, self._time)
 
     def _maxnode(self):
+        ''' maximum node number (+1)
+
+        such that renumbering using this results in nodes with numbers > 0'''
         if not self._final:
             raise ValueError("should not be called outside finalize")
-        return next(self._chromosome_ids) - 1
+        return next(self._chromosome_ids)
 
-    def generation(self, average_offspring: float):
+    def generation(self, average_offspring: float, debug=False):
         ''' make one generation and store the resulting segments,
 
         then merge these to complete records information'''
@@ -138,7 +149,7 @@ class Population(object):
         self._individuals = new_inds  # non-overlapping gens
         self._total_size = self.size() + len(self._individuals)
         self._size = len(self._individuals)
-        self._merge_segs_to_records()
+        self._merge_segs_to_records(debug)
 
     def _store_inds(self, iterable_of_individuals):
         new_inds = []
@@ -178,19 +189,17 @@ class Population(object):
         maxn = self._maxnode()
         maxt = self._maxtime()
         self._records = self._finalize(self.records(), maxt=maxt, maxn=maxn)
-#        for k, v in self.unmerged_records():
-#            for r in self._finalize(v, maxt=maxt, maxn=maxn):
-#                self._nc[k] = r
 
     def _finalize(self, iterable, maxt, maxn):
         recs = SortedList([], key=lambda rec: rec.time)
         for r in iterable:
             time = maxt - r.time
             node = maxn - r.node
+            renumbered_children = (maxn - c if c != PHANTOM_NODE_FWD else PHANTOM_NODE_BKWD for c in r.children)
             recs.add(CoalescenceRecord(
                     time=time,
                     node=node,
-                    children=[maxn - c for c in r.children],
+                    children=sorted(renumbered_children),
                     population=r.population,
                     left=r.left,
                     right=r.right,
@@ -207,7 +216,7 @@ class Population(object):
             except:
                 pass
 
-    def _merge_segs_to_records(self, debug=False):
+    def _merge_segs_to_records(self, debug):
         for k in self._nc.keys():
             segments = self._nc.pop(k)
             comp, incomp = merge_records(segments)
@@ -215,7 +224,9 @@ class Population(object):
                 self._records.add(c)
 
             for i in incomp:
-                self._nc[k] = i
+                completed = fix_incomplete(i, added_child=PHANTOM_NODE_FWD)
+                self._nc[k] = completed
+                self._records.add(completed)
 
     # helpers to advance generation
     def _next_generation(self, average_offspring):

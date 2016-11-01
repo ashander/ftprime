@@ -30,51 +30,20 @@ def test_initialize():
             assert seg.left is default_chromosome['left_end']
 
 
-def test_generation_working():
-    while True:
-        p = Population(size=2)
-        p.generation(2)
-        p.finalize()
-        tol = 0.00001
-        total = 0.0
-        for r in p.records():
-            total += r.right - r.left
-
-        if total - int(total) < tol:
-            break
-    print(p)
-    print(total)
-    print(p._nc)
-    with open('working.tsv', 'w') as f:
-        p.write_records(f)
-    msprime.load_txt('working.tsv')
-
-
-def test_notworking_generation():
+def test_working_generation():
     __import__("numpy").random.seed(1221)
-    p = Population(size=2)
-    for i in p:
-#        print(i)
-        pass
-    for c in p.chromosomes():
-#        print(c)
-        pass
-    p.generation(2)
-    tol = 0.00001
-    total = 0.0
-    for r in p.records():
-        total += r.right - r.left
-        print(r)
-    print(total - int(total))
-    for k, items in p.unmerged_records():
-        for r in items:
-            print(r)
-            total += r.right - r.left
-    print(total - int(total))
-
-    p.finalize()
-    with open('notworking.tsv', 'w') as f:
-        p.write_records(f)
-
-    with pytest.raises(Exception) as e_info:
-        msprime.load_txt('notworking.tsv')
+    pops = randint(low=100, high=1000, size=10)
+    for sz in pops:
+        p = Population(size=sz)
+        for i in p:
+            print(i)
+            pass
+        for c in p.chromosomes():
+            print(c)
+            pass
+        p.generation(2, True)
+        print(p._nc)
+        p.finalize()
+        with open('working.tsv', 'w') as f:
+            p.write_records(f)
+        msprime.load_txt('working.tsv')
