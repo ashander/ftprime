@@ -1,7 +1,7 @@
 import pytest
 from ftprime import Population
 from ftprime.chromosome import default_chromosome
-from numpy.random import randint
+from numpy.random import randint, choice, seed
 import msprime
 
 
@@ -21,7 +21,7 @@ def test_creation_int():
 
 
 def test_initialize():
-    __import__("numpy").random.seed(1221)
+    seed(1221)
     p = Population(size=2)
     for k, seglist in p.unmerged_records():
         for seg in seglist:
@@ -31,19 +31,23 @@ def test_initialize():
 
 
 def test_working_generation():
-    __import__("numpy").random.seed(1221)
-    pops = randint(low=100, high=1000, size=10)
-    for sz in pops:
+    seed(1221)
+    pop_size = randint(low=100, high=500, size=20)
+    for i, sz in enumerate(pop_size):
         p = Population(size=sz)
-        for i in p:
-            print(i)
-            pass
-        for c in p.chromosomes():
-            print(c)
-            pass
         p.generation(2, True)
-        print(p._nc)
         p.finalize()
         with open('working.tsv', 'w') as f:
             p.write_records(f)
-        msprime.load_txt('working.tsv')
+
+        tr = msprime.load_txt('working.tsv')
+        all_samples = tr.get_samples()
+        print('total samples:', len(all_samples))
+        # subset requires child of commit 21be37b in msprime
+        with pytest.raises(Exception) as e_info:
+            ts = tr.subset(choice(all_samples, size=10, replace=False))
+        print(i)
+        if i in (0, 2, 3, 5, 12, 15, 19):
+            assert 'LibraryError' in str(e_info)
+        elif i in (1, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16, 17, 18):
+            assert 'IndexError' in str(e_info)
