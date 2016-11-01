@@ -217,7 +217,8 @@ class Population(object):
                 pass
 
     def _merge_segs_to_records(self, debug):
-        for k in self._nc.keys():
+        keys = [k for k in self._nc.keys()]
+        for k in keys:
             segments = self._nc.pop(k)
             comp, incomp = merge_records(segments)
             for c in comp:
@@ -225,7 +226,6 @@ class Population(object):
 
             for i in incomp:
                 completed = fix_incomplete(i, added_child=PHANTOM_NODE_FWD)
-                self._nc[k] = completed
                 self._records.add(completed)
 
     # helpers to advance generation

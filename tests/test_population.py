@@ -33,21 +33,25 @@ def test_initialize():
 def test_working_generation():
     seed(1221)
     pop_size = randint(low=100, high=500, size=20)
+
+    gens = 9
+    seed(1221)
     for i, sz in enumerate(pop_size):
         p = Population(size=sz)
-        p.generation(2, True)
+        for x in range(gens):
+            p.generation(2)
         p.finalize()
         with open('working.tsv', 'w') as f:
             p.write_records(f)
 
         tr = msprime.load_txt('working.tsv')
         all_samples = tr.get_samples()
-        print('total samples:', len(all_samples))
+        print("\ninitial pop size:", sz)
+        print("generations:", gens)
+        print('total samples produced:', len(all_samples))
         # subset requires child of commit 21be37b in msprime
         with pytest.raises(Exception) as e_info:
             ts = tr.subset(choice(all_samples, size=10, replace=False))
-        print(i)
-        if i in (0, 2, 3, 5, 12, 15, 19):
-            assert 'LibraryError' in str(e_info)
-        elif i in (1, 4, 6, 7, 8, 9, 10, 11, 13, 14, 16, 17, 18):
-            assert 'IndexError' in str(e_info)
+        print("drawing 10 samples with subset causes")
+        print(str(e_info))
+    assert False
