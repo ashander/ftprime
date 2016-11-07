@@ -1,0 +1,89 @@
+\documentclass[12pt]{article}
+\usepackage[inline]{asymptote}
+
+\title{Msprime in forward time}
+\author{Jaime Ashander}
+\begin{document}
+\maketitle
+
+\begin{asydef}
+//
+// Global Asymptote definitions
+//
+usepackage("bm");
+texpreamble("\def\V#1{\bm{#1}}");
+\end{asydef}
+
+Consider a lineage descended from three parent chromosomes, $1,2,3$. The parent
+of each chromosome is labeled above it.
+
+\begin{center}
+\begin{asy}[width=\the\linewidth,inline=true]
+	// positioning info
+	real g0 = 0;
+	real g1 = -0.5;
+	real g1b = -0.75;
+	real g2 = -1.5;
+	real col0 = 0.5;
+	real col1 = 1.5;
+	real chromlen = 0.5;
+	pair l = (chromlen, 0);
+
+	//chromosome labels
+	pair[] n;
+	n[1] = (0, g0);
+	n[2] = (1, g0);
+	n[3] = (2, g0);
+	// gen1
+	n[4] = (col0, g1);
+	n[5] = (col1, g1);
+	n[6] = (col0, g1b);
+	n[7] = (col1, g1b);
+	// gen2
+	n[8] = (col0, g2);
+	n[9] = (col1, g2);
+
+	//breakpoints
+	pair bpmark = (0, 0.025); // formatting mark
+	pair[] bp;
+	bp[4] = (0.5 * chromlen, 0);
+	bp[5] = (0.25 * chromlen, 0);
+	bp[6] = (0.0 * chromlen, 0);
+	bp[7] = (0.0 * chromlen, 0);
+	bp[8] = (0.75 * chromlen, 0);
+	bp[9] = (0.3 * chromlen, 0);
+
+	//parents
+	pair rightfmt = (.05, .05);
+	pair leftfmt = (-.05, .05);
+	pair[] parents;
+	parents[4] = (1, 2);
+	parents[5] = (3, 2);
+	parents[6] = (0, 2);
+	parents[7] = (0, 3);
+	parents[8] = (5, 6);
+	parents[9] = (7, 6);
+
+	for (int i = 1; i <= 3; ++i) {
+		dot(format("$%d$", i), n[i], W);
+		draw(n[i]--l + n[i]);
+	}
+	pair parent;
+	pair bploc;
+	for (int i = 4; i <= 9; ++i) {
+		dot(format("$%d$", i), n[i], W);
+		draw(n[i]--l + n[i]);
+		bploc = bp[i] + n[i];
+		draw(bploc--bploc + bpmark);
+		label(format("$x_%d$", i), bploc, S);
+		parent = parents[i];
+		label(format("$%f$", parent.y), bp[i] + n[i] + bpmark + rightfmt);
+		if (parent.x != 0.0) {
+			label(format("$%f$", parent.x), bp[i] + n[i] + bpmark + leftfmt);
+		}
+
+	}
+\end{asy}
+\end{center}
+
+\end{document}
