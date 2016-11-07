@@ -1,8 +1,9 @@
 \documentclass[12pt]{article}
 \usepackage[inline]{asymptote}
 
-\title{Msprime in forward time}
+\title{recording msprime `coalescence records' from forward time simulations}
 \author{Jaime Ashander}
+\date{}
 \begin{document}
 \maketitle
 
@@ -14,76 +15,212 @@ usepackage("bm");
 texpreamble("\def\V#1{\bm{#1}}");
 \end{asydef}
 
-Consider a lineage descended from three parent chromosomes, $1,2,3$. The parent
-of each chromosome is labeled above it.
+{\bf Goal} Our goal is to encode the ARG produced  from a simulation that
+proceeds forward in time in {\tt msprime}-style coalesence records.
+One way to do this is to simulate forward, sample, and then work backwards.
+In theory, one could also produce "partial'' records going forward.
+Up to present, this is what we have done --- producing records as described in
+{\it Going forward} below and augmenting any singleton remining with a
+``phantom'' sibling (all having the same ID.
+These can be loaded in to {\tt msprime} but don't actually meet the specs.
+It seems that to meet {\tt msprime} format requirements we will still need to
+traverse backward from a given set of samples to prune off incomplete records.
+
+{ \bf A scenario}
+Below each chromosome is labeled on the left with an ID; a single breakpoint,
+labelled below the chromosome, represents a recombination during the meiosis
+that produced the chromosome.
+Above, the haplotypes are labelled by the ID for the parent that produced them.
+
+Consider a lineage descended from three parent chromosomes: $1,2,3$.
+Mating between these produced a first generation of two half-sib individuals
+$(4,6)$ and $(5,7)$.
+A subsequent mating between these produced gametes $8$ and $9$ in the second generation.
 
 \begin{center}
-\begin{asy}[width=\the\linewidth,inline=true]
-	// positioning info
-	real g0 = 0;
-	real g1 = -0.5;
-	real g1b = -0.75;
-	real g2 = -1.5;
-	real col0 = 0.5;
-	real col1 = 1.5;
-	real chromlen = 0.5;
-	pair l = (chromlen, 0);
+	\begin{asy}[width=\the\linewidth,inline=true]
+		// positioning info
+		real g0 = 0;
+		real g1 = -0.2;
+		real g1b = -0.325;
+		real g2 = -.6;
+		real col0 = 0.5;
+		real col1 = 1.5;
+		real chromlen = 0.5;
+		pair l = (chromlen, 0);
+//		pair final = (0, -.5);
 
-	//chromosome labels
-	pair[] n;
-	n[1] = (0, g0);
-	n[2] = (1, g0);
-	n[3] = (2, g0);
-	// gen1
-	n[4] = (col0, g1);
-	n[5] = (col1, g1);
-	n[6] = (col0, g1b);
-	n[7] = (col1, g1b);
-	// gen2
-	n[8] = (col0, g2);
-	n[9] = (col1, g2);
+		//chromosome labels
+		pair[] n;
+		n[1] = (0, g0);
+		n[2] = (1, g0);
+		n[3] = (2, g0);
+		// gen1
+		n[4] = (col0, g1);
+		n[5] = (col1, g1);
+		n[6] = (col0, g1b);
+		n[7] = (col1, g1b);
+		// gen2
+		n[8] = (col0, g2);
+		n[9] = (col1, g2);
 
-	//breakpoints
-	pair bpmark = (0, 0.025); // formatting mark
-	pair[] bp;
-	bp[4] = (0.5 * chromlen, 0);
-	bp[5] = (0.25 * chromlen, 0);
-	bp[6] = (0.0 * chromlen, 0);
-	bp[7] = (0.0 * chromlen, 0);
-	bp[8] = (0.75 * chromlen, 0);
-	bp[9] = (0.3 * chromlen, 0);
+		//breakpoints
+		pair bpmark = (0, 0.025); // formatting mark
+		pair[] bp;
+		bp[4] = (0.5 * chromlen, 0);
+		bp[5] = (0.25 * chromlen, 0);
+		bp[6] = (0.0 * chromlen, 0);
+		bp[7] = (0.0 * chromlen, 0);
+		bp[8] = (0.75 * chromlen, 0);
+		bp[9] = (0.3 * chromlen, 0);
 
-	//parents
-	pair rightfmt = (.05, .05);
-	pair leftfmt = (-.05, .05);
-	pair[] parents;
-	parents[4] = (1, 2);
-	parents[5] = (3, 2);
-	parents[6] = (0, 2);
-	parents[7] = (0, 3);
-	parents[8] = (5, 6);
-	parents[9] = (7, 6);
+		//parents
+		pair rightfmt = (.05, .025);
+		pair leftfmt = (-.05, .025);
+		pair[] parents;
+		parents[4] = (1, 2);
+		parents[5] = (3, 2);
+		parents[6] = (0, 2);
+		parents[7] = (0, 3);
+		parents[8] = (5, 6);
+		parents[9] = (7, 6);
 
-	for (int i = 1; i <= 3; ++i) {
-		dot(format("$%d$", i), n[i], W);
-		draw(n[i]--l + n[i]);
-	}
-	pair parent;
-	pair bploc;
-	for (int i = 4; i <= 9; ++i) {
-		dot(format("$%d$", i), n[i], W);
-		draw(n[i]--l + n[i]);
-		bploc = bp[i] + n[i];
-		draw(bploc--bploc + bpmark);
-		label(format("$x_%d$", i), bploc, S);
-		parent = parents[i];
-		label(format("$%f$", parent.y), bp[i] + n[i] + bpmark + rightfmt);
-		if (parent.x != 0.0) {
-			label(format("$%f$", parent.x), bp[i] + n[i] + bpmark + leftfmt);
+		for (int i = 1; i <= 3; ++i) {
+			dot(format("$%d$", i), n[i], W);
+			draw(n[i]--l + n[i]);
 		}
+		pair parent;
+		pair bploc;
+		for (int i = 4; i <= 9; ++i) {
+			dot(format("$%d$", i), n[i], W);
+			draw(n[i]--l + n[i]);
+			bploc = bp[i] + n[i];
+			draw(bploc--bploc + bpmark);
+			label(format("$x_%d$", i), bploc, S);
+			parent = parents[i];
+			label(format("$%f$", parent.y), bploc + bpmark + rightfmt);
+			if (parent.x != 0.0) {
+				label(format("$%f$", parent.x), bploc + bpmark + leftfmt);
+			}
 
-	}
-\end{asy}
+		}
+//		pair endline = (0, g2)  + (0, -0.25);
+//		draw(endline--endline +(3, 0));
+//		int idx;
+//		for (int i=8; i <=9; ++i) {
+//			dot(format("$%d$", i), n[i] + final, W);
+//			draw(n[i] + final--final + l + n[i]);
+//			//self
+//			bploc = bp[i] + n[i] + final;
+//			draw(bploc--bploc + bpmark);
+//			label(format("$x_%d$", i), bploc, N);
+//
+//			parent = parents[i];
+//			//l parent
+//			idx = (int) parent.x;
+//			bploc = bploc = bp[idx] + n[i] + final;
+//			draw(bploc--bploc + bpmark);
+//			label(format("$x_%d$", (int) parent.x), bploc, S);
+//
+//			//r parent
+//			idx = (int) parent.y;
+//			bploc = bploc = bp[idx] + n[i] + final;
+//			draw(bploc--bploc + bpmark);
+//			label(format("$x_%d$", (int) parent.y), bploc, N);
+//		}
+	\end{asy}
 \end{center}
+
+% All the accumulated recombination breakpoints are labelled on these final gametes, below the large horizonal line.
+
+We describe coalescence records in the format $(left, right, node, (children), time)$ of {\tt
+	msprime}.
+Label the right endpoint of the chromosome by $L$ and the left by
+$0.0$. Further, label the current generation $0$, the parent $-1$ and the
+grandparent $-2$
+
+\subsection*{Going forward}
+
+We could imagine constructing the records going forward in time.
+Each meiosis would produce some information, not all of it useful.
+
+From the first generation, there is one singleton coalescence to $1$,
+\begin{verbatim}
+	A = (0, x_4, 1, (4, ), -2)
+\end{verbatim}
+a couple different coalescences to $2$ and a singleton left over
+\begin{verbatim}
+	B = (0, x_5, 2, (6, ), -2)
+	C = (x_5, x_4,  2, (5, 6), -2)
+	D = (x_4, L,  2, (4, 5, 6), -2)
+\end{verbatim}
+and one coalesce to $3$ with one singleton left
+\begin{verbatim}
+	E = (0, x_5, 3, (5, 7), -2)
+	F = (x_5, L, 3, (7, ), -2)
+\end{verbatim}
+
+From the second generation, there is one coalesence to $6$ and some singletons
+\begin{verbatim}
+	G = (x_8, L,  6, (8, 9), -1)
+	H = (0, x_8, 5, (8, ), -1)
+	I = (0, x_9, 7, (9, ), -1)
+	J = (x_9, x_8,  6, (9, ), -1)
+\end{verbatim}
+
+\subsubsection*{Combining}
+
+Note that while going forward  we cannot discard records that will not be used
+as we have no {\it a priori}  criterion to do so.  For example, records relating
+to chromosome $4$ are never used in sampling coalescence from $8$ and $9$ but
+this is not known going forward.
+
+\subsection*{Going backward}
+Moving back in time, in the parent generation, a haplotype on the right coalesces
+in chromosome $6$,
+\begin{verbatim}
+	A' = (x_8, L, 6, (8, 9), -1)
+\end{verbatim}
+The rest of the chromosome has yet to coalesce,
+\begin{verbatim}
+	B' = (0, x_8, 5, (8, ), -1)
+	C' = (0, x_9, 7, (9, ), -1)
+	D' = (x_9, x_8, 6, (9, ), -1)
+\end{verbatim}
+
+In the grandparent generation, the other parts coalesce
+(Assume the recombination points in chromosome $5$ and $9$ coincide and let $a =
+x_5 =x_9$.)
+\begin{verbatim}
+	F' = (0, a, 3, (5, 7), -2)
+	G' = (a, x_8, 2, (5, 6), -2)
+\end{verbatim}
+
+\subsubsection*{Combining}
+
+The singleton records {\tt B' \dots G'} combine to form two complete
+records (noting that {\tt B'} encodes two records split at {\tt a}), 
+\begin{verbatim}
+	(0, a, 3, (8, 9), -2)
+	(a, x_8, 2, (8, 9), -2)
+\end{verbatim}
+that together with {\tt A'} form a complete set of records. Renumbered in
+ascending order from the leaves, these are
+\begin{verbatim}
+	(x_8, L, 2, (0, 1), -1)
+	(0, a, 3, (0, 1), -2)
+	(a, x_8, 4, (0, 1), -2)
+\end{verbatim}
+and they encode the following sparse trees (moving left to right across the
+chromosome and encoding trees as integer vectors with {\tt -1} signifying the
+root)
+\begin{verbatim}
+	0, a: (3, 3, NA, -1, NA)
+	a, x_8: (4, 4, NA, NA, -1)
+	x_8, L: (2, 2, -1, NA, NA)
+\end{verbatim}
+
+\pagebreak
+
 
 \end{document}
