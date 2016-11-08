@@ -20,9 +20,10 @@ proceeds forward in time in {\tt msprime}-style coalesence records.
 One way to do this is to simulate forward, sample, and then work backwards.
 In theory, one could also produce "partial'' records going forward.
 Up to present, this is what we have done --- producing records as described in
-{\it Going forward} below and augmenting any singleton remining with a
+{\it Going forward} below and augmenting any singleton remaining with a
 ``phantom'' sibling (all having the same ID.
-These can be loaded in to {\tt msprime} but don't actually meet the specs.
+These can be loaded in to {\tt msprime} but don't actually meet the specs ---
+there are many redundant trees encoded.
 It seems that to meet {\tt msprime} format requirements we will still need to
 traverse backward from a given set of samples to prune off incomplete records.
 
@@ -33,7 +34,7 @@ that produced the chromosome.
 Above, the haplotypes are labelled by the ID for the parent that produced them.
 
 Consider a lineage descended from three parent chromosomes: $1,2,3$.
-Mating between these produced a first generation of two half-sib individuals
+Mating between these produced a first generation of two individuals
 $(4,6)$ and $(5,7)$.
 A subsequent mating between these produced gametes $8$ and $9$ in the second generation.
 
@@ -133,47 +134,51 @@ A subsequent mating between these produced gametes $8$ and $9$ in the second gen
 
 % All the accumulated recombination breakpoints are labelled on these final gametes, below the large horizonal line.
 
-We describe coalescence records in the format $(left, right, node, (children), time)$ of {\tt
-	msprime}.
-Label the right endpoint of the chromosome by $L$ and the left by
-$0.0$. Further, label the current generation $0$, the parent $-1$ and the
-grandparent $-2$
+We describe coalescence records in the format $(left, right, node, (children), time)$ of {\tt msprime}.
+Label the right endpoint of the chromosome by $L$ and the left by $0.0$.
+Further, label the current generation $0$, the parent $-1$ and the grandparent $-2$.
+Below, I refer a pair (or more) combining backwards in time as ``coalescence''
+and a haplotype finding itt parent but not coalescing with another as a
+``singleton".
 
 \subsection*{Going forward}
+We could imagine constructing something like the records going forward in time.
+Each meiosis provides some information (not all of it ultimately useful).
 
-We could imagine constructing the records going forward in time.
-Each meiosis would produce some information, not all of it useful.
-
-From the first generation, there is one singleton coalescence to $1$,
+In the grandparent generation, there is one singleton coalescence to $1$:
 \begin{verbatim}
 	A = (0, x_4, 1, (4, ), -2)
 \end{verbatim}
-a couple different coalescences to $2$ and a singleton left over
+two different coalescence to $2$ and a singleton left over:
 \begin{verbatim}
 	B = (0, x_5, 2, (6, ), -2)
 	C = (x_5, x_4,  2, (5, 6), -2)
 	D = (x_4, L,  2, (4, 5, 6), -2)
 \end{verbatim}
-and one coalesce to $3$ with one singleton left
+and one coalescence to $3$ with one singleton left:
 \begin{verbatim}
 	E = (0, x_5, 3, (5, 7), -2)
 	F = (x_5, L, 3, (7, ), -2)
 \end{verbatim}
 
-From the second generation, there is one coalesence to $6$ and some singletons
+In the parent generation, there is one coalescence to $6$:
 \begin{verbatim}
 	G = (x_8, L,  6, (8, 9), -1)
+\end{verbatim}
+and some singletons:
+\begin{verbatim}
 	H = (0, x_8, 5, (8, ), -1)
 	I = (0, x_9, 7, (9, ), -1)
 	J = (x_9, x_8,  6, (9, ), -1)
 \end{verbatim}
 
-\subsubsection*{Combining}
-
-Note that while going forward  we cannot discard records that will not be used
-as we have no {\it a priori}  criterion to do so.  For example, records relating
-to chromosome $4$ are never used in sampling coalescence from $8$ and $9$ but
-this is not known going forward.
+Note that while going forward we cannot discard records that will not ultimately be used
+as we have no {\it a priori} criterion.
+For example, records relating to chromosome $4$ are never used in sampling
+coalescence from $8$ and $9$ but this is not known going forward.
+Thus, whether or not we construct records in forward time along with the simulation
+we will need to need to use backward-time analysis to combine the records to a
+minimal set as {\tt msprime} requires (see {\it Combining Records} below).
 
 \subsection*{Going backward}
 Moving back in time, in the parent generation, a haplotype on the right coalesces
@@ -189,29 +194,44 @@ The rest of the chromosome has yet to coalesce,
 \end{verbatim}
 
 In the grandparent generation, the other parts coalesce
-(Assume the recombination points in chromosome $5$ and $9$ coincide and let $a =
-x_5 =x_9$.)
 \begin{verbatim}
-	F' = (0, a, 3, (5, 7), -2)
-	G' = (a, x_8, 2, (5, 6), -2)
+	F' = (0, x_5, 3, (5, 7), -2)
+	G' = (x_9, x_8, 2, (5, 6), -2)
 \end{verbatim}
 
-\subsubsection*{Combining}
+\subsection*{Combining Records}
 
-The singleton records {\tt B' \dots G'} combine to form two complete
-records (noting that {\tt B'} encodes two records split at {\tt a}), 
+The singleton records in the parent generation (i.e., {\tt H, I, J} in forward
+time or {\tt B', C' D'} in backward time) can be followed up to the grandparent generation.
+Combined with the relevant coalescences in the grandparent generation (i.e.,
+{\tt C, D, F} in forward time or {\tt F', G'} in backward time), these form complete records.
+For example, assume recombination points in chromosome $5$ and $9$ coincide and let $a = x_5 =x_9$.
+Then the complete records
 \begin{verbatim}
 	(0, a, 3, (8, 9), -2)
 	(a, x_8, 2, (8, 9), -2)
 \end{verbatim}
-that together with {\tt A'} form a complete set of records. Renumbered in
-ascending order from the leaves, these are
+Then, together with the one complete coalescence in the parent ({\tt G} in
+forward time or {\tt A'} in backward time)
+\begin{verbatim}
+	(x_8, L, 6, (8, 9), -1)
+\end{verbatim}
+these form a complete set of records.
+
+
+\subsection*{Renumbering nodes and enumerating trees}
+Once the complete set of records is formed, to meet {\tt msprime} requirements
+for a dense tree in the records, we renumber in ascending order from the leaves
+(the mapping from the chromosome numbers listed above is $8 \to 0; 9 \to 1; 6
+\to 2; 3 \to 3; 2 \to 4$).
+
+The complete set of records describes a dense tree sequence
 \begin{verbatim}
 	(x_8, L, 2, (0, 1), -1)
 	(0, a, 3, (0, 1), -2)
 	(a, x_8, 4, (0, 1), -2)
 \end{verbatim}
-and they encode the following sparse trees (moving left to right across the
+and encodes the following sparse trees (moving left to right across the
 chromosome and encoding trees as integer vectors with {\tt -1} signifying the
 root)
 \begin{verbatim}
@@ -219,8 +239,5 @@ root)
 	a, x_8: (4, 4, NA, NA, -1)
 	x_8, L: (2, 2, -1, NA, NA)
 \end{verbatim}
-
-\pagebreak
-
 
 \end{document}
