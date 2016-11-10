@@ -50,3 +50,49 @@ The ordered index vectors would be (indexing starting at 1)
     # 0.0    0     1           2               1   0       2                         0   1           2
     #
     #          A(0.0, 0.2),                   B(0.2, 0.8),                             C(0.8, 1.0)
+
+
+# output from `trees.py`
+
+lists the records in and out and prints each tree visited (in two ways):
+
+    in: CoalescenceRecord(left=0.0, right=0.2, node=4, children=(2, 3), time=0.4, population=0)
+    in: CoalescenceRecord(left=0.0, right=1.0, node=5, children=(1, 4), time=0.5, population=0)
+    in: CoalescenceRecord(left=0.0, right=0.2, node=7, children=(0, 5), time=1.0, population=0)
+    ([7, 5, 4, 4, 5, 7, -1, -1], [[], [], [], [], (2, 3), (1, 4), [], (0, 5)])
+    out: CoalescenceRecord(left=0.0, right=0.2, node=7, children=(0, 5), time=1.0, population=0)
+    out: CoalescenceRecord(left=0.0, right=0.2, node=4, children=(2, 3), time=0.4, population=0)
+    in: CoalescenceRecord(left=0.2, right=0.8, node=4, children=(0, 2), time=0.4, population=0)
+    ([4, 5, 4, -1, 5, -1, -1, -1], [[], [], [], [], (0, 2), (1, 4), [], []])
+    out: CoalescenceRecord(left=0.2, right=0.8, node=4, children=(0, 2), time=0.4, population=0)
+    in: CoalescenceRecord(left=0.8, right=1.0, node=4, children=(2, 3), time=0.4, population=0)
+    in: CoalescenceRecord(left=0.8, right=1.0, node=6, children=(0, 5), time=0.7, population=0)
+    ([6, 5, 4, 4, 5, 6, -1, -1], [[], [], [], [], (2, 3), (1, 4), (0, 5), []])
+
+# The error in c
+
+Per Peter's sleuthing, the low level code throws an error with these records
+that relates to the in_count vs out_count
+
+    #     if (first_tree) {
+    #     } else {
+    #         if (in_count != out_count) {
+    #             ret = MSP_ERR_BAD_COALESCENCE_RECORDS_12;
+    #             goto out;
+    #         }
+
+The [in_count](https://github.com/ashander/msprime/blob/acd9e3aad2fc828115dd2e6ba5a28b0b097abad5/lib/tree_sequence.c#L2183) and
+[out_count](https://github.com/ashander/msprime/blob/acd9e3aad2fc828115dd2e6ba5a28b0b097abad5/lib/tree_sequence.c#L2158) 
+both accumulate the number of _children_ (less 1 for some reason) in or out when adding or removing a set of records. 
+
+The above snippet appears just before 'returning' the tree and seems to be
+a check that, at any given point after the first tree, the cumulative number of
+children (beyond the first child) added or removed is
+equal.
+For binary trees (like we have) this is just that the number of records in and
+out match.
+
+This clearly isn't the case for the example worked through in this document.
+
+But! It is the case both for the first simple example in `test_msprime.py` and
+the final example that 'works' (but maybe has incorrect records)
