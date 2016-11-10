@@ -163,13 +163,11 @@ my_ts = msprime.TreeSequence(my_ll_ts)
 #          (0.0, 0.2),                   (0.2, 0.8),                             (0.8, 1.0)
 
 
-my_records = [ 
-    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=4,  children=(2,  3),  time=0.4,  population=0),  # left seg for 7
+my_records = [
+    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=4,  children=(2,  3),  time=0.4,  population=0),  # left seg for 3
     msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=4,  children=(0,  2),  time=0.4,  population=0),
-    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=4,  children=(2,  3),  time=0.4,  population=0),  # right seg for 7
-    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=5,  children=(1,  2),  time=0.5,  population=0),
-    msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=5,  children=(1,  4),  time=0.5,  population=0),
-    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=5,  children=(1,  2),  time=0.5,  population=0),
+    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=4,  children=(2,  3),  time=0.4,  population=0),  # right seg for 3
+    msprime.CoalescenceRecord(left=0.0,  right=1.0,  node=5,  children=(1,  4),  time=0.5,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=6,  children=(0,  5),  time=0.7,  population=0),
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=7,  children=(0,  5),  time=1.0,  population=0),
     ]
