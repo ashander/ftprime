@@ -238,7 +238,22 @@ my_ts = msprime.TreeSequence(my_ll_ts)
 for t in trees(list(my_ts.records())):
     print(t)
     pass
-print("------------- works in python ----------")
+print("------------- imports in python ----------")
+# but the trees are not correct
+# 	in: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(2, 4), time=0.4, population=0)
+#  	in: CoalescenceRecord(left=0.0, right=1.0, node=6, children=(1, 5), time=0.5, population=0)
+#  	in: CoalescenceRecord(left=0.0, right=0.2, node=8, children=(0, 6), time=1.0, population=0)
+#  ([8, 6, 5, -1, 5, 6, 8, -1, -1], [[], [], [], [], [], (2, 4), (1, 5), [], (0, 6)])
+#  	out: CoalescenceRecord(left=0.0, right=0.2, node=8, children=(0, 6), time=1.0, population=0)
+#  	out: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(2, 4), time=0.4, population=0)
+#  	in: CoalescenceRecord(left=0.2, right=0.8, node=4, children=(0, 3), time=0.2, population=0)
+#  	in: CoalescenceRecord(left=0.2, right=0.8, node=5, children=(0, 2), time=0.4, population=0)
+#  ([5, 6, 5, 4, -1, 6, -1, -1, -1], [[], [], [], [], (0, 3), (0, 2), (1, 5), [], []])
+#  	out: CoalescenceRecord(left=0.2, right=0.8, node=5, children=(0, 2), time=0.4, population=0)
+#  	out: CoalescenceRecord(left=0.2, right=0.8, node=4, children=(0, 3), time=0.2, population=0)
+#  	in: CoalescenceRecord(left=0.8, right=1.0, node=5, children=(2, 4), time=0.4, population=0)
+#  	in: CoalescenceRecord(left=0.8, right=1.0, node=7, children=(0, 6), time=0.7, population=0)
+#  ([7, 6, 5, -1, 5, 6, 7, -1, -1], [[], [], [], [], [], (2, 4), (1, 5), (0, 6), []])
 
 for k,x in enumerate(my_ts.trees()):
     print(x)
