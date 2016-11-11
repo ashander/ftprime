@@ -249,8 +249,16 @@ except Exception as e:
     print('drawing trees fails')
     print(e)
 
+#  doesn't relaly work. Thinks 3 is a root! I'm guessing the alg that draws
+#  trees take the first -1 as root and then tries to draw? this would probably
+#  happen in the example above too --- if it didn't fail to iterate over trees
+#  in c
+#  {0: 8, 1: 6, 2: 5, 3: -1, 5: 6, 6: 8, 8: -1}
+#  {0: 5, 1: 6, 2: 5, 3: 4, 4: -1, 5: 6, 6: -1}
+#  {0: 7, 1: 6, 2: 5, 3: -1, 5: 6, 6: 7, 7: -1}
 
-### Works!!  Compare pictures of trees.
-# Node identification of internal nodes not the same though:
+# so makes sense that drawing trees fails with
+# tuple index out of range
 
-[ x==y for x,y in zip( ts.trees(), my_ts.trees() ) ]
+
+# [ x==y for x,y in zip( ts.trees(), my_ts.trees() ) ]
