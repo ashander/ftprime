@@ -81,6 +81,7 @@ Suppose that:
 
 What should the tree be?
 If we count in **meioses**, it should be
+
 ```
                                         
 2            a _                        
@@ -89,7 +90,11 @@ If we count in **meioses**, it should be
           /                             
 0        c                              
 ```
+
+Here, nodes = individuals.
+
 On the other hand, if we count in **clock time**, then it should be
+
 ```
                                         
 4       a                               
@@ -103,6 +108,7 @@ On the other hand, if we count in **clock time**, then it should be
 0       d e   c                         
 ```
 
+Here, nodes = (individuals at a particular point in time)
 
 
 
@@ -115,12 +121,10 @@ Requirements:
 3.  We need to be able to re-label so samples have the first $n$ labels at the end.
 
 
-Notes:
-
-1. We have to decide whether to measure time in real units or in meioses.
-
 
 ## Without recombination
+
+This algorithm will be in **clock time**.
 
 Now:
 the idea is that each branch of the tree gets a label;
@@ -140,6 +144,80 @@ and we write out coalescent records, which are:
 - `[parent, offspring, time]` : parent and offspring are labels of branch tips; 
     the `time` is the time of *birth of the offspring*,
     so we measure time in *clock time*.
+
+## Example
+
+Here's the example above, extended slightly:
+
+1. We start with individual $a$ at $t=0$.
+2. $a$ gives birth to $b$ at $t=1$.
+3. $b$ gives birth to $c$ at $t=2$.
+4. $a$ gives birth to $d$ and $e$ at $t=3$.
+5. $b$ gives birth to $f$ and $a$ and $b$ die at $t=4
+6. We sample $c$, $d$, $e$, and $f$.
+
+With lineage labels on the right, and time now moving forwards:
+```
+------------
+time   tree        |   lineages        records output
+
+0       a          |       0         
+
+------------
+
+0       a          |       0           
+        |\         |       |\                         
+1       a b        |       0 0         
+
+------------
+
+0       a          |       0           [ 0, (1,2), 0 ]               
+        |\         |       |\                         
+1       a b        |       1 2         
+        | |\       |       | |\                       
+2       a b c      |       1 2 2       
+
+------------
+                                        
+0       a          |       0           
+        |\         |       |\                         
+1       a b        |       1 2         
+        | |\       |       | |\                       
+2       a b c      |       1 2 2       [ 1, (3,4,5), 2 ]               
+       /|\ \ \     |      /|\ \ \                     
+3     a d e b c    |     3 4 5 2 2                    
+
+------------
+                                        
+                                        
+0       a          |       0           
+        |\         |       |\                         
+1       a b        |       1 2         
+        | |\       |       | |\                       
+2       a b c      |       1 2 2       
+       /|\ \ \     |      /|\ \ \                     
+3     a d e b c    |     3 4 5 2 2                    
+        | |   |    |       | |   |                    
+4       d e   c    |       4 5   2                    
+
+------------
+                                        
+0       a          |       0           
+        |\         |       |\                         
+1       a b        |       1 2         
+        | |\       |       | |\                       
+2       a b c      |       1 6 7       
+       /|\ \ \     |      /|\ \ \                     
+3     a d e b c    |     3 4 5 6 7                    
+      | | | |\ \   |       | |  \ \                   
+4     * d e * f c  |       4 5   6 7   [ 2, (6,7), 1 ]              
+
+```
+
+Note that we've output the records not quite in time order.
+
+## Algorithm
+
 
 Events that happen at a given time will be births and deaths.
 
@@ -164,7 +242,7 @@ Events that happen at a given time will be births and deaths.
             if $k<n$, a new tip $L'_{2} : (a_{k+1}, \ldots, a_n)$;
             and $L_j : (b_j)$ for $1 \le j \le m$.
 
-        2.  Record the coalescence record $(L_0, (L_1,\ldots,L_m)$, 
+        2.  Record the coalescence record $(L_0, (L_1,\ldots,L_m), ??) $
 
 2.  If the event is a `death` : 
     remove the individual from the tip they are in, 
