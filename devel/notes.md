@@ -54,7 +54,7 @@ The ordered index vectors would be (indexing starting at 1)
 
 # output from `trees.py`
 
-lists the records in and out and prints each tree visited (in two ways):
+Lists the records in and out and prints each tree visited (in two ways):
 
     in: CoalescenceRecord(left=0.0, right=0.2, node=4, children=(2, 3), time=0.4, population=0)
     in: CoalescenceRecord(left=0.0, right=1.0, node=5, children=(1, 4), time=0.5, population=0)
@@ -67,7 +67,9 @@ lists the records in and out and prints each tree visited (in two ways):
     out: CoalescenceRecord(left=0.2, right=0.8, node=4, children=(0, 2), time=0.4, population=0)
     in: CoalescenceRecord(left=0.8, right=1.0, node=4, children=(2, 3), time=0.4, population=0)
     in: CoalescenceRecord(left=0.8, right=1.0, node=6, children=(0, 5), time=0.7, population=0)
-    ([6, 5, 4, 4, 5, 6, -1, -1], [[], [], [], [], (2, 3), (1, 4), (0, 5), []])
+    ------------- works in python ----------
+    fails in c with
+    Bad coalescence records in file, _12.
 
 # The error in c
 

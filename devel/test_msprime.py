@@ -103,9 +103,11 @@ for t in trees(list(my_ts.records())):
     pass
 print("------------- works in python ----------")
 
-
-
-[ x.draw(path="tree_{}.svg".format(k)) for k,x in enumerate(ts.trees()) ]
+try:
+    [ x.draw(path="tree_{}.svg".format(k)) for k,x in enumerate(ts.trees()) ]
+    print('works in c')
+except:
+    pass
 
 # Requirements: (from msprime/lib/tree_sequence.c)
 #   Input data must be time sorted.
@@ -190,7 +192,8 @@ print("------------- works in python ----------")
 try:
     [ x.draw(path="new_tree_{}.svg".format(k)) for k,x in enumerate(my_ts.trees()) ]
 except Exception as e:
-    print(e)
+    print('fails in c with')
+    print('  ', e)
 
 # Error at:
 
@@ -224,9 +227,7 @@ my_records = [
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=5,  children=(2,  4),  time=0.4,  population=0),
     msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=5,  children=(0,  2),  time=0.4,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=5,  children=(2,  4),  time=0.4,  population=0),
-    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=6,  children=(1,  2),  time=0.5,  population=0),
-    msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=6,  children=(1,  5),  time=0.5,  population=0),
-    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=6,  children=(1,  2),  time=0.5,  population=0),
+    msprime.CoalescenceRecord(left=0.0,  right=1.0,  node=6,  children=(1,  5),  time=0.5,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=7,  children=(0,  6),  time=0.7,  population=0),
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=8,  children=(0,  6),  time=1.0,  population=0),
     ]
@@ -239,9 +240,13 @@ for t in trees(list(my_ts.records())):
     pass
 print("------------- works in python ----------")
 
+for k,x in enumerate(my_ts.trees()):
+    print(x)
+
 try:
     [ x.draw(path="new_tree_{}.svg".format(k)) for k,x in enumerate(my_ts.trees()) ]
 except Exception as e:
+    print('drawing trees fails')
     print(e)
 
 
