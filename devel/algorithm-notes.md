@@ -240,6 +240,7 @@ Check: every time a new label is assigned,
 it should appear in a coalescence record (so we know who it's parent is).
 
 
+## Algorithm, with recombination
 
 
 ## Jerome's outline of forward-time alg
