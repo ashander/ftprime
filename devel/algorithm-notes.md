@@ -153,7 +153,7 @@ Here's the example above, extended slightly:
 2. $a$ gives birth to $b$ at $t=1$.
 3. $b$ gives birth to $c$ at $t=2$.
 4. $a$ gives birth to $d$ and $e$ at $t=3$.
-5. $b$ gives birth to $f$ and $a$ and $b$ die at $t=4
+5. $b$ gives birth to $f$ and $a$ and $b$ die at $t=4$
 6. We sample $c$, $d$, $e$, and $f$.
 
 With lineage labels on the right, and time now moving forwards:
