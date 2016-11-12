@@ -139,7 +139,7 @@ and we write out coalescent records, which are:
     the `time` is the time of *birth of the offspring*,
     so we measure time in *clock time*.
 
-## Example
+### Example
 
 Here's the example above, extended slightly:
 
@@ -217,7 +217,7 @@ so as to remember that lineage 9 is a continuation of lineage 3.
 (But, either works.)
 
 
-## Algorithm, no recombination
+### Algorithm, no recombination
 
 
 At each time step, some individuals die and some give birth.
@@ -238,9 +238,6 @@ Let $L$ denote the current vector of labels, one for each extant individual.
 
 Check: every time a new label is assigned, 
 it should appear in a coalescence record (so we know who it's parent is).
-
-
-## Algorithm, with recombination
 
 
 ## Jerome's outline of forward-time alg
@@ -299,3 +296,13 @@ outlining, but it may be a bit simpler.
 
 I would try to get things working for a single locus model first though, and
 see if the basic logic holds.
+
+
+
+## With recombination
+
+
+
+### Algorithm, with recombination
+
+At each time step, some individuals die and some pairs reproduce.
