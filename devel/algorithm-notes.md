@@ -242,10 +242,66 @@ Events that happen at a given time will be births and deaths.
             if $k<n$, a new tip $L'_{2} : (a_{k+1}, \ldots, a_n)$;
             and $L_j : (b_j)$ for $1 \le j \le m$.
 
-        2.  Record the coalescence record $(L_0, (L_1,\ldots,L_m), ??) $
+        2.  Record the coalescence record $(L_0, (L_1,\ldots,L_m), ??)$
 
 2.  If the event is a `death` : 
     remove the individual from the tip they are in, 
     and remove the tip if it is empty.
 
 
+## Jerome's outline of forward-time alg
+
+<!-- edited from his email per correction -->
+
+I think you're on the right track here, but I'm a bit confused as to why you're
+recording 'coalescences' where there is a single child. In my mind, the
+simplest way to think about this is to just imagine running the coalescent
+algorithm in reverse, using the same data structures. Suppose we were doing
+this for a single locus, and we started with ancestral individuals `[0, 1, 2, 3, 4, 5]`. Now, we generate some children randomly from this, and we get
+
+`[3, 2, 1, 3, 3, 0]`
+
+Since multiple children have chosen the same parent, we must have a
+coalescence. Replace the coalesced node with new IDs, giving
+
+`[6, 2, 1, 7, 8, 0]`
+
+and record the coalescence (6, 7, 8) -> 3. Repeating, we get the next generation
+
+`[1, 1, 7, 8, 0, 0]`
+
+Because we have two distinct parents here, we have two coalescences:
+
+`[9, 10, 7, 8, 11, 12]`
+
+with records `(9, 10) -> 1` and `(11, 12) -> 0`.
+
+The key thing here is that we only record _coalescences_, where actual changes
+to the topology of the trees occur. If only one child in the next generation
+inherits from a particular individual, then its node ID is passed on unchanged.
+When coalescences occur, we allocate new nodes for the children, so that they
+each become nodes in the genealogy.
+
+A nice property of this representation is that it's easy to tell when we've
+simulated far enough forward in time to be sure that there is an MRCA: if you
+started with `n` individuals, and any `ID < n` remains in the population, then you
+need to continue (thinking about this again, it may not be a sufficient
+condition though).
+
+Once you get to the end, you should be able to rename your present day
+population as `0` to `n - 1`, update any affected records, and then use the tree
+sequence directly. Calling subset on this should then trim out all the stuff
+that you don't want. (Warning though: there is still a bug in subset when
+dealing with weird corner cases. If you hit a 'Bad records' when running subset
+it's because of this bug. Let me know if you do.)
+
+This is nice and easy for a single locus, and it's a lot more tricky for
+multiple loci, of course. However, I think the same strategy as used in
+`msprime` will work, where each individual is a linked list of ancestral
+segments. The algorithms listed in the paper for manipulating these linked
+lists should also work here, as we're doing essentially the same thing. I think
+this will probably end up being equivalent to the approach that you're
+outlining, but it may be a bit simpler.
+
+I would try to get things working for a single locus model first though, and
+see if the basic logic holds.
