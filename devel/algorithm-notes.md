@@ -131,13 +131,7 @@ the idea is that each branch of the tree gets a label;
 so we record coalescence records then a branch splits.
 As we move forwards in time, we keep track of:
 
--  `C` : the current state, a list of *tips*
--  each `tip` is : 
-
-    * a unique label
-    * an ordered list of individuals on that branch 
-        that are currently alive, with the most recent at the end
-    * an ordered list of birth times of those individuals
+-  `L` : a vector of unique labels, one for each individual currently alive
 
 and we write out coalescent records, which are:
 
@@ -161,43 +155,43 @@ With lineage labels on the right, and time now moving forwards:
 ------------
 time   tree        |   lineages      | current state |  records output
 
-0       a          |       0         |  0:[a]        |              
+0       a          |       0         |  a:0          |              
 
 ------------
 
 0       a          |       0         |               |  [ 0, (1,2), 0 ]               
-        |\         |       |\        |  1:[a]        |                 
-1       a b        |       1 2       |  2:[b]        |  
+        |\         |       |\        |  a:1          |                 
+1       a b        |       1 2       |  b:2          |  
 
 ------------
 
 0       a          |       0         |               |  
         |\         |       |\        |               |                 
-1       a b        |       1 2       |  1:[a]        |  [ 2, (3,4), 1 ]               
-        | |\       |       | |\      |  3:[b]        |                 
-2       a b c      |       1 3 4     |  4:[c]        |  
+1       a b        |       1 2       |  a:1          |  [ 2, (3,4), 1 ]               
+        | |\       |       | |\      |  b:3          |                 
+2       a b c      |       1 3 4     |  c:4          |  
 
 ------------
                                      |               |   
 0       a          |       0         |               |  
         |\         |       |\        |               |                 
-1       a b        |       1 2       |   3:[b]       |  
-        | |\       |       | |\      |   4:[c]       |                 
-2       a b c      |       1 3 4     |   5:[a]       |  [ 1, (5,6,7), 2 ]               
-       /|\ \ \     |      /|\ \ \    |   6:[d]       |                 
-3     a d e b c    |     5 6 7 3 4   |   7:[e]       |                 
+1       a b        |       1 2       |   a:5         |  
+        | |\       |       | |\      |   b:3         |                 
+2       a b c      |       1 3 4     |   c:4         |  [ 1, (5,6,7), 2 ]               
+       /|\ \ \     |      /|\ \ \    |   d:6         |                 
+3     a d e b c    |     5 6 7 3 4   |   e:7         |                 
 
 ------------
                                      |               |   
 0       a          |       0         |               |  
         |\         |       |\        |               |                 
 1       a b        |       1 2       |               |  
-        | |\       |       | |\      |    3:[f]      |                 
-2       a b c      |       1 3 4     |    4:[c]      |  
-       /|\ \ \     |      /|\ \ \    |               |                 
-3     a d e b c    |     5 6 7 3 4   |    6:[d]      |                 
-      | | | |\ \   |       | |  \ \  |    7:[e]      |                 
-4     * d e * f c  |       6 7   3 4 |               |  
+        | |\       |       | |\      |               |                 
+2       a b c      |       1 3 4     |               |  
+       /|\ \ \     |      /|\ \ \    |    c:4        |                 
+3     a d e b c    |     5 6 7 3 4   |    d:6        |                 
+      | | | |\ \   |       | |  \ \  |    e:7        |                 
+4     * d e * f c  |       6 7   3 4 |    f:3        |  
 
 ```
 
@@ -210,10 +204,10 @@ otherwise we'd have:
         |\         |       |\        |               |                 
 1       a b        |       1 2       |               |  
         | |\       |       | |\      |               |                 
-2       a b c      |       1 3 4     |    4:[c]      |  
-       /|\ \ \     |      /|\ \ \    |    6:[d]      |                 
-3     a d e b c    |     5 6 7 3 4   |    7:[e]      |                 
-      | | | |\ \   |       | | |\ \  |    9:[f]      |   [ 3, (8,9), 4 ]              
+2       a b c      |       1 3 4     |    c:4        |  
+       /|\ \ \     |      /|\ \ \    |    d:6        |                 
+3     a d e b c    |     5 6 7 3 4   |    e:7        |                 
+      | | | |\ \   |       | | |\ \  |    f:9        |   [ 3, (8,9), 4 ]              
 4     * d e * f c  |       6 7 8 9 4 |               |  
 
 ```
@@ -226,7 +220,7 @@ so as to remember that lineage 9 is a continuation of lineage 3.
 ## Algorithm
 
 
-Events that happen at a given time will be births and deaths.
+At each time step, some individuals die and some give birth.
 
 0.  Begin with `C = ` a tip for each extant individual. 
 1.  First deal with **births**, in order by age of parent (oldest parents first).
