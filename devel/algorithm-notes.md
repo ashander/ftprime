@@ -217,37 +217,29 @@ so as to remember that lineage 9 is a continuation of lineage 3.
 (But, either works.)
 
 
-## Algorithm
+## Algorithm, no recombination
 
 
 At each time step, some individuals die and some give birth.
+Let $L$ denote the current vector of labels, one for each extant individual.
 
-0.  Begin with `C = ` a tip for each extant individual. 
-1.  First deal with **births**, in order by age of parent (oldest parents first).
-    For each new parent,
-    check where that parent is in the birth order of its tip.
+0.  Begin with $L$ a vector of unique labels.
+1.  For each birth and/or death at time $t$, consider the parent:
     
-    -  If it is at the end (the most recent birth),
-        and the number of offspring is 1,
-        then add the new individual to the end of the list of individuals for that tip.
+    a.  If they die with no offspring, remove them.
+    b.  If they die and leave one offspring,
+        let their offspring inherit their label.
+    c.  Otherwise, assign a new label to each offspring,
+        and to *themselves*, if they survive.
+        Let the label of the parent be $\ell_0$ and these new labels be $\ell_1, \ldots, \ell_k$,
+        and output the coalescence record
+        \[  ( \ell_0, (\ell_1, \ldots, \ell_k), t ) . \]
 
-    -  If it is *not* at the end, 
-        or she had more than one offspring,
-        then split the tip:
-        if the old tip is $L_0 : (a_1, \ldots, a_n)$,
-        the parent is $a_k$, and the offspring are $b_1, \ldots, b_m$,
-        then:
 
-        1.  Make new tips:
-            if $k>1$, a new tip $L'_{1} : (a_1, \ldots, a_k)$;
-            if $k<n$, a new tip $L'_{2} : (a_{k+1}, \ldots, a_n)$;
-            and $L_j : (b_j)$ for $1 \le j \le m$.
+Check: every time a new label is assigned, 
+it should appear in a coalescence record (so we know who it's parent is).
 
-        2.  Record the coalescence record $(L_0, (L_1,\ldots,L_m), ??)$
 
-2.  If the event is a `death` : 
-    remove the individual from the tip they are in, 
-    and remove the tip if it is empty.
 
 
 ## Jerome's outline of forward-time alg
