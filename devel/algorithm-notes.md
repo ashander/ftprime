@@ -159,62 +159,69 @@ Here's the example above, extended slightly:
 With lineage labels on the right, and time now moving forwards:
 ```
 ------------
-time   tree        |   lineages        records output
+time   tree        |   lineages      | current state |  records output
 
-0       a          |       0         
-
-------------
-
-0       a          |       0           
-        |\         |       |\                         
-1       a b        |       0 0         
+0       a          |       0         |  0:[a]        |              
 
 ------------
 
-0       a          |       0           [ 0, (1,2), 0 ]               
-        |\         |       |\                         
-1       a b        |       1 2         
-        | |\       |       | |\                       
-2       a b c      |       1 2 2       
+0       a          |       0         |               |  [ 0, (1,2), 0 ]               
+        |\         |       |\        |  1:[a]        |                 
+1       a b        |       1 2       |  2:[b]        |  
 
 ------------
-                                        
-0       a          |       0           
-        |\         |       |\                         
-1       a b        |       1 2         
-        | |\       |       | |\                       
-2       a b c      |       1 2 2       [ 1, (3,4,5), 2 ]               
-       /|\ \ \     |      /|\ \ \                     
-3     a d e b c    |     3 4 5 2 2                    
+
+0       a          |       0         |               |  
+        |\         |       |\        |               |                 
+1       a b        |       1 2       |  1:[a]        |  [ 2, (3,4), 1 ]               
+        | |\       |       | |\      |  3:[b]        |                 
+2       a b c      |       1 3 4     |  4:[c]        |  
 
 ------------
-                                        
-                                        
-0       a          |       0           
-        |\         |       |\                         
-1       a b        |       1 2         
-        | |\       |       | |\                       
-2       a b c      |       1 2 2       
-       /|\ \ \     |      /|\ \ \                     
-3     a d e b c    |     3 4 5 2 2                    
-        | |   |    |       | |   |                    
-4       d e   c    |       4 5   2                    
+                                     |               |   
+0       a          |       0         |               |  
+        |\         |       |\        |               |                 
+1       a b        |       1 2       |   3:[b]       |  
+        | |\       |       | |\      |   4:[c]       |                 
+2       a b c      |       1 3 4     |   5:[a]       |  [ 1, (5,6,7), 2 ]               
+       /|\ \ \     |      /|\ \ \    |   6:[d]       |                 
+3     a d e b c    |     5 6 7 3 4   |   7:[e]       |                 
 
 ------------
-                                        
-0       a          |       0           
-        |\         |       |\                         
-1       a b        |       1 2         
-        | |\       |       | |\                       
-2       a b c      |       1 6 7       
-       /|\ \ \     |      /|\ \ \                     
-3     a d e b c    |     3 4 5 6 7                    
-      | | | |\ \   |       | |  \ \                   
-4     * d e * f c  |       4 5   6 7   [ 2, (6,7), 1 ]              
+                                     |               |   
+0       a          |       0         |               |  
+        |\         |       |\        |               |                 
+1       a b        |       1 2       |               |  
+        | |\       |       | |\      |    3:[f]      |                 
+2       a b c      |       1 3 4     |    4:[c]      |  
+       /|\ \ \     |      /|\ \ \    |               |                 
+3     a d e b c    |     5 6 7 3 4   |    6:[d]      |                 
+      | | | |\ \   |       | |  \ \  |    7:[e]      |                 
+4     * d e * f c  |       6 7   3 4 |               |  
 
 ```
 
-Note that we've output the records not quite in time order.
+Here we noticed that b died and was replaced by f,
+so kept just one lineage;
+otherwise we'd have:
+
+```
+0       a          |       0         |               |  
+        |\         |       |\        |               |                 
+1       a b        |       1 2       |               |  
+        | |\       |       | |\      |               |                 
+2       a b c      |       1 3 4     |    4:[c]      |  
+       /|\ \ \     |      /|\ \ \    |    6:[d]      |                 
+3     a d e b c    |     5 6 7 3 4   |    7:[e]      |                 
+      | | | |\ \   |       | | |\ \  |    9:[f]      |   [ 3, (8,9), 4 ]              
+4     * d e * f c  |       6 7 8 9 4 |               |  
+
+```
+
+... where we only really have to output the coalescence record 
+so as to remember that lineage 9 is a continuation of lineage 3.
+(But, either works.)
+
 
 ## Algorithm
 
