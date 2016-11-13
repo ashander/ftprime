@@ -301,8 +301,249 @@ see if the basic logic holds.
 
 ## With recombination
 
+We need only make sure we record from where each individual has inherited her genome.
+However, coalescence records focus on the "other end" of the relationship, siblingship.
+
+Here's a minimal example:
+with `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
+
+1. Begin with an individual `a` (and another anonymous one) at `t=0`.
+2. `(a,?,1.0)->b` at `t=1`
+3. `(a,b,0.5)->c` at `t=2`
+4. `(a,c,0.2)->d` and `(c,b,0.6)->e` at `t=3`.
+5. `a` and `b` die, we sample `c,d,e` at `t=4`.
 
 
-### Algorithm, with recombination
+### Algorithm No. 1
 
-At each time step, some individuals die and some pairs reproduce.
+As a first pass, 
+we'll "deal with death last" at each time point,
+so that everyone has their parent as a "sibling".
+Coalescent records are
+```
+(left, right, node, (children), time)
+```
+The current state is a list of labels,
+with each label corresponding to a currently alive individual.
+
+
+```
+t  |   trees       |             lineages                                    |    state           |   records output                                              
+                   |                                                                                             
+0  |        a      |                         1                               |    1:a             |                        
+
+# (a,?,1.0)->b , t=1
+1  |        a      |                         1                               |                    |                        
+   |       / \     |                        / \                              |    2:a             |   ( 0.0, 1.0, 1, (2,3), 1 )    
+   |      a   b    |                       2   3                             |    3:b             |                        
+
+# (a,b,0.5)->c , t=2
+ 2 |        a      |             1                           1               |                    |                        
+   |       / \     |            / \                         / \              |                    |                        
+   |      a   b    |           2   3                       2   3             |    4:a             |   ( 0.0, 0.5, 2, (4,6), 2 )
+   |     / \ / \   |          / \   \                     /   / \            |    5:b             |   ( 0.5, 1.0, 3, (5,6), 2 )
+   |    a   c   b  |         4   6   5                   4   6   5           |    6:c             |                         
+   |               |                                                         |                    |                         
+   |               |         [0.0,0.5)                    [0.5,1.0)          |                    |                         
+                                                                    
+# (a,c,0.2)->d , t=3                                                
+3  |       a       |       1             1                    1              |                    |                         
+   |      / \      |      / \           / \                  / \             |                    |                         
+   |     a   b     |     2   3         2   3                2   3            |                    |   ( 0.0, 0.2, 4, (7,8), 3 )
+   |    / \ / \    |    / \   \       / \   \              /   / \           |    5:b             |                         
+   |   a   c   b   |   4   6   5     4   6   5            4   6   5          |                    |   ( 0.2, 1.0, 6, (8,9), 3 )    ** see below
+   |  / \ /        |  / \           /   /|               /   /|              |    7:a             |                        
+   | a   d         | 7   8         7   8 9              7   8 9              |    8:d             |                        
+   |               |                                                         |    9:c             |                        
+   |               |                                                         |                    |                        
+   |               |  [0.0,0.2)      [0.2,0.5)             [0.5,1.0)         |                    |                        
+
+# (c,b,0.6)->e , still t=3
+3  |       a       |       1             1           1              1        |                    |                        
+   |      / \      |      / \           / \         / \            / \       |                    |                        
+   |     a   b     |     2   3         2   3       2   3          2   3      |                    |                        
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                    |   ( 0.0, 0.2, 6, (9,10), 3 )
+   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |    7:a             |   ( 0.2, 0.6, 6, (8,9,10), 3 )   ** split
+   |  / \ / \ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |    8:d             |   ( 0.6, 1.0, 6, (8,9), 3 )      ** split
+   | a   d   e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |    9:c             |                        
+   |               |                                                         |   10:e             |                                   
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |   11:b             |   ( 0.6, 1.0, 5, (10,11), 3 )
+                                                                           
+# a,b die; sample c,d,e at t=4
+3  |       a       |       1             1           1              1        |                    |                        
+   |      / \      |      / \           / \         / \            / \       |                    |  
+   |     a   b     |     2   3         2   3       2   3          2   3      |                    |  
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                    |  
+   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |                    |  
+   |  / \ /|\ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |    8:d             |  
+   | a   d | e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |                    |  
+   |    /  |  \    |   |   |  \       /  |  \     /  |  \        /  |   |    |    9:c             |  
+   |   d   c   e   |   8   9   10    8   9   10  8   9   10     8   9  10    |   10:e             |  
+   |               |                                                         |                    |  
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                    |  
+   |               |                                                         |                    |  
+
+````
+
+
+What'd we do there?
+Every time there's a new individual, they get a lineage all to themselves (their whole genome).
+When anyone has offspring
+we create new lineages for the parents as well; 
+these new lineages serve as siblings to their offspring in the new coalescent records.
+Sometimes in building coalescent records for events happening in the same generation,
+we modified one already in the pipeline.
+
+Here's the order we add and remove records to create the trees
+in Algorithm T:
+
+```
+  Adding                           |   Removing
+  ------                           |   --------
+1  ( 0.0, 1.0, 1, (2,3),    1 )    |
+1  ( 0.0, 0.5, 2, (4,6),    2 )    |
+1  ( 0.0, 0.2, 4, (7,8),    3 )    |
+1  ( 0.0, 0.2, 6, (9,10),   3 )    |
+                                   | 2  ( 0.0, 0.2, 4, (7,8),   3 )
+                                   | 2  ( 0.0, 0.2, 6, (9,10),  3 )
+2  ( 0.2, 0.6, 6, (8,9,10), 3 )    |
+                                   | 3  ( 0.0, 0.5, 2, (4,6),   2 )
+3  ( 0.5, 1.0, 3, (5,6),    2 )    |
+                                   | 4  ( 0.2, 0.6, 6, (8,9,10),3 )
+4  ( 0.6, 1.0, 6, (8,9),    3 )    |
+4  ( 0.6, 1.0, 5, (10,11),  3 )    |
+                                   | *  ( 0.6, 1.0, 6, (8,9),   3 )
+                                   | *  ( 0.6, 1.0, 5, (10,11), 3 )
+                                   | *  ( 0.5, 1.0, 3, (5,6),   2 )
+                                   | *  ( 0.0, 1.0, 1, (2,3),   1 )    
+```
+
+
+**Algorithm:**
+
+Let $L$ be the dictionary of labels (initiallized to a unique set);
+and let $u$ be a list of flags denoting whether we've processed a reproduction for the individual
+this generation.
+At time point $t$:
+
+0.  Set every element of $u$ to False.
+1.  For each birth, with parents $i$, $j$ and offspring $k$:
+    
+    a.  If $u(i)$ is False, 
+        assign a new label to $i$, and set $u(i)$ to True,
+        and likewise for $j$.
+        Let $L'(i)$ be the previous label for $i$ 
+        and $L(i)$ the new label for $i$ (possibly already assigned), 
+        and likewise for $j$;
+        and let $L(k)$ be the label of the offspring.
+
+    b.  Let $x_0=0 \le x_1,x_2,\ldots,x_n \le x_{n=1}=1$ be the recombination breakpoints,
+        with the offspring inheriting from $i$ on $[x_2\ell,x_{2\ell+1})$
+        and from $j$ on $[x_2\ell+1,x_{2\ell+2})$;
+        and output coalescence records
+        $(x_2\ell,x_{2\ell+1},L'(i),(L(i),L(k)),t)$
+        and
+        $(x_2\ell+1,x_{2\ell+2},L'(j),(L(j),L(k)),t)$
+        for each $\ell$.
+
+    c.  Remove dead individuals.
+
+    d.  Merge-and-split coalescence records that share a parent.
+
+
+
+
+### Algorithm No. 2 (probably ignore this!)
+
+
+The first algorithm has an inefficiency
+in that it records coalescent events for EVERY new offspring.
+Here is an algorithm that initially keeps track of *more*,
+but may be more amenable to subsequent pruning of redundant information.
+
+The current state is a list of labels,
+with each label corresponding to a segment of a currently alive individual.
+
+
+```
+t  |   trees       |             lineages                                    |    state           |   records output                                              
+                   |                                                                                             
+0  |        a      |                         1                               |    1:a,[0,1)       |                        
+
+# (a,?,1.0)->b , t=1
+1  |        a      |                         1                               |                    |                        
+   |       / \     |                        / \                              |    2:a,[0,1)       |   ( 0.0, 1.0, 1, (2,3), 1 )    
+   |      a   b    |                       2   3                             |    3:b,[0,1)       |                        
+
+# (a,b,0.5)->c , t=2
+ 2 |        a      |             1                           1               |    2:a,[0.5,1.0) * |                        
+   |       / \     |            / \                         / \              |    3:b,[0.0,0.5) * |                        
+   |      a   b    |           2   3                       2   3             |    4:a,[0.0,0.5)   |   ( 0.0, 0.5, 2, (4,6), 2 )
+   |     / \ / \   |          / \   \                     /   / \            |    5:b,[0.5,1.0)   |   ( 0.5, 1.0, 3, (5,6), 2 )
+   |    a   c   b  |         4   6   3                   2   6   5           |    6:c,[0.0,1.0)   |                         
+   |               |                                                         |                    |                         
+   |               |         [0.0,0.5)                    [0.5,1.0)          |                    |                         
+                                                                    
+# (a,c,0.2)->d , t=3                                                
+3  |       a       |       1             1                    1              |    2:a,[0.5,1.0)   |                         
+   |      / \      |      / \           / \                  / \             |    3:b,[0.0,0.5)   |                         
+   |     a   b     |     2   3         2   3                2   3            |    4:a,[0.2,0.5) * |   ( 0.0, 0.2, 4, (7,8), 3 )
+   |    / \ / \    |    / \   \       / \   \              /   / \           |    5:b,[0.5,1.0)   |                         
+   |   a   c   b   |   4   6   3     4   6   3            2   6   5          |    6:c,[0.0,0.2) * |   ( 0.2, 1.0, 6, (8,9), 3 )    ** see below
+   |  / \ /        |  / \           /   / \                  / \             |    7:a,[0.0,0.2)   |                        
+   | a   d         | 7   8         4   8   9                8   9            |    8:d,[0.0,1.0)   |                        
+   |               |                                                         |    9:c,[0.2,1.0)   |                        
+   |               |                                                         |                    |                        
+   |               |  [0.0,0.2)      [0.2,0.5)             [0.5,1.0)         |                    |                        
+
+# (c,b,0.6)->e , still t=3
+3  |       a       |       1             1           1              1        |    2:a,[0.5,1.0)   |                        
+   |      / \      |      / \           / \         / \            / \       |    3:b,[0.0,0.5)   |                        
+   |     a   b     |     2   3         2   3       2   3          2   3      |    4:a,[0.2,0.5)   |                        
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |    5:b,[0.5,0.6) * |   ( 0.0, 0.2, 6, (10,11), 3 )
+   |   a   c   b   |   4   6   3     4   6   3   2   6   5      2   6   5    |    7:a,[0.0,0.2)   |   ( 0.2, 0.6, 6, (8,9,11), 3 )   ** split
+   |  / \ / \ / \  |  /|   |\       /   /|\         /|\            /|  / \   |    8:d,[0.0,1.0)   |   ( 0.6, 1.0, 6, (8,9), 3 )      ** split
+   | a   d   e   b | 7 8  10 11    4   8 9 11      8 9 11         8 9 11 12  |    9:c,[0.2,1.0)   |                        
+   |               |                                                         |   10:c,[0.0,0.2)   |                                   
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |   11:e,[0.0,1.0)   |                       
+   |               |                                                         |   12:b,[0.6,1.0)   |   ( 0.6, 1.0, 5, (11,12), 3 )
+                                                                           
+# a,b die at t=4; sample c,d,e
+4  |       a       |       1             1           1              1        |                    | 
+   |      / \      |      / \           / \         / \            / \       |                    | 
+   |     a   b     |     2   3         2   3       2   3          2   3      |     8:d,[0.0,1.0)  | 
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |     9:c,[0.2,1.0)  | 
+   |   a   c   b   |   4   6   3     4   6   3   2   6   5      2   6   5    |    10:c,[0.0,0.2)  | 
+   |  / \ /|\ / \  |  /|   |\       /   /|\         /|\            /|  / \   |    11:e,[0.0,1.0)  | 
+   | a   d | e   b | 7 8  10 11    4   8 9 11      8 9 11         8 9 11 12  |                    | 
+   |    /  |  \    |   |   |  \       /  |  \     /  |  \        /  | |      |                    | 
+   |   d   c   e   |   8  10   11    8   9   11  8   9   11     8   9 11     |                    | 
+   |               |                                                         |                    | 
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                    | 
+   |               |                                                         |                    | 
+
+````
+
+
+What'd we do there?
+Every time there's a new individual, they get a lineage all to themselves (their whole genome).
+When anyone has offspring
+we create new lineages for the parents as well, 
+but only the parts of their genomes inherited by the offspring;
+these new lineages serve as siblings to their offspring in the new coalescent records.
+
+Here's the order we add and remove records to create the trees
+in Algorithm T:
+
+```
+   Adding                       |      Removing
+1 ( 0.0, 1.0, 1, (2,3),   1 )   |   2 ( 0.0, 0.2, 4, (7,8),   3 )
+1 ( 0.0, 0.5, 2, (4,6),   2 )   |   2 ( 0.0, 0.2, 6, (10,11), 3 )
+1 ( 0.0, 0.2, 4, (7,8),   3 )   |   3 ( 0.0, 0.5, 2, (4,6),   2 )
+1 ( 0.0, 0.2, 6, (10,11), 3 )   |   4 ( 0.2, 0.6, 6, (8,9,11),3 )
+2 ( 0.2, 0.6, 6, (8,9,11),3 )   |   * ( 0.6, 1.0, 6, (8,9),   3 )
+3 ( 0.5, 1.0, 3, (5,6),   2 )   |   * ( 0.6, 1.0, 5, (11,12), 3 )              
+4 ( 0.6, 1.0, 6, (8,9),   3 )   |   * ( 0.5, 1.0, 3, (5,6),   2 )
+4 ( 0.6, 1.0, 5, (11,12), 3 )   |   * ( 0.0, 1.0, 1, (2,3),   1 )                        
+```
+
