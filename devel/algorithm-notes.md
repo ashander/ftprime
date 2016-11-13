@@ -233,7 +233,7 @@ Let $L$ denote the current vector of labels, one for each extant individual.
         and to *themselves*, if they survive.
         Let the label of the parent be $\ell_0$ and these new labels be $\ell_1, \ldots, \ell_k$,
         and output the coalescence record
-        \[  ( \ell_0, (\ell_1, \ldots, \ell_k), t ) . \]
+        $$( \ell_0, (\ell_1, \ldots, \ell_k), t ).$$
 
 
 Check: every time a new label is assigned, 
