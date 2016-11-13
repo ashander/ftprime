@@ -294,7 +294,9 @@ time   tree        |   lineages      | current state |  records output
 <li><p>Merge-and-split coalescence records that share a parent.</p></li>
 </ol></li>
 </ol>
-<h3 id="algorithm-no.-2-probably-ignore-this">Algorithm No. 2 (probably ignore this!)</h3>
+<h2 id="renumbering">Renumbering</h2>
+<p>At the end we need to renumber, so that the samples have labels <span class="math inline">1, …, <em>n</em></span> and the largest-numbered node is an internal node.</p>
+<h1 id="an-alternative-algorithm-probably-ignore-this">An alternative algorithm (probably ignore this)</h1>
 <p>The first algorithm has an inefficiency in that it records coalescent events for EVERY new offspring. Here is an algorithm that initially keeps track of <em>more</em>, but may be more amenable to subsequent pruning of redundant information.</p>
 <p>The current state is a list of labels, with each label corresponding to a segment of a currently alive individual.</p>
 <pre><code>t  |   trees       |             lineages                                    |    state           |   records output                                              

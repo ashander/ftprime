@@ -452,8 +452,15 @@ At time point $t$:
 
 
 
+## Renumbering
 
-### Algorithm No. 2 (probably ignore this!)
+At the end we need to renumber,
+so that the samples have labels $1,\ldots,n$
+and the largest-numbered node is an internal node.
+
+
+
+# An alternative algorithm (probably ignore this)
 
 
 The first algorithm has an inefficiency
