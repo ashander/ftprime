@@ -103,11 +103,15 @@ with open('tmp.tsv', 'w') as f:
 ts = msprime.load_txt('tmp.tsv')
 my_ll_ts = ts.ll_tree_sequence
 
-for t, pyt in zip(ts.trees(), trees(list(population))):
-    print("a tree")
-    print("  msprime", t)
-    print("  trees.py", pyt[0])
+for x, y in zip(list(population), ts.records()):
+    # records match
+    assert x == y
 
+print("# this is what we get from tree iteration")
+for t, pyt in zip(ts.trees(), trees(list(population))):
+    print("#a tree")
+    print("#  msprime", t)
+    print("#  trees.py", pyt[0])
 # this is what we get from tree iteration
 # a tree
 #   msprime {0: 5, 1: -1, 2: 7, 3: 5, 4: 7, 5: 9, 7: 9, 9: 10, 10: -1}
