@@ -35,25 +35,6 @@ class CoalescenceRecord(CoalescenceRecord):
 
         return s
 
-class NodeItems(dict):
-    '''
-    a softed list of items keyed by parent node
-
-    a dict but with a sortedcontainers.SortedListof nodes as the value
-    '''
-
-    def __setitem__(self, key, value):
-        '''
-        keep list of values for each key, add to it with each set
-        '''
-        self.setdefault(key, []).append(value)
-
-    def update(self, *E, **F):
-        raise NotImplementedError
-
-    def get(self, k):
-        raise NotImplementedError
-
 
 def merge_records(l: list, debug: bool=False):
     '''

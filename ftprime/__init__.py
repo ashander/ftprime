@@ -4,7 +4,6 @@ from itertools import count
 from .merge import (
     merge_records,
     SortedList,
-    NodeItems,
     CoalescenceRecord,
     fix_incomplete,
 )
@@ -92,7 +91,7 @@ class Population(object):
         self._final = False
         # decreasing 'infinite' count(__import__('sys').maxsize, -1)
         self._records = SortedList([], key=lambda rec: rec.time)
-        self._nc = NodeItems()
+        self._L = dict()
         initial_chroms = (Chromosome(id)
                           for ct, id in zip(range(size * 2),
                                             self._chromosome_ids))
@@ -155,32 +154,6 @@ class Population(object):
         self._size = len(self._individuals)
         self._merge_segs_to_records(debug)
 
-    def _store_inds(self, iterable_of_individuals):
-        new_inds = []
-        for ind in iterable_of_individuals:
-            new_inds.append(ind)
-            for c in ind:
-                if c.breakpoint is None:
-                    s = Segment(left=c.left_end,
-                                right=c.right_end,
-                                node=c.lparent,
-                                children=(c.identity,),
-                                time=self.time)
-                    self._nc[s.node] = s
-                else:
-                    sl = Segment(left=c.left_end,
-                                 right=c.breakpoint,
-                                 node=c.lparent,
-                                 children=(c.identity,),
-                                 time=self.time)
-                    sr = Segment(left=c.breakpoint,
-                                 right=c.right_end,
-                                 node=c.rparent,
-                                 children=(c.identity,),
-                                 time=self.time)
-                    self._nc[sl.node] = sl
-                    self._nc[sr.node] = sr
-        return new_inds
 
     @property
     def records(self):
