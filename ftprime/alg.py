@@ -51,7 +51,7 @@ def main():
 
 class Population(object):
 
-    def __init__(self, time=0.0, state=dict()):
+    def __init__(self, time=0.0, state=dict(), verbose=False):
         '''A pop that spits out records
 
             state (dict): mapping individuals to labels
@@ -61,6 +61,7 @@ class Population(object):
         self._state = state
         self.left_end = 0.0
         self.right_end = 1.0
+        self._verbose = verbose
         self._records = []
         self._breakpoints = SortedSet()
         # next_label (callable): to generate labels (integers)
@@ -141,7 +142,7 @@ class Population(object):
                 except:
                     pass
         for recs in records.values():
-            comp,  inc = merge_records(recs, debug=False)
+            comp,  inc = merge_records(recs, debug=self._verbose)
             assert len([i for i in inc]) == 0
             self._records.extend(comp)
 
