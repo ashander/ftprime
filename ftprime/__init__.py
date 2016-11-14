@@ -31,6 +31,7 @@ class Individual(object):
         self._sc.reverse()
         self._a = age
 
+    @property
     def age(self) -> int:
         return self._a
 
@@ -100,12 +101,13 @@ class Population(object):
         self._individuals = [i for i in initial_inds]  # self._store_inds()
 
     def __str__(self):
-        return "size: {} & time: {}\n".format(self.size(), self.time()) +\
+        return "size: {} & time: {}\n".format(self.size, self.time) +\
             "\n".join((str(r) for r in self._records))
 
     def __repr__(self):
         return str(self)
 
+    @property
     def time(self):
         return self._time
 
@@ -115,12 +117,14 @@ class Population(object):
     def __iter__(self):
         return iter(self._individuals)
 
+    @property
     def chromosomes(self):
         return (c for i in iter(self) for c in i)
 
     def individuals_randomized(self):
         return iter(permutation(self._individuals))
 
+    @property
     def size(self):
         return self._size
 
@@ -147,7 +151,7 @@ class Population(object):
         new_inds = self._store_inds(self._next_generation(average_offspring))
         self._updatetime()
         self._individuals = new_inds  # non-overlapping gens
-        self._total_size = self.size() + len(self._individuals)
+        self._total_size = self.size + len(self._individuals)
         self._size = len(self._individuals)
         self._merge_segs_to_records(debug)
 
@@ -161,26 +165,28 @@ class Population(object):
                                 right=c.right_end,
                                 node=c.lparent,
                                 children=(c.identity,),
-                                time=self.time())
+                                time=self.time)
                     self._nc[s.node] = s
                 else:
                     sl = Segment(left=c.left_end,
                                  right=c.breakpoint,
                                  node=c.lparent,
                                  children=(c.identity,),
-                                 time=self.time())
+                                 time=self.time)
                     sr = Segment(left=c.breakpoint,
                                  right=c.right_end,
                                  node=c.rparent,
                                  children=(c.identity,),
-                                 time=self.time())
+                                 time=self.time)
                     self._nc[sl.node] = sl
                     self._nc[sr.node] = sr
         return new_inds
 
+    @property
     def records(self):
         return iter(self._records)
 
+    @property
     def unmerged_records(self):
         yield from self._nc.items()
 
@@ -188,7 +194,7 @@ class Population(object):
         self._final = True
         maxn = self._maxnode()
         maxt = self._maxtime()
-        self._records = self._finalize(self.records(), maxt=maxt, maxn=maxn)
+        self._records = self._finalize(self.records, maxt=maxt, maxn=maxn)
 
     def _finalize(self, iterable, maxt, maxn):
         recs = SortedList([], key=lambda rec: rec.time)
@@ -240,7 +246,7 @@ class Population(object):
                       i2.gametes(on, tagger=self._chromosome_ids))
 
     def _mating_pairs(self, average_offspring):
-        offspring_it = iter(poisson(average_offspring, self.size()))
+        offspring_it = iter(poisson(average_offspring, self.size))
         for i1, i2, on in zip(*[self.individuals_randomized()] * 2, offspring_it):
             yield i1, i2, on
 
@@ -281,7 +287,7 @@ class Population(object):
                 "left", "right", "node", "children",
                 "time", "population", sep="\t", file=output)
 
-        for record in self.records():
+        for record in self.records:
             children = ",".join(str(c) for c in record.children)
             row = (
                 "{left:.{precision}f}\t"

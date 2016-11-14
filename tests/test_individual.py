@@ -15,7 +15,7 @@ def test_making_and_using():
         Individual((c, 1))
 
     i = Individual((c, c))
-    i.age()
+    i.age
     print([ch for ch in i])
     print([g for g in i.raw_gametes(5)])
     with pytest.raises(Exception) as e_info:

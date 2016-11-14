@@ -15,15 +15,15 @@ def test_creation_int():
     for n in pops:
         p = Population(size=2)
         realsize = len([i for i in p])
-        numchroms = len([c for c in p.chromosomes()])
-        assert realsize == p.size()
-        assert numchroms == p.size() * 2
+        numchroms = len([c for c in p.chromosomes])
+        assert realsize == p.size
+        assert numchroms == p.size * 2
 
 
 def test_initialize():
     seed(1221)
     p = Population(size=2)
-    for k, seglist in p.unmerged_records():
+    for k, seglist in p.unmerged_records:
         for seg in seglist:
             assert seg.node is default_chromosome['rparent']
             assert seg.right is default_chromosome['right_end']
@@ -32,7 +32,7 @@ def test_initialize():
 
 def test_working_generation():
     seed(1221)
-    pop_size = randint(low=100, high=500, size=20)
+    pop_size = randint(low=10, high=100, size=5)
 
     gens = 9
     seed(1221)
