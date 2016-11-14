@@ -3,6 +3,7 @@ import msprime
 import _msprime
 from trees import trees
 
+
 population = main()
 #  what main() does
 #    p = Population(0.0, state={'a': 1, '?': -1})
@@ -45,12 +46,11 @@ print("\n state:")
 print(population.state)
 print("(in old numbers:", [(k, mapping[v]) for k, v in population.state.items()])
 print("\n")
-for t in trees(list(population)):
-    print("  trees: ", t)
-    t_1_renum = [[mapping[j] for j in els] if len(els) > 0 else [] for els in t[1]]
+for pi, chi in trees(list(population)):
+    print("  trees: ", pi, chi)
+    t_1_renum = [[mapping[j] for j in els] if len(els) > 0 else [] for els in chi]
     t_1_renum.reverse()
     print("(in old numbers:", t_1_renum)
-    pass
 #
 #  ------ feeding a renumbered version into the msprime alg T ------
 #      the mapping from NEW to OLD:
@@ -107,31 +107,41 @@ for x, y in zip(list(population), ts.records()):
     # records match
     assert x == y
 
+def parent_dict(pi):
+    parent_dict = {}
+    for child, parent in enumerate(pi):
+        parent_dict[child] = parent
+    return parent_dict
+
 print("# this is what we get from tree iteration")
 for t, pyt in zip(ts.trees(), trees(list(population))):
     print("#a tree")
     print("#  msprime", t)
-    print("#  trees.py", pyt[0])
+    print("#  trees.py", parent_dict(pyt[0]))
 # this is what we get from tree iteration
-# a tree
-#   msprime {0: 5, 1: -1, 2: 7, 3: 5, 4: 7, 5: 9, 7: 9, 9: 10, 10: -1}
-#   trees.py [5, -1, 7, 5, 7, 9, -1, 9, 10, 10, -1]
-# 	out: CoalescenceRecord(left=0.0, right=0.2, node=7, children=(2, 4), time=0.0, population=0)
-# 	out: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(0, 3), time=0.0, population=0)
-# 	in: CoalescenceRecord(left=0.2, right=0.5, node=5, children=(0, 2, 3), time=0.0, population=0)
-# a tree
-#   msprime {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 9, 9: 10, 10: -1}
-#   trees.py [5, -1, 5, 5, -1, 9, -1, 9, 10, 10, -1]
-# 	out: CoalescenceRecord(left=0.0, right=0.5, node=9, children=(5, 7), time=1.0, population=0)
-# 	out: CoalescenceRecord(left=0.2, right=0.5, node=5, children=(0, 2, 3), time=0.0, population=0)
-# 	in: CoalescenceRecord(left=0.5, right=0.6, node=5, children=(0, 2, 3), time=0.0, population=0)
-# 	in: CoalescenceRecord(left=0.5, right=1.0, node=8, children=(5, 6), time=1.0, population=0)
-# a tree
-#   msprime {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 8, 8: 10, 10: -1}
-#   trees.py [5, -1, 5, 5, -1, 8, 8, -1, 10, 10, -1]
-# 	out: CoalescenceRecord(left=0.5, right=0.6, node=5, children=(0, 2, 3), time=0.0, population=0)
-# 	in: CoalescenceRecord(left=0.6, right=1.0, node=6, children=(0, 1), time=0.0, population=0)
-# 	in: CoalescenceRecord(left=0.6, right=1.0, node=5, children=(2, 3), time=0.0, population=0)
-# a tree
-#   msprime {0: 6, 1: 6, 2: 5, 3: 5, 4: -1, 5: 8, 6: 8, 8: 10, 10: -1}
-#   trees.py [6, 6, 5, 5, -1, 8, 8, -1, 10, 10, -1]
+   # in: CoalescenceRecord(left=0.0, right=0.2, node=7, children=(2, 4), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(0, 3), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.0, right=0.5, node=9, children=(5, 7), time=1.0, population=0)
+   # in: CoalescenceRecord(left=0.0, right=1.0, node=10, children=(8, 9), time=2.0, population=0)
+#a tree
+#  msprime {0: 5, 1: -1, 2: 7, 3: 5, 4: 7, 5: 9, 7: 9, 9: 10, 10: -1}
+#  trees.py {0: 5, 1: -1, 2: 7, 3: 5, 4: 7, 5: 9, 6: -1, 7: 9, 8: 10, 9: 10, 10: -1}
+   # out: CoalescenceRecord(left=0.0, right=0.2, node=7, children=(2, 4), time=0.0, population=0)
+   # out: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(0, 3), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.2, right=0.5, node=5, children=(0, 2, 3), time=0.0, population=0)
+#a tree
+#  msprime {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 9, 9: 10, 10: -1}
+#  trees.py {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 9, 6: -1, 7: 9, 8: 10, 9: 10, 10: -1}
+   # out: CoalescenceRecord(left=0.0, right=0.5, node=9, children=(5, 7), time=1.0, population=0)
+   # out: CoalescenceRecord(left=0.2, right=0.5, node=5, children=(0, 2, 3), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.5, right=0.6, node=5, children=(0, 2, 3), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.5, right=1.0, node=8, children=(5, 6), time=1.0, population=0)
+#a tree
+#  msprime {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 8, 8: 10, 10: -1}
+#  trees.py {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 8, 6: 8, 7: -1, 8: 10, 9: 10, 10: -1}
+   # out: CoalescenceRecord(left=0.5, right=0.6, node=5, children=(0, 2, 3), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.6, right=1.0, node=6, children=(0, 1), time=0.0, population=0)
+   # in: CoalescenceRecord(left=0.6, right=1.0, node=5, children=(2, 3), time=0.0, population=0)
+#a tree
+#  msprime {0: 6, 1: 6, 2: 5, 3: 5, 4: -1, 5: 8, 6: 8, 8: 10, 10: -1}
+#  trees.py {0: 6, 1: 6, 2: 5, 3: 5, 4: -1, 5: 8, 6: 8, 7: -1, 8: 10, 9: 10, 10: -1}

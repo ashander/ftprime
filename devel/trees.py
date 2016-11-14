@@ -25,6 +25,14 @@ def trees(records):
             j += 1
         yield pi, chi
 
+
+def parent_dict(pi):
+    parent_dict = {}
+    for child, parent in enumerate(pi):
+        parent_dict[child] = parent
+    return parent_dict
+
+
 if __name__ == "__main__":
     import msprime
     tsgood = msprime.simulate(3, recombination_rate=1, random_seed=111)
