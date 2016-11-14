@@ -240,9 +240,10 @@ Check: every time a new label is assigned,
 it should appear in a coalescence record (so we know who it's parent is).
 
 
+<!--
 ## Jerome's outline of forward-time alg
 
-<!-- edited from his email per correction -->
+edited from his email per correction
 
 I think you're on the right track here, but I'm a bit confused as to why you're
 recording 'coalescences' where there is a single child. In my mind, the
@@ -296,8 +297,7 @@ outlining, but it may be a bit simpler.
 
 I would try to get things working for a single locus model first though, and
 see if the basic logic holds.
-
-
+ -->
 
 ## With recombination
 
@@ -438,12 +438,12 @@ At time point $t$:
         and let $L(k)$ be the label of the offspring.
 
     b.  Let $x_0=0 \le x_1,x_2,\ldots,x_n \le x_{n=1}=1$ be the recombination breakpoints,
-        with the offspring inheriting from $i$ on $[x_2\ell,x_{2\ell+1})$
-        and from $j$ on $[x_2\ell+1,x_{2\ell+2})$;
+        with the offspring inheriting from $i$ on $[x_{2\ell},x_{2\ell+1})$
+        and from $j$ on $[x_{2\ell+1},x_{2\ell+2})$;
         and output coalescence records
-        $(x_2\ell,x_{2\ell+1},L'(i),(L(i),L(k)),t)$
+        $(x_{2\ell},x_{2\ell+1},L'(i),(L(i),L(k)),t)$
         and
-        $(x_2\ell+1,x_{2\ell+2},L'(j),(L(j),L(k)),t)$
+        $(x_{2\ell+1},x_{2\ell+2},L'(j),(L(j),L(k)),t)$
         for each $\ell$.
 
     c.  Remove dead individuals.
@@ -460,6 +460,7 @@ and the largest-numbered node is an internal node.
 
 
 
+<!--
 # An alternative algorithm (probably ignore this)
 
 
@@ -553,4 +554,4 @@ in Algorithm T:
 4 ( 0.6, 1.0, 6, (8,9),   3 )   |   * ( 0.5, 1.0, 3, (5,6),   2 )
 4 ( 0.6, 1.0, 5, (11,12), 3 )   |   * ( 0.0, 1.0, 1, (2,3),   1 )                        
 ```
-
+-->
