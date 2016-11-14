@@ -99,11 +99,9 @@ for pi, chi in trees(list(population)):
 #   |               |                                                         |   10:b             |
 #   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                    |
 #   |               |                                                         |                    |
-with open('tmp.tsv', 'w') as f:
-    population.write_records(f)
-
-ts = msprime.load_txt('tmp.tsv')
-my_ll_ts = ts.ll_tree_sequence
+my_ll_ts = _msprime.TreeSequence()
+my_ll_ts.load_records(list(population.records))
+ts = msprime.TreeSequence(my_ll_ts)
 
 for x, y in zip(list(population), ts.records()):
     # records match
