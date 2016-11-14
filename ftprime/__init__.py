@@ -3,13 +3,10 @@ from numpy.random import randint, random, poisson, permutation
 from itertools import count
 from .merge import (
     merge_records,
-    SortedList,
     CoalescenceRecord,
     fix_incomplete,
 )
 
-PHANTOM_NODE_FWD = -1
-PHANTOM_NODE_BKWD = 0
 
 class Individual(object):
     def __init__(self, chromosomes: tuple, age: int=0):
@@ -154,7 +151,6 @@ class Population(object):
         self._size = len(self._individuals)
         self._merge_segs_to_records(debug)
 
-
     @property
     def records(self):
         return iter(self._records)
@@ -280,4 +276,3 @@ if __name__ == "__main__":
     p = Population(size=size)
     for g in p.generation(average_offspring=2.5):
         print(g)
-

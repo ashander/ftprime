@@ -17,28 +17,30 @@ have, in order along the line:
 - [0, sorted(x_k1, x_k2, ..., x_kn, x_l, x_r, 1.0]
 
 '''
-from sortedcontainers import SortedList, SortedSet
+from sortedcontainers import SortedSet
 from msprime.trees import CoalescenceRecord
 
 
-class CoalescenceRecord(CoalescenceRecord):
-    # over ride coalescence records so it has a more readable str representation
-    __slots__ = ()
-    legend = "t    : [L,  R) - node <-(children)\n"
+# class CoalescenceRecord(CoalescenceRecord):
+#     # over ride coalescence records so it has a more readable str representation
+#     __slots__ = ()
+#     legend = "t    : [L,  R) - node <-(children)\n"
+#
+#     def __str__(self):
+#         s = "{} : [{}, {}) - {} <-{}".format(
+#             round(self.time, 3),
+#             round(self.left, 3), round(self.right, 2),
+#             self.node, tuple(self.children),
+#         )
+#
+#         return s
+#
 
-    def __str__(self):
-        s = "{} : [{}, {}) - {} <-{}".format(
-            round(self.time, 3),
-            round(self.left, 3), round(self.right, 2),
-            self.node, tuple(self.children),
-        )
-
-        return s
-
+ChildrenSet = lambda : SortedSet(key=lambda x: x)
 
 def merge_records(l: list, debug: bool=False):
     '''
-    merge two records to provide a list of complete, and of incomplete records
+    merge records to provide a list of complete, and of incomplete records
 
     args:
         l: a list of CoalesenceRecords of length n
@@ -51,19 +53,19 @@ def merge_records(l: list, debug: bool=False):
     records = []
     pop = l[0].population
     node = l[0].node
-    children = SortedSet(key=lambda x: -x)  # use set for easy removal and addition
+    children =   ChildrenSet() # use set for easy removal and addition
     time = []
     left = None
     endpoints, childs, times, add, inds = _prepare_records_to_merge(l)
     for k, ind in enumerate(inds):  # inds aren't used
         if add[k]:
-            if left is not None and children != SortedSet(key=lambda x: -x):
+            if left is not None and children != ChildrenSet():
                 assert time != []
                 if left != endpoints[k]:
                     records.append(CoalescenceRecord(time=max(time), left=left,
                                                     right=endpoints[k], node=node,
-                                                    children=list(children), population=pop))
-            elif left is not None and children == SortedSet(key=lambda x: -x):
+                                                    children=tuple(children), population=pop))
+            elif left is not None and children == ChildrenSet():
                 assert time == []
                 break
 
@@ -74,12 +76,17 @@ def merge_records(l: list, debug: bool=False):
             left = endpoints[k]
         elif not add[k]:
             # close off the old record
-            assert children != SortedSet(key=lambda x: -x), [str(ll) for ll in l]
+            assert children != ChildrenSet(), [str(ll) for ll in l]
             assert time != []
             if left != endpoints[k]:
+                # CRAPPY FIX!
+                # if we don't re-add kids here then if moving from (8,9,11)
+                # to 8,9 we'll remove the 8 with current example
+                for c in childs[k]:
+                    children.add(c)
                 records.append(CoalescenceRecord(time=max(time), left=left,
-                                                right=endpoints[k], node=node,
-                                                children=list(children), population=pop))
+                                                 right=endpoints[k], node=node,
+                                                 children=tuple(children), population=pop))
             # save children but remove the current one
             for c in childs[k]:
                 children.remove(c)
