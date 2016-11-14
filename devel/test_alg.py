@@ -1,9 +1,11 @@
 from ftprime.alg import main
+import msprime
+import _msprime
 from trees import trees
 
 population = main()
 #  what main() does
-#    p = Population(0.0, state={'a': 1, '?': 0})
+#    p = Population(0.0, state={'a': 1, '?': -1})
 #    births = [Birth('a', '?', 1.0, 'b'), ]
 #    deaths = ['?',]
 #    p._onegen(births, deaths)
@@ -52,11 +54,12 @@ for t in trees(list(population)):
 #
 #  ------ feeding a renumbered version into the msprime alg T ------
 #      the mapping from NEW to OLD:
-#{1: 11, 2: 10, 3: 9, 4: 8, 5: 7, 6: 6, 7: 5, 8: 4, 9: 3, 10: 2, 11: 1, 12: 0}
+#{1: 11, 2: 10, 3: 9, 4: 8, 5: 7, 6: 6, 7: 5, 8: 4, 9: 3, 10: 2, 11: 1}
 #
 # state:
-#{'d': 3, 'b': 2, 'e': 1, 'c': 4, 'a': 5}
-#(in old numbers: [('a', 7), ('d', 9), ('c', 8), ('b', 10), ('e', 11)]
+#{'d': 3, 'c': 4, 'b': 2, 'a': 5, 'e': 1}
+#(in old numbers: [('d', 9), ('c', 8), ('b', 10), ('a', 7), ('e', 11)]
+#
 #
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=8, children=[3, 5], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=6, children=[1, 4], time=0.0, population=0)
@@ -80,7 +83,6 @@ for t in trees(list(population)):
 #	in: CoalescenceRecord(left=0.6, right=1.0, node=6, children=[3, 4], time=0.0, population=0)
 #  trees:  ([-1, 7, 7, 6, 6, -1, 9, 9, -1, 11, 11, -1], [[], [], [], [], [], [], [3, 4], [1, 2], [], [6, 7], [], [9, 10]])
 #(in old numbers: [[3, 2], [], [6, 5], [], [11, 10], [9, 8], [], [], [], [], [], []]
-
 # According to my renumbering, we get
 #
 #3  |       a       |       1             1           1              1        |                    |

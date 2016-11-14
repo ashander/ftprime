@@ -31,7 +31,7 @@ class NodeItems(dict):
 
 
 def main():
-    p = Population(0.0, state={'a': 1, '?': 0})
+    p = Population(0.0, state={'a': 1, '?': -1})
     births = [Birth('a', '?', 1.0, 'b'), ]
     deaths = ['?',]
     p._onegen(births, deaths)
@@ -66,6 +66,7 @@ class Population(object):
         # next_label (callable): to generate labels (integers)
         next_label = 1 + max(v for v in state.values())
         self._labels = count(next_label)
+        self._start_label = min(v for v in state.values() if v >= 0)
         self.add_breakpoint(0.0)
         self.add_breakpoint(1.0)
         self._final = False
@@ -158,7 +159,10 @@ class Population(object):
         self._records = self._finalize(self, maxt=maxt, maxn=maxn)
         for ind, label in self.state.items():
             self.state[ind] = maxn - label
-        return dict(zip(range(maxn, 0, -1), range(maxn)))
+        # need to use maxn -1 at `start` of range, maxn at `stop`
+        # because range stops before returning `stop` value
+        return dict(zip(range(maxn - 1, self._start_label - 1, -1),
+                        range(self._start_label, maxn)))
 
     def _maxnode(self):
         ''' maximum node number
