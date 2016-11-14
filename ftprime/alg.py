@@ -156,6 +156,8 @@ class Population(object):
         maxn = self._maxnode()
         maxt = self.time
         self._records = self._finalize(self, maxt=maxt, maxn=maxn)
+        for ind, label in self.state.items():
+            self.state[ind] = maxn - label
 
     def _maxnode(self):
         ''' maximum node number

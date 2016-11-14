@@ -37,13 +37,19 @@ population = main()
 
 population.renumber()
 print("\n  ------ feeding a renumbered version into the msprime alg T ------")
+print("\n state:")
+print(population.state)
+print("\n")
 for t in trees(list(population)):
     print(t)
     pass
-
-
-
+#
 #  ------ feeding a renumbered version into the msprime alg T ------
+#
+# state:
+#{'d': 3, 'e': 1, 'c': 4, 'b': 2, 'a': 5}
+#
+#
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=8, children=[3, 5], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=6, children=[1, 4], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=0.5, node=10, children=[6, 8], time=1.0, population=0)
