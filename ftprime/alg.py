@@ -93,6 +93,10 @@ class Population(object):
     def __iter__(self):
         return iter(self._records)
 
+    @property
+    def records(self):
+        return iter(self)
+
     def _onegen(self, births, deaths=None):
         '''
         args:
@@ -161,8 +165,9 @@ class Population(object):
             self.state[ind] = maxn - label
         # need to use maxn -1 at `start` of range, maxn at `stop`
         # because range stops before returning `stop` value
-        return dict(zip(range(maxn - 1, self._start_label - 1, -1),
-                        range(self._start_label, maxn)))
+        number_nodes = maxn - self._start_label - 1
+        return dict(zip(range(number_nodes, -1, -1),
+                        range(self._start_label, maxn + 1)))
 
     def _maxnode(self):
         ''' maximum node number
@@ -170,7 +175,7 @@ class Population(object):
         such that renumbering using this results in nodes with numbers > 0'''
         if not self._final:
             raise ValueError("should not be called outside renumbering")
-        return self.next_label
+        return self.next_label - 1
 
     def _finalize(self, iterable, maxt, maxn):
         recs = SortedList([], key=lambda rec: rec.time)
@@ -181,12 +186,64 @@ class Population(object):
             recs.add(CoalescenceRecord(
                     time=time,
                     node=node,
-                    children=sorted(renumbered_children),
+                    children=tuple(sorted(renumbered_children)),
                     population=r.population,
                     left=r.left,
                     right=r.right,
                 ))
         return recs
+
+    def write_records(self, output, header=True, precision=6):
+        """
+        Writes the records for this tree sequence to the specified file in a
+        tab-separated format. If ``header`` is True, the first line of this
+        file contains the names of the columns, i.e., ``left``, ``right``,
+        ``node``, ``children``, ``time`` and ``population``. After the
+        optional header, the records are written to the file in
+        tab-separated form in order of non-decreasing time. The ``left``,
+        ``right`` and ``time`` fields are base 10 floating point values
+        printed to the specified ``precision``. The ``node`` and
+        ``population`` fields are base 10 integers. The ``children`` column
+        is a comma-separated list of base 10 integers, which must contain at
+        least two values.
+
+        Example usage:
+
+        >>> with open("records.txt", "w") as records_file:
+        >>>     tree_sequence.write_records(records_file)
+
+        :param File output: The file-like object to write the tab separated
+        output.
+        :param bool header: If True, write a header describing the column
+        names in the output.
+        :param int precision: The number of decimal places to print out for
+        floating point columns.
+
+        License:
+            this function is Copyright (C) 2015 Jerome Kelleher and reused
+            under the GPLv3
+        """
+        if not self._final:
+            raise ValueError("need to finalize records first")
+        if header:
+            print(
+                "left", "right", "node", "children",
+                "time", "population", sep="\t", file=output)
+
+        for record in self.records:
+            children = ",".join(str(c) for c in record.children)
+            row = (
+                "{left:.{precision}f}\t"
+                "{right:.{precision}f}\t"
+                "{node}\t"
+                "{children}\t"
+                "{time:.{precision}f}\t"
+                "{population}\t").format(
+                    precision=precision,
+                    left=record.left, right=record.right,
+                    node=record.node, children=children,
+                    time=record.time, population=record.population)
+            print(row, file=output)
 
 if __name__ == "__main__":
     main()
