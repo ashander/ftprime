@@ -158,7 +158,7 @@ class Population(object):
         self._records = self._finalize(self, maxt=maxt, maxn=maxn)
         for ind, label in self.state.items():
             self.state[ind] = maxn - label
-        return dict(zip(range(maxn), range(maxn, 0, -1)))
+        return dict(zip(range(maxn, 0, -1), range(maxn)))
 
     def _maxnode(self):
         ''' maximum node number

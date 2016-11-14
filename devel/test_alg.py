@@ -37,38 +37,43 @@ population = main()
 
 mapping = population.renumber()
 print("\n  ------ feeding a renumbered version into the msprime alg T ------")
-print("      the mapping:")
+print("      the mapping from NEW to OLD:")
 print(mapping)
 print("\n state:")
 print(population.state)
 print("\n")
 for t in trees(list(population)):
-    print(t)
+    print("  trees: ", t)
+    print("(in old numbers:", [mapping[i] if i != -1 else -1 for i in t[0]])
     pass
-
+#
 #  ------ feeding a renumbered version into the msprime alg T ------
-#      the mapping:
-#{0: 12, 1: 11, 2: 10, 3: 9, 4: 8, 5: 7, 6: 6, 7: 5, 8: 4, 9: 3, 10: 2, 11: 1}
+#      the mapping from NEW to OLD:
+#{1: 11, 2: 10, 3: 9, 4: 8, 5: 7, 6: 6, 7: 5, 8: 4, 9: 3, 10: 2, 11: 1, 12: 0}
 #
 # state:
-#{'a': 5, 'c': 4, 'b': 2, 'e': 1, 'd': 3}
+#{'c': 4, 'b': 2, 'd': 3, 'e': 1, 'a': 5}
 #
 #
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=8, children=[3, 5], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=6, children=[1, 4], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=0.5, node=10, children=[6, 8], time=1.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=1.0, node=11, children=[9, 10], time=2.0, population=0)
-#([-1, 6, -1, 8, 6, 8, 10, -1, 10, 11, 11, -1], [[], [], [], [], [], [], [1, 4], [], [3, 5], [], [6, 8], [9, 10]])
+#  trees:  ([-1, 6, -1, 8, 6, 8, 10, -1, 10, 11, 11, -1], [[], [], [], [], [], [], [1, 4], [], [3, 5], [], [6, 8], [9, 10]])
+#(in old numbers: [-1, 6, -1, 4, 6, 4, 2, -1, 2, 1, 1, -1]
 #	out: CoalescenceRecord(left=0.0, right=0.2, node=8, children=[3, 5], time=0.0, population=0)
 #	out: CoalescenceRecord(left=0.0, right=0.2, node=6, children=[1, 4], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.2, right=0.5, node=6, children=[1, 3, 4], time=0.0, population=0)
-#([-1, 6, -1, 6, 6, -1, 10, -1, 10, 11, 11, -1], [[], [], [], [], [], [], [1, 3, 4], [], [], [], [6, 8], [9, 10]])
+#  trees:  ([-1, 6, -1, 6, 6, -1, 10, -1, 10, 11, 11, -1], [[], [], [], [], [], [], [1, 3, 4], [], [], [], [6, 8], [9, 10]])
+#(in old numbers: [-1, 6, -1, 6, 6, -1, 2, -1, 2, 1, 1, -1]
 #	out: CoalescenceRecord(left=0.0, right=0.5, node=10, children=[6, 8], time=1.0, population=0)
 #	out: CoalescenceRecord(left=0.2, right=0.5, node=6, children=[1, 3, 4], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.5, right=0.6, node=6, children=[1, 3, 4], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.5, right=1.0, node=9, children=[6, 7], time=1.0, population=0)
-#([-1, 6, -1, 6, 6, -1, 9, 9, -1, 11, 11, -1], [[], [], [], [], [], [], [1, 3, 4], [], [], [6, 7], [], [9, 10]])
+#  trees:  ([-1, 6, -1, 6, 6, -1, 9, 9, -1, 11, 11, -1], [[], [], [], [], [], [], [1, 3, 4], [], [], [6, 7], [], [9, 10]])
+#(in old numbers: [-1, 6, -1, 6, 6, -1, 3, 3, -1, 1, 1, -1]
 #	out: CoalescenceRecord(left=0.5, right=0.6, node=6, children=[1, 3, 4], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.6, right=1.0, node=7, children=[1, 2], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.6, right=1.0, node=6, children=[3, 4], time=0.0, population=0)
-#([-1, 7, 7, 6, 6, -1, 9, 9, -1, 11, 11, -1], [[], [], [], [], [], [], [3, 4], [1, 2], [], [6, 7], [], [9, 10]])
+#  trees:  ([-1, 7, 7, 6, 6, -1, 9, 9, -1, 11, 11, -1], [[], [], [], [], [], [], [3, 4], [1, 2], [], [6, 7], [], [9, 10]])
+#(in old numbers: [-1, 5, 5, 6, 6, -1, 3, 3, -1, 1, 1, -1]
