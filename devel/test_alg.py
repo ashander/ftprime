@@ -103,11 +103,31 @@ with open('tmp.tsv', 'w') as f:
 ts = msprime.load_txt('tmp.tsv')
 my_ll_ts = ts.ll_tree_sequence
 
-for t in ts.trees():
-    print(t)
+for t, pyt in zip(ts.trees(), trees(list(population))):
+    print("a tree")
+    print("  msprime", t)
+    print("  trees.py", pyt[0])
+
 # this is what we get from tree iteration
-#{0: 5, 1: -1, 2: 7, 3: 5, 4: 7, 5: 9, 7: 9, 9: 10, 10: -1}
-#{0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 9, 9: 10, 10: -1}
-#{0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 8, 8: 10, 10: -1}
-#{0: 6, 1: 6, 2: 5, 3: 5, 4: -1, 5: 8, 6: 8, 8: 10, 10: -1}
-#
+# a tree
+#   msprime {0: 5, 1: -1, 2: 7, 3: 5, 4: 7, 5: 9, 7: 9, 9: 10, 10: -1}
+#   trees.py [5, -1, 7, 5, 7, 9, -1, 9, 10, 10, -1]
+# 	out: CoalescenceRecord(left=0.0, right=0.2, node=7, children=(2, 4), time=0.0, population=0)
+# 	out: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(0, 3), time=0.0, population=0)
+# 	in: CoalescenceRecord(left=0.2, right=0.5, node=5, children=(0, 2, 3), time=0.0, population=0)
+# a tree
+#   msprime {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 9, 9: 10, 10: -1}
+#   trees.py [5, -1, 5, 5, -1, 9, -1, 9, 10, 10, -1]
+# 	out: CoalescenceRecord(left=0.0, right=0.5, node=9, children=(5, 7), time=1.0, population=0)
+# 	out: CoalescenceRecord(left=0.2, right=0.5, node=5, children=(0, 2, 3), time=0.0, population=0)
+# 	in: CoalescenceRecord(left=0.5, right=0.6, node=5, children=(0, 2, 3), time=0.0, population=0)
+# 	in: CoalescenceRecord(left=0.5, right=1.0, node=8, children=(5, 6), time=1.0, population=0)
+# a tree
+#   msprime {0: 5, 1: -1, 2: 5, 3: 5, 4: -1, 5: 8, 8: 10, 10: -1}
+#   trees.py [5, -1, 5, 5, -1, 8, 8, -1, 10, 10, -1]
+# 	out: CoalescenceRecord(left=0.5, right=0.6, node=5, children=(0, 2, 3), time=0.0, population=0)
+# 	in: CoalescenceRecord(left=0.6, right=1.0, node=6, children=(0, 1), time=0.0, population=0)
+# 	in: CoalescenceRecord(left=0.6, right=1.0, node=5, children=(2, 3), time=0.0, population=0)
+# a tree
+#   msprime {0: 6, 1: 6, 2: 5, 3: 5, 4: -1, 5: 8, 6: 8, 8: 10, 10: -1}
+#   trees.py [6, 6, 5, 5, -1, 8, 8, -1, 10, 10, -1]
