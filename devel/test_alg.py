@@ -35,19 +35,23 @@ population = main()
 #CoalescenceRecord(left=0.6, right=1.0, node=6, children=(8, 9), time=3.0, population=0)
 
 
-population.renumber()
+mapping = population.renumber()
 print("\n  ------ feeding a renumbered version into the msprime alg T ------")
+print("      the mapping:")
+print(mapping)
 print("\n state:")
 print(population.state)
 print("\n")
 for t in trees(list(population)):
     print(t)
     pass
-#
+
 #  ------ feeding a renumbered version into the msprime alg T ------
+#      the mapping:
+#{0: 12, 1: 11, 2: 10, 3: 9, 4: 8, 5: 7, 6: 6, 7: 5, 8: 4, 9: 3, 10: 2, 11: 1}
 #
 # state:
-#{'d': 3, 'e': 1, 'c': 4, 'b': 2, 'a': 5}
+#{'a': 5, 'c': 4, 'b': 2, 'e': 1, 'd': 3}
 #
 #
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=8, children=[3, 5], time=0.0, population=0)
