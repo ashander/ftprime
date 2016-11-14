@@ -41,6 +41,7 @@ print("      the mapping from NEW to OLD:")
 print(mapping)
 print("\n state:")
 print(population.state)
+print("(in old numbers:", [(k, mapping[v]) for k, v in population.state.items()])
 print("\n")
 for t in trees(list(population)):
     print("  trees: ", t)
@@ -55,7 +56,7 @@ for t in trees(list(population)):
 #
 # state:
 #{'d': 3, 'b': 2, 'e': 1, 'c': 4, 'a': 5}
-#
+#(in old numbers: [('a', 7), ('d', 9), ('c', 8), ('b', 10), ('e', 11)]
 #
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=8, children=[3, 5], time=0.0, population=0)
 #	in: CoalescenceRecord(left=0.0, right=0.2, node=6, children=[1, 4], time=0.0, population=0)
@@ -79,3 +80,18 @@ for t in trees(list(population)):
 #	in: CoalescenceRecord(left=0.6, right=1.0, node=6, children=[3, 4], time=0.0, population=0)
 #  trees:  ([-1, 7, 7, 6, 6, -1, 9, 9, -1, 11, 11, -1], [[], [], [], [], [], [], [3, 4], [1, 2], [], [6, 7], [], [9, 10]])
 #(in old numbers: [[3, 2], [], [6, 5], [], [11, 10], [9, 8], [], [], [], [], [], []]
+
+# According to my renumbering, we get
+#
+#3  |       a       |       1             1           1              1        |                    |
+#   |      / \      |      / \           / \         / \            / \       |                    |
+#   |     a   b     |     2   3         2   3       2   3          2   3      |                    |
+#   |    / \ / \    |    / \           / \             / \            / \     |                    |
+#   |   a   c   b   |   4   6         4   6           6   5          6   5    |    7:a             |
+#   |  / \ /|\ / \  |  /|   |\           /|\         /|\            /|   |\   |    9:d             |
+#   | a   d | e   b | 7 9   8 11        8 9 11      8 9 11         8 9  11 10 |                    |
+#        /  |  \    |                                                         |    8:c             |
+#   |   d   c   e   |                                                         |   11:e             |
+#   |               |                                                         |   10:b             |
+#   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                    |
+#   |               |                                                         |                    |
