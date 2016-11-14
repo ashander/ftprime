@@ -1,7 +1,42 @@
 from ftprime.alg import main
+import tempfile
 import msprime
 import _msprime
-from trees import trees
+
+
+def trees(records):
+    M = len(records)
+    I = sorted(range(M), key=lambda j: (records[j].left, records[j].time))
+    O = sorted(range(M), key=lambda j: (records[j].right, -records[j].time))
+    pi = [-1 for j in range(max(r.node for r in records) + 1)]
+    chi = [[] for j in range(max(r.node for r in records) + 1)]
+    j = 0
+    k = 0
+    while j < M:
+        x = records[I[j]].left
+        while records[O[k]].right == x:
+            h = O[k]
+            print("\tout:", records[h])
+            chi[records[h].node] = []
+            for q in records[h].children:
+                pi[q] = -1
+            k += 1
+
+        while j < M and records[I[j]].left == x:
+            h = I[j]
+            print("\tin:", records[h])
+            chi[records[h].node] = records[h].children
+            for q in records[h].children:
+                pi[q] = records[h].node
+            j += 1
+        yield pi, chi
+
+
+def parent_dict(pi):
+    parent_dict = {}
+    for child, parent in enumerate(pi):
+        parent_dict[child] = parent
+    return parent_dict
 
 
 population = main()
@@ -99,41 +134,53 @@ for pi, chi in trees(list(population)):
 #   |               |                                                         |   10:b             |
 #   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                    |
 #   |               |                                                         |                    |
-my_ll_ts = _msprime.TreeSequence()
-my_ll_ts.load_records(list(population.records))
-ts = msprime.TreeSequence(my_ll_ts)
+def test_load_directly():
+    population = main()
+    mapping = population.renumber()
+    my_ll_ts = _msprime.TreeSequence()
+    my_ll_ts.load_records(list(population.records))
+    ts = msprime.TreeSequence(my_ll_ts)
+    return ts
 
-for x, y in zip(list(population), ts.records()):
-    # records match
-    assert x == y
+def test_load_from_file():
+    population = main()
+    mapping = population.renumber()
+    with tempfile.NamedTemporaryFile(mode='w') as f:
+        population.write_records(f)
+        f.flush()
+        msprime.load_txt(f.name)
 
-def parent_dict(pi):
-    parent_dict = {}
-    for child, parent in enumerate(pi):
-        parent_dict[child] = parent
-    return parent_dict
+def test_records_match():
+    ts = test_load_directly()
+    my_ll_ts = ts.ll_tree_sequence
+    for x, y in zip(list(population), ts.records()):
+        # records match
+        assert x == y
+    return my_ll_ts
 
-print("# this is what we get from tree iteration")
-for t, pyt in zip(ts.trees(), pytrees):
-    print("#a tree")
-    t  = t.parent_dict
-    p  = parent_dict(pyt)
-    print("#  msprime", t)
-    print("#  trees.py", p)
-    print("#   differ at")
-    clashing_children = set(t.keys()).symmetric_difference(p.keys())
-    for k in clashing_children:
-        print("#    child:", k)
-        try:
-            v = t[k]
-            print("#      <(msprime)<", v)
-        except:
-            print("#      <(msprime)<", "no entry")
-        try:
-            v = p[k]
-            print("#      >(treespy)>", v)
-        except:
-            print("#      >(msprime)>", "no entry")
+def compare_trees():
+    ts = test_load_directly()
+    print("# this is what we get from tree iteration")
+    for t, pyt in zip(ts.trees(), pytrees):
+        print("#a tree")
+        t  = t.parent_dict
+        p  = parent_dict(pyt)
+        print("#  msprime", t)
+        print("#  trees.py", p)
+        print("#   differ at")
+        clashing_children = set(t.keys()).symmetric_difference(p.keys())
+        for k in clashing_children:
+            print("#    child:", k)
+            try:
+                v = t[k]
+                print("#      <(msprime)<", v)
+            except:
+                print("#      <(msprime)<", "no entry")
+            try:
+                v = p[k]
+                print("#      >(treespy)>", v)
+            except:
+                print("#      >(msprime)>", "no entry")
 
 # this is what we get from tree iteration
 #a tree

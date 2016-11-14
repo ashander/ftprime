@@ -224,7 +224,7 @@ class Population(object):
             under the GPLv3
         """
         if not self._final:
-            raise ValueError("need to finalize records first")
+            raise ValueError("need to renumber records first")
         if header:
             print(
                 "left", "right", "node", "children",
