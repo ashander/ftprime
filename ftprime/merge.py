@@ -36,10 +36,121 @@ from msprime.trees import CoalescenceRecord
 #         return s
 #
 
+class Current(object):
+    ''' track the current state of the segements we're merging
+
+    args:
+        pop (int): population id
+        node (int): parent id
+    '''
+
+    def __init__(self, pop, node):
+        self._x = None
+        self._childsets = []
+        self._time = []
+        self._pop = pop
+        self._node = node
+        self._records = []
+
+    def __str__(self):
+        return "\n".join(["time {}",
+                          "records {}",
+                          "children {}"]).format(self.time,
+                                                 self._records,
+                                                 self._childsets)
+
+    def add_children(self, endpoint, time, children):
+        if self.endpoint == endpoint:
+            ## add more and return
+            self.add_time(time)
+            self.add_childset(children)
+            self.endpoint = endpoint
+            return
+        # otherwise write an old record first unless we're empty
+        if self.endpoint is not None and self._childsets != []:
+            assert self._time != [], str(self)
+            self._records.append(CoalescenceRecord(time=self.time,
+                                                   left=self.endpoint,
+                                                   right=endpoint,
+                                                   node=self._node,
+                                                   children=self.children,
+                                                   population=self._pop))
+        self.add_time(time)
+        self.add_childset(children)
+        self.endpoint = endpoint
+
+    def remove_children(self, endpoint, time, children):
+        # remove children and write an old record
+        if self.endpoint == endpoint:
+            return
+        assert self._time != [], str(self)
+        if self._childsets != []:
+            self._records.append(CoalescenceRecord(time=self.time,
+                                                   left=self.endpoint,
+                                                   right=endpoint,
+                                                   node=self._node,
+                                                   children=self.children,
+                                                   population=self._pop))
+        self.remove_time(time)
+        self.remove_childset(children)
+        self.endpoint = endpoint
+
+    @classmethod
+    def _flatten(self, children):
+        '''arg: list of tuples
+
+        return: sorted tuple of unique entries
+        '''
+        sset = SortedSet(key=lambda x: x)
+        sset.update(*children)
+        return tuple(sset)
+
+    @property
+    def records(self):
+        return self._records
+    @property
+    def endpoint(self):
+        return self._x
+
+    @endpoint.setter
+    def endpoint(self, value):
+        self._x = value
+
+    @property
+    def time(self):
+        return max(self._time)
+
+    def add_time(self, value):
+        self._time.append(value)
+
+    def remove_time(self, value):
+        try:
+            self._time.remove(value)  # TODO better way than list remove?
+        except ValueError as e:
+            print("ValueError:", e)
+            print(str(self))
+
+    @property
+    def children(self):
+        return self._flatten(self._childsets)
+
+    def add_childset(self, value):
+        self._childsets.append(value)
+
+    def remove_childset(self, value):
+        try:
+            self._childsets.remove(value)  # TODO better way than list remove?
+        except ValueError as e:
+            print("ValueError:", e)
+            print(str(self))
+
 
 def merge_records(l: list, debug: bool=False):
     '''
     merge records to provide a list of complete, and of incomplete records
+
+    TODO -- currently does not concatenate adjoining records that share
+    children/time
 
     args:
         l: a list of CoalesenceRecords of length n
@@ -49,47 +160,19 @@ def merge_records(l: list, debug: bool=False):
         complete: an iterator over complete records
         incomplete: an iterator over incomplete records
     '''
-    records = []
-    pop = l[0].population
-    node = l[0].node
-    children =  set() #set for easy removal and addition
-    time = []
-    existing_endpoint = None
+    current = Current(pop=l[0].population, node=l[0].node)
     endpoints, childs, times, add, inds = _prepare_records_to_merge(l)
     for k, ind in enumerate(inds):  # inds aren't used
         if add[k]:
-            if existing_endpoint is not None:
-                # there is an existing record being built
-                if existing_endpoint != endpoints[k]:
-                    assert time == [], " time {}\n records {}\n children {}".format(time, records, children)
-                    # the current endpoint is a rightendpoint so close off a
-                    # record
-                    records.append(CoalescenceRecord(time=max(time), left=existing_endpoint,
-                                                    right=endpoints[k], node=node,
-                                                    children=_flatten(children), population=pop))
-            # add children, time, start a new record
-            children.add(childs[k])
-            time.append(times[k])
-            existing_endpoint = endpoints[k]
+            current.add_children(endpoints[k], times[k], childs[k])
         elif not add[k]:
-            # we are closing a record
-            assert children != set(), " time {}\n records {}\n children {}".format(time, records, children)
-
-            assert time != [], " time {}\n records {}\n children {}".format(time, records, children)
-            assert existing_endpoint != endpoints[k], " time {}\n records {}\n children {}".format(time, records, children)
-            records.append(CoalescenceRecord(time=max(time), left=existing_endpoint,
-                                             right=endpoints[k], node=node,
-                                             children=_flatten(children), population=pop))
             # save children but remove the current one
-            children.remove(childs[k])
-            time.remove(times[k])  # is there a better way to do this?
-            # start a new record
-            existing_endpoint = endpoints[k]
+            current.remove_children(endpoints[k], times[k], childs[k])
         else:
             raise ValueError("elements of `add` should be True or False")
 
-    comp = _complete_records(records)
-    incomp = _incomplete_records(records)
+    comp = _complete_records(current.records)
+    incomp = _incomplete_records(current.records)
 
     if debug:  # debugging
         print("\nWith inputs...")
@@ -97,10 +180,7 @@ def merge_records(l: list, debug: bool=False):
             print(ll)
         complete = [c for c in comp]
         incomplete = [c for c in incomp]
-        assert len(complete) + len(incomplete) == len(records), \
-            "comp: {}\n incomp:{}\n all:{}\n".format(complete,
-                                                     incomplete,
-                                                     records)
+        assert len(complete) + len(incomplete) >= len(current.records), str(current)
         print("Merged")
         for c in complete:
             print(c)
@@ -108,21 +188,13 @@ def merge_records(l: list, debug: bool=False):
         for i in incomplete:
             print(i)
         print("... (all records created")
-        for r in records:
+        for r in current.records:
             print(r)
         print("...)")
         return complete, incomplete
 
     return comp, incomp
 
-def _flatten(children):
-    '''arg: list of tuples
-
-    return: sorted tuple of unique entries
-    '''
-    sset = SortedSet(key=lambda x: x)
-    sset.update(*children)
-    return tuple(sset)
 
 def _complete_records(records):
     '''complete (children > 1)'''

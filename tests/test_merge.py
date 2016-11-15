@@ -1,4 +1,4 @@
-from ftprime.merge import merge_records, CoalescenceRecord
+from ftprime.merge import merge_records, CoalescenceRecord, Current
 from ftprime import merge
 
 c1 = CoalescenceRecord(0.0, 0.5, 3, (1, 2), 0.0, 0)
@@ -13,11 +13,11 @@ irecs = (c3, c4)
 
 def test_ll_flatten():
     childlist = [(1, 2), (1, )]
-    assert merge._flatten(childlist) == (1, 2)
+    assert Current._flatten(childlist) == (1, 2)
     childlist = [(1, 2), (1, ), (7, 8, 9, 20)]
-    assert merge._flatten(childlist) == (1, 2, 7, 8, 9, 20)
+    assert Current._flatten(childlist) == (1, 2, 7, 8, 9, 20)
     childlist = [(1, ), ]
-    assert merge._flatten(childlist) == (1, )
+    assert Current._flatten(childlist) == (1, )
 
 
 def test_ll_prep_records_overlapping():
@@ -46,8 +46,10 @@ def test_ll_prep_records_nonoverlapping_orphans():
     ep, ch, t, add, ind =  merge._prepare_records_to_merge([c3, c4])
     assert ep == (0.0, 0.3, 0.4, 1.0)
     assert len(ch) == 4
-    assert (1, ), (1, ) == ch[:2]
-    assert (2, ), (2, ) == ch[2:]
+    assert (1, ) == ch[0]
+    assert (1, ) == ch[1]
+    assert (2, ) == ch[2]
+    assert (2, ) == ch[3]
     assert t == (0.0, 0.0, 0.0, 0.0)
     assert add == (True, False, True, False)
     assert ind == (0, 0, 1, 1)
@@ -57,8 +59,10 @@ def test_ll_prep_records_overlapping_children_vary():
     ep, ch, t, add, ind =  merge._prepare_records_to_merge([c1, c5])
     assert ep == (0.0, 0.4, 0.5, 1.0)
     assert len(ch) == 4
-    assert (1, 2), (1, 2, 7) == ch[:2]
-    assert (1, 2), (1, 2, 7) == ch[2:]
+    assert (1, 2) == ch[0]
+    assert (1, 2, 7) == ch[1]
+    assert (1, 2) == ch[2]
+    assert (1, 2, 7) == ch[3]
     assert t == (0.0, 0.0, 0.0, 0.0)
     assert add == (True, True, False, False)
     assert ind == (0, 1, 0, 1)
@@ -66,8 +70,10 @@ def test_ll_prep_records_overlapping_children_vary():
     ep, ch, t, add, ind =  merge._prepare_records_to_merge([c3, c6])
     assert ep == (0.0, 0.0, 0.2, 0.3)
     assert len(ch) == 4
-    assert (1, ), (1, 2, 7) == ch[:2]
-    assert (1, ), (1, 2, 7) == ch[2:]
+    assert (1, ) == ch[0]
+    assert (1, 2, 7) == ch[1]
+    assert (1, 2, 7) == ch[2]
+    assert (1, ) == ch[3]
     assert t == (0.0, 1.0, 1.0, 0.0)
     assert add == (True, True, False, False)
     assert ind == (0, 1, 1, 0)
@@ -116,11 +122,39 @@ def test_sibs_non_overlapping():
     assert c2 in comp
 
 
-def test_simple_overlapping():
-    c1 = CoalescenceRecord(0.0, 0.5, 3, (1, 2), 0.0, 0)
-    c2 = CoalescenceRecord(0.3, 1.0, 3, (1, 2), 0.0, 0)
+def test_simple_singleton_overlapping():
+    c1 = CoalescenceRecord(0.0, 0.5, 3, (1, ), 0.0, 0)
+    c2 = CoalescenceRecord(0.3, 1.0, 3, (2, ), 0.0, 0)
     comp, inc = merge_records([c1, c2], debug=True)
     assert len(comp) == 1
     assert len(inc) == 2
-    assert c1 in inc
-    assert c2 in inc
+    assert CoalescenceRecord(0.0, 0.3, 3, (1, ), 0.0, 0) in inc
+    assert CoalescenceRecord(0.3, 0.5, 3, (1, 2), 0.0, 0) in comp
+    assert CoalescenceRecord(0.5, 1.0, 3, (2, ), 0.0, 0) in inc
+
+
+def test_simple_sibs_overlapping():
+    comp, inc = merge_records([c1, c2], debug=True)
+    assert len(comp) == 3
+    assert len(inc) == 0
+    assert CoalescenceRecord(0.0, 0.3, 3, (1, 2), 0.0, 0) in comp
+    assert CoalescenceRecord(0.3, 0.5, 3, (1, 2), 1.0, 0) in comp
+    assert CoalescenceRecord(0.5, 1.0, 3, (1, 2), 1.0, 0) in comp
+
+
+def test_sibs_overlapping_on_left():
+    comp, inc = merge_records([c6,c3,c4], debug=True)
+    assert len(comp) == 1
+    assert len(inc) == 2
+    assert CoalescenceRecord(left=0.0, right=0.2, node=3, children=(1, 2, 7), time=1.0, population=0) in comp
+    assert CoalescenceRecord(left=0.2, right=0.3, node=3, children=(1,), time=0.0, population=0) in inc
+    assert CoalescenceRecord(left=0.4, right=1.0, node=3, children=(2,), time=0.0, population=0) in inc
+
+
+def test_sibs_overlapping_on_right():
+    comp, inc = merge_records([c2,c3,c4], debug=True)
+    assert len(comp) == 2
+    assert len(inc) == 1
+    assert CoalescenceRecord(left=0.0, right=0.3, node=3, children=(1,), time=0.0, population=0) in inc
+    assert CoalescenceRecord(left=0.3, right=0.4, node=3, children=(1, 2), time=1.0, population=0) in comp
+    assert CoalescenceRecord(left=0.4, right=1.0, node=3, children=(1, 2), time=1.0, population=0) in comp
