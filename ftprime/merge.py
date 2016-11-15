@@ -67,6 +67,7 @@ def merge_records(l: list, debug: bool=False):
                                                     children=tuple(children), population=pop))
             elif left is not None and children == ChildrenSet():
                 assert time == []
+                print("I broke")
                 break
 
             # add children, time, start a new record
@@ -145,7 +146,7 @@ def _prepare_records_to_merge(l: list):
 
     returns a zip object containing three length 2n lists:
         endpoints: a sorted list consisting of all left and rigth endpoints in l
-        childs: list of children from the records
+        childs: list of children from the records corresponding to each endpoint
         times: list of times
         add: list of True/False indicating whether to add children (i.e.,
              whether the endpoint is left
