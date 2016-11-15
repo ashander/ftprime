@@ -11,6 +11,15 @@ crecs = (c1, c2, c5, c6)
 irecs = (c3, c4)
 
 
+def test_ll_flatten():
+    childlist = [(1, 2), (1, )]
+    assert merge._flatten(childlist) == (1, 2)
+    childlist = [(1, 2), (1, ), (7, 8, 9, 20)]
+    assert merge._flatten(childlist) == (1, 2, 7, 8, 9, 20)
+    childlist = [(1, ), ]
+    assert merge._flatten(childlist) == (1, )
+
+
 def test_ll_prep_records_overlapping():
     ep, ch, t, add, ind =  merge._prepare_records_to_merge([c1, c2])
     assert ep == (0.0, 0.3, 0.5, 1.0)
@@ -44,6 +53,26 @@ def test_ll_prep_records_nonoverlapping_orphans():
     assert ind == (0, 0, 1, 1)
 
 
+def test_ll_prep_records_overlapping_children_vary():
+    ep, ch, t, add, ind =  merge._prepare_records_to_merge([c1, c5])
+    assert ep == (0.0, 0.4, 0.5, 1.0)
+    assert len(ch) == 4
+    assert (1, 2), (1, 2, 7) == ch[:2]
+    assert (1, 2), (1, 2, 7) == ch[2:]
+    assert t == (0.0, 0.0, 0.0, 0.0)
+    assert add == (True, True, False, False)
+    assert ind == (0, 1, 0, 1)
+
+    ep, ch, t, add, ind =  merge._prepare_records_to_merge([c3, c6])
+    assert ep == (0.0, 0.0, 0.2, 0.3)
+    assert len(ch) == 4
+    assert (1, ), (1, 2, 7) == ch[:2]
+    assert (1, ), (1, 2, 7) == ch[2:]
+    assert t == (0.0, 1.0, 1.0, 0.0)
+    assert add == (True, True, False, False)
+    assert ind == (0, 1, 1, 0)
+
+
 def test_ll_in_or_complete_records():
     comp = [c for c in merge._complete_records(crecs + irecs)]
     inc = [i for i in merge._incomplete_records(crecs + irecs)]
@@ -73,8 +102,8 @@ def test_singleton_non_overlapping():
     comp, inc = merge_records([c3, c4], debug=True)
     assert len(comp) == 0
     assert len(inc) == 2
-    assert c1 in inc
-    assert c2 in inc
+    assert c3 in inc
+    assert c4 in inc
 
 
 def test_sibs_non_overlapping():

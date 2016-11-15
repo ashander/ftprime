@@ -36,7 +36,6 @@ from msprime.trees import CoalescenceRecord
 #         return s
 #
 
-ChildrenSet = lambda : SortedSet(key=lambda x: x)
 
 def merge_records(l: list, debug: bool=False):
     '''
@@ -53,47 +52,39 @@ def merge_records(l: list, debug: bool=False):
     records = []
     pop = l[0].population
     node = l[0].node
-    children =   ChildrenSet() # use set for easy removal and addition
+    children =  set() #set for easy removal and addition
     time = []
-    left = None
+    existing_endpoint = None
     endpoints, childs, times, add, inds = _prepare_records_to_merge(l)
     for k, ind in enumerate(inds):  # inds aren't used
         if add[k]:
-            if left is not None and children != ChildrenSet():
-                assert time != []
-                if left != endpoints[k]:
-                    records.append(CoalescenceRecord(time=max(time), left=left,
+            if existing_endpoint is not None:
+                # there is an existing record being built
+                if existing_endpoint != endpoints[k]:
+                    assert time == [], " time {}\n records {}\n children {}".format(time, records, children)
+                    # the current endpoint is a rightendpoint so close off a
+                    # record
+                    records.append(CoalescenceRecord(time=max(time), left=existing_endpoint,
                                                     right=endpoints[k], node=node,
-                                                    children=tuple(children), population=pop))
-            elif left is not None and children == ChildrenSet():
-                assert time == []
-                print("I broke")
-                break
-
+                                                    children=_flatten(children), population=pop))
             # add children, time, start a new record
-            for c in childs[k]:
-                children.add(c)
+            children.add(childs[k])
             time.append(times[k])
-            left = endpoints[k]
+            existing_endpoint = endpoints[k]
         elif not add[k]:
-            # close off the old record
-            assert children != ChildrenSet(), [str(ll) for ll in l]
-            assert time != []
-            if left != endpoints[k]:
-                # CRAPPY FIX!
-                # if we don't re-add kids here then if moving from (8,9,11)
-                # to 8,9 we'll remove the 8 with current example
-                for c in childs[k]:
-                    children.add(c)
-                records.append(CoalescenceRecord(time=max(time), left=left,
-                                                 right=endpoints[k], node=node,
-                                                 children=tuple(children), population=pop))
+            # we are closing a record
+            assert children != set(), " time {}\n records {}\n children {}".format(time, records, children)
+
+            assert time != [], " time {}\n records {}\n children {}".format(time, records, children)
+            assert existing_endpoint != endpoints[k], " time {}\n records {}\n children {}".format(time, records, children)
+            records.append(CoalescenceRecord(time=max(time), left=existing_endpoint,
+                                             right=endpoints[k], node=node,
+                                             children=_flatten(children), population=pop))
             # save children but remove the current one
-            for c in childs[k]:
-                children.remove(c)
+            children.remove(childs[k])
             time.remove(times[k])  # is there a better way to do this?
             # start a new record
-            left = endpoints[k]
+            existing_endpoint = endpoints[k]
         else:
             raise ValueError("elements of `add` should be True or False")
 
@@ -124,6 +115,14 @@ def merge_records(l: list, debug: bool=False):
 
     return comp, incomp
 
+def _flatten(children):
+    '''arg: list of tuples
+
+    return: sorted tuple of unique entries
+    '''
+    sset = SortedSet(key=lambda x: x)
+    sset.update(*children)
+    return tuple(sset)
 
 def _complete_records(records):
     '''complete (children > 1)'''
