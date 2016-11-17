@@ -555,3 +555,230 @@ in Algorithm T:
 4 ( 0.6, 1.0, 5, (11,12), 3 )   |   * ( 0.0, 1.0, 1, (2,3),   1 )                        
 ```
 -->
+
+# Algorithm M: including single-offspring events.
+
+Here's a minimal example:
+with `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
+
+1. Begin with an individual `a` (and another anonymous one) at `t=0`.
+2. `(a,?,1.0)->b` at `t=1`
+3. `(a,b,0.5)->c` at `t=2`
+4. `(a,c,0.2)->d` and `(c,b,0.6)->e` at `t=3`.
+5. `a` and `b` die, we sample `c,d,e` at `t=4`.
+
+
+Coalescent records are
+```
+(left, right, node, (children), time)
+```
+
+The current state will be a list of coalescent records for which extant individuals are the parents;
+these are output when the individual dies.
+
+
+```
+t  |   trees       |             lineages                                    |    state                         |   records output                                              
+                   |                                                                                                           
+0  |        a      |                         a                               |                                  |                        
+
+# (a,?,1.0)->b , t=1
+1  |        a      |                         a                               |                                  |                        
+   |       / \     |                        / \                              |    ( 0.0, 1.0, a, (a,b), 1 )     |  
+   |      a   b    |                       a   b                             |                                  |                        
+
+# (a,b,0.5)->c , t=2
+ 2 |        a      |             a                           a               |                                  |                        
+   |       / \     |            / \                         / \              |                                  |                        
+   |      a   b    |           a   b                       a   b             |                                  |   
+   |     / \ / \   |          / \   \                     /   / \            |                                  |   
+   |    a   c   b  |         a   c   b                   a   c   b           |    ( 0.0, 1.0, a, (b,c), 1 )     |                         
+   |               |                                                         |    ( 0.5, 1.0, a, (b),   1 )     |                         
+   |               |         [0.0,0.5)                    [0.5,1.0)          |    ( 0.5, 1.0, b, (c),   2 )     |                         
+                                                                    
+# (a,c,0.2)->d , t=3                                                
+3  |       a       |       a             a                    a              |                                  |                         
+   |      / \      |      / \           / \                  / \             |                                  |                         
+   |     a   b     |     a   b         a   b                a   b            |                                  |
+   |    / \ / \    |    / \   \       / \   \              /   / \           |     ( 0.0, 1.0, a, (b,c), 1 )    |
+   |   a   c   b   |   a   c   b     a   c   b            a   c   b          |     ( 0.5, 1.0, a, (b),   1 )    |
+   |  / \ /        |  / \           /   /|               /   /|              |     ( 0.5, 1.0, b, (c),   2 )    |                        
+   | a   d         | a   d         a   d c              a   d c              |                                  |                        
+   |               |                                                         |                                  |                        
+   |               |                                                         |                                  |                        
+   |               |  [0.0,0.2)      [0.2,0.5)             [0.5,1.0)         |                                  |                        
+
+# (c,b,0.6)->e , still t=3
+3  |       a       |       1             1           1              1        |                                  |                        
+   |      / \      |      / \           / \         / \            / \       |                                  |                        
+   |     a   b     |     2   3         2   3       2   3          2   3      |                                  |                        
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                                  |   ( 0.0, 0.2, 6, (9,10), 3 )
+   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |    7:a                           |   ( 0.2, 0.6, 6, (8,9,10), 3 )   ** split
+   |  / \ / \ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |    8:d                           |   ( 0.6, 1.0, 6, (8,9), 3 )      ** split
+   | a   d   e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |    9:c                           |                        
+   |               |                                                         |   10:e                           |                                   
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |   11:b                           |   ( 0.6, 1.0, 5, (10,11), 3 )
+                                                                           
+# a,b die; sample c,d,e at t=4
+3  |       a       |       1             1           1              1        |                                  |                        
+   |      / \      |      / \           / \         / \            / \       |                                  |  
+   |     a   b     |     2   3         2   3       2   3          2   3      |                                  |  
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                                  |  
+   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |                                  |  
+   |  / \ /|\ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |    8:d                           |  
+   | a   d | e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |                                  |  
+   |    /  |  \    |   |   |  \       /  |  \     /  |  \        /  |   |    |    9:c                           |  
+   |   d   c   e   |   8   9   10    8   9   10  8   9   10     8   9  10    |   10:e                           |  
+   |               |                                                         |                                  |  
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                                  |  
+   |               |                                                         |                                  |  
+
+````
+
+
+
+# Another example situation:
+
+With `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
+
+1. Begin with an individual `a` (and another anonymous one) at `t=0`.
+2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
+3. `(b,a,0.9)->d` and `(a,c,0.1)->e` and then `a` dies at `t=2`
+4. `(d,e,0.7)->f` at `t=3`
+5. `(f,d,0.8)->g` and `(e,f,0.2)->h` at `t=4`.
+6. `(b,g,0.6)->i` and `(g,h,0.5)->j` and `(h,c,0.4)->k` at `t=5`.
+7. We sample `i` and `j`.
+
+
+Here are the trees:
+```
+t                  |              |              |             |             |             |             |             |             |            
+                                                                                                                                                  
+0       --a--      |     --a--    |     --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--   
+       /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
+1     b   |   c    |   b   |   c  |   b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b   |   c 
+      |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
+2     | d   e |    |   | d   e |  |   | d   e |  |  | d   e |  |  | d   e    |  | d   e    |    d   e    |    d   e    |    d   e    |    d   e   
+      | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
+3     | | f | |    |   |   f | |  |   |   f | |  |  |   f   |  |  |   f      |  |   f      |      f      |      f      |    | f      |    | f     
+      | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
+4     | g   h |    |   | g   h |  |   | g   h |  |  | g   h |  |  | g   h    |  | g   h    |    g   h    |    g   h    |    g   h    |    g   h   
+      |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
+5     i   j   k    |   i   j   k  |   i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k 
+                                                                                                                                                  
+                   |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
+
+```
+
+
+Here is one labeling of the lineages of i, j and k:
+```
+t                  |              |              |             |             |             |             |             |             |            
+                                                                                                                                                  
+5       --a--      |     --6--    |     --6--    |    --6--    |    --.--    |    --.--    |    --.--    |    --.--    |    --6--    |    --6--   
+       /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
+4     b   |   c    |   5   |   2  |   5       2  |  5       2  |  5       .  |  5       .  |  .       .  |  .       .  |  0       3  |  .   |   3 
+      |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
+3     | d   e |    |   | 1   . |  |   | 1   . |  |  | 1   . |  |  | 4   .    |  | 3   .    |    .   .    |    .   .    |    0   3    |    0   3   
+      | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
+2     | | f | |    |   |   1 | |  |   |   1 | |  |  |   1   |  |  |   4      |  |   3      |      4      |      4      |    | 3      |    | 3     
+      | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
+1     | g   h |    |   | 1   . |  |   | 1   . |  |  | 1   . |  |  | 1   2    |  | .   3    |    0   3    |    0   3    |    0   3    |    0   3   
+      |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
+0     i   j   k    |   0   1   2  |   0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2 
+                                                                                                                                                  
+                   |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
+
+```
+and the corresponding set of records:
+```
+(left, right, parent, children, time)
+( 0.5,   1.0,      3,    (1,2), 1.0 )
+( 0.4,   0.5,      4,    (1,2), 2.0 )
+( 0.6,   0.8,      4,    (0,3), 2.0 )
+( 0.0,   0.4,      5,    (0,1), 4.0 )
+( 0.4,   0.5,      5,    (0,4), 4.0 )
+( 0.5,   0.6,      5,    (0,3), 4.0 )
+( 0.0,   0.4,      6,    (2,5), 5.0 )
+( 0.8,   1.0,      6,    (0,3), 5.0 )
+```
+
+
+Alternatively, here is the full labeling (using letters instead of numbers to reduce confusion):
+```
+t                  |              |              |             |             |             |             |             |             |            
+                                                                                                                                                  
+5       --a--      |     --a--    |     --a--    |    --a--    |    --.--    |    --.--    |    --.--    |    --.--    |    --a--    |    --a--   
+       /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
+4     b   |   c    |   b   |   c  |   b       c  |  b       c  |  b       .  |  b       .  |  .       .  |  .       .  |  b       c  |  .   |   c 
+      |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
+3     | d   e |    |   | d   . |  |   | d   . |  |  | d   . |  |  | d   .    |  | d   .    |    .   .    |    .   .    |    d   e    |    d   e   
+      | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
+2     | | f | |    |   |   f | |  |   |   f | |  |  |   f   |  |  |   f      |  |   f      |      f      |      f      |   d2 f      |   d2 f     
+      | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
+1     | g   h |    |  b2 g   . c2 |  b2 g   . c2 | b2 g   . c2 | b2 g   h    | b2 .   h    |    g   h    |    g   h    |    g   h    |    g   h   
+      |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
+0     i   j   k    |   0   1   2  |   0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2 
+                                                                                                                                                  
+                   |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
+
+```
+and here are two possible sets of records;
+on the left are all one-parent records;
+on the right are records produced by merging within one generation overlapping ones:
+```
+(left, right, parent, children, time)    |  (left, right, parent, children, time)
+#  (b,g,0.6)->i and (g,h,0.5)->j
+#      and (h,c,0.4)->k        
+( 0.0,   0.4,      h,    (k,), 1.0 )     | ( 0.0,   0.4,      h,    (k,), 1.0 )           
+( 0.4,   1.0,      c2,   (k,), 1.0 )     | ( 0.4,   1.0,      c2,   (k,), 1.0 )           
+( 0.0,   0.5,      g,    (j,), 1.0 )     | ( 0.0,   0.5,      g,    (j,), 1.0 )           
+( 0.5,   1.0,      h,    (j,), 1.0 )     | ( 0.5,   1.0,      h,    (j,), 1.0 )           
+( 0.0,   0.6,      b2,   (i,), 1.0 )     | ( 0.0,   0.6,      b2,   (i,), 1.0 )           
+( 0.6,   1.0,      g,    (i,), 1.0 )     | ( 0.6,   1.0,      g,    (i,), 1.0 )           
+
+#  (f,d,0.8)->g and (e,f,0.2)->h
+( 0.0,   0.2,      e,    (h,), 2.0 )     | ( 0.0,   0.2,      e,    (h,), 2.0 )           
+( 0.2,   1.0,      f,    (h,), 2.0 )     | ( 0.8,   1.0,      f,    (h,), 2.0 )           
+( 0.0,   0.8,      f,    (g,), 2.0 )     | ( 0.2,   0.8,      f,   (g,h), 2.0 )           
+( 0.8,   1.0,      d2,   (g,), 2.0 )     | ( 0.0,   0.2,      f,    (g,), 2.0 )           
+                                         | ( 0.8,   1.0,      d2,   (g,), 2.0 )        
+
+#  (d,e,0.7)->f                
+( 0.0,   0.7,      d,    (f,), 3.0 )     | ( 0.0,   0.7,      d,  (f,d2), 3.0 )           
+( 0.7,   1.0,      e,    (f,), 3.0 )     | ( 0.7,   1.0,      e,    (f,), 3.0 )           
+( 0.0,   1.0,      d,   (d2,), 3.0 )     | ( 0.7,   1.0,      d,   (d2,), 3.0 )
+
+#  (b,a,0.9)->d and (a,c,0.1)->e
+( 0.0,   0.1,      a,    (e,), 4.0 )     | ( 0.0,   0.1,      a,    (e,), 4.0 )           
+( 0.1,   1.0,      c,    (e,), 4.0 )     | ( 0.1,   1.0,      c,  (e,c2), 4.0 )           
+( 0.0,   0.9,      b,    (d,), 4.0 )     | ( 0.0,   0.9,      b,  (d,b2), 4.0 )           
+( 0.9,   1.0,      a,    (d,), 4.0 )     | ( 0.9,   1.0,      a,    (d,), 4.0 )           
+( 0.0,   1.0,      b,   (b2,), 4.0 )     | ( 0.9,   1.0,      b,   (b2,), 4.0 ) 
+( 0.0,   1.0,      c,   (c2,), 4.0 )     | ( 0.0,   0.1,      c,   (c2,), 4.0 ) 
+
+#  (a,?,1.0)->b and (a,?,1.0)->c
+( 0.0,   1.0,      a,    (c,), 5.0 )     | ( 0.0,   1.0,      a,   (b,c), 5.0 )           
+( 0.0,   1.0,      a,    (b,), 5.0 )     |
+```
+
+How can we merge these to get closer to the smaller set of records above?
+In general, we can keep track of who inherits from whom,
+splitting and pruning as we go along.
+For instance, since `h` has only offspring on `[0,0.4)` and `[0.5,0.8)`;
+none on `[0.4,0.5)`,
+and no grandchildren on `[0.8,1.0)`,
+we could remove the label `h` entirely, combining:
+```
+                            from      --->   to
+ ( 0.0,   0.4,      h,    (k,), 1.0 )  |
+ ( 0.5,   1.0,      h,    (j,), 1.0 )  |                                                  
+ ( 0.0,   0.2,      e,    (h,), 2.0 )  | ( 0.0,   0.2,      e,    (k,), 2.0 ) 
+ ( 0.2,   0.8,      f,   (g,h), 2.0 )  | ( 0.2,   0.4,      f,   (g,k), 2.0 ) 
+ ( 0.8,   1.0,      f,    (h,), 2.0 )  | ( 0.4,   0.5,      f,    (g,), 2.0 ) 
+                                       | ( 0.5,   0.8,      f,   (g,j), 2.0 ) 
+                                       | ( 0.8,   1.0,      f,    (j,), 2.0 ) 
+```
+We can check that we've still got complete records for the `[0,0.4)` segment of `k`,
+and the `[0.5,1)` segment of `j`, which is what we started with.
+
