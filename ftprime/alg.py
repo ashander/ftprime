@@ -157,13 +157,34 @@ class Population(object):
             self.state[ind] = new_lab
         return old_lab, new_lab, old_labels
 
-    def renumber(self):
+    def renumber(self, samples=None):
+        '''
+        More or less, just reverse the lineage labels,
+        so they increase back in time instead of forwards;
+        and reverse time.
+        But, additionally, make sure that the individuals in `samples`
+        have labels range(len(samples));
+        and that the largest lineage label is an internal node.
+        '''
         self._final = True
-        maxn = self._maxnode()
+        maxn = self._maxnode() # next counter = max node + 1
         maxt = self.time
-        self._records = self._finalize(self, maxt=maxt, maxn=maxn)
+        if samples is None :
+            nsamples = 0
+        else :
+            nsamples = len(samples)
+        # function to do the relabeling
+        def relabel_fn(label) :
+            # print(str(label)+"\n")
+            if ( samples is not None ) and ( label in samples ) :
+                return samples.index(label)
+            else :
+                return nsamples + maxn - label
+        # modify times and labels in coalescence records
+        self._records = self._finalize(self, maxt=maxt, rfn=relabel_fn)
+        # update the mapping of lineages to individuals
         for ind, label in self.state.items():
-            self.state[ind] = maxn - label
+            self.state[ind] = relabel_fn(label)
         # need to use maxn -1 at `start` of range, maxn at `stop`
         # because range stops before returning `stop` value
         number_nodes = maxn - self._start_label - 1
@@ -178,12 +199,13 @@ class Population(object):
             raise ValueError("should not be called outside renumbering")
         return self.next_label - 1
 
-    def _finalize(self, iterable, maxt, maxn):
+    def _finalize(self, iterable, maxt, rfn):
         recs = SortedList([], key=lambda rec: rec.time)
         for r in iterable:
             time = maxt - r.time
-            node = maxn - r.node
-            renumbered_children = (maxn - c for c in r.children)
+            node = rfn(r.node)
+            # print("node " + str(node) + "\n")
+            renumbered_children = ( rfn(c) for c in r.children )
             recs.add(CoalescenceRecord(
                     time=time,
                     node=node,
