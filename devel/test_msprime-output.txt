@@ -28,7 +28,6 @@ plotting works in c
 [5, 4, 4, -1, 5, -1, -1]
 Can have partial tips?
 --------------------------
-plotting trees fails.
 	in: CoalescenceRecord(left=0.0, right=0.2, node=3, children=(2, 7), time=0.4, population=0)
 python fails.
 list assignment index out of range
@@ -49,8 +48,6 @@ Can have partial tips, if numbered increasing towards root(s)?
 	in: CoalescenceRecord(left=0.8, right=1.0, node=6, children=(0, 5), time=0.7, population=0)
 {0: 6, 1: 5, 2: 4, 3: 4, 4: 5, 5: 6, 6: -1, 7: -1}
 [6, 5, 4, 4, 5, 6, -1, -1]
-fails in c with
-   Bad coalescence records in file, _12.
 Can have unsampled tips, if numbered increasing towards root(s)?
 --------------------------
 	in: CoalescenceRecord(left=0.0, right=0.2, node=5, children=(2, 3), time=0.4, population=0)
@@ -109,7 +106,6 @@ Can have coalescence records with the same parent referring to different times?
 [6, 5, 4, 4, 5, 6, -1, -1]
 Can have single-offspring coalescence records?
 --------------------------
-Must be >= 2 children
 	in: CoalescenceRecord(left=0.0, right=0.2, node=4, children=(2, 3), time=0.4, population=0)
 	in: CoalescenceRecord(left=0.0, right=1.0, node=5, children=(1, 4), time=0.5, population=0)
 	in: CoalescenceRecord(left=0.0, right=0.2, node=6, children=(5,), time=0.7, population=0)
