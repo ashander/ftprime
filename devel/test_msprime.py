@@ -3,11 +3,11 @@ import _msprime
 from trees import trees
 
 ## In this file, testing of:
-# Can have partial tips?  Not if the largest ID is not an internal node.
-# Can have partial tips, if numbered increasing towards root(s)?  No.
+# Can have partial tips?  Yes, even if the largest ID is not an internal node, but can't plot them.
+# Can have partial tips, if numbered increasing towards root(s)?  Yes.
 # Can have unsampled tips, if numbered increasing towards root(s)?  Yes.
 # Can have coalescence records with the same parent referring to different times?  No.
-# Can have single-offspring coalescence records?  No.
+# Can have single-offspring coalescence records?  Yes.
 
 
 # Requirements: (from msprime/lib/tree_sequence.c)
@@ -145,8 +145,9 @@ except Exception as e:
 ########
 print("Can have partial tips?")
 print("--------------------------")
+print("Yes, except plotting:")
 
-# No, at least not if the largest label isn't a node.
+# Yes, but plotting fails:
 
 # Try inserting the invisible 3 in the left and right trees
 # by adding a ghost offspring:
@@ -169,16 +170,16 @@ records_1 = [
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=3,  children=(2,  7),  time=0.4,  population=0),  # left seg for 7
     msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=3,  children=(0,  2),  time=0.4,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=3,  children=(2,  7),  time=0.4,  population=0),  # right seg for 7
-    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=4,  children=(1,  2),  time=0.5,  population=0),
+    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=4,  children=(1,  3),  time=0.5,  population=0),
     msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=4,  children=(1,  3),  time=0.5,  population=0),
-    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=4,  children=(1,  2),  time=0.5,  population=0),
+    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=4,  children=(1,  3),  time=0.5,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=5,  children=(0,  4),  time=0.7,  population=0),
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=6,  children=(0,  4),  time=1.0,  population=0),
     ]
 
 true_trees_1 = [ {0: 6, 1: 4, 2: 3, 3: 4, 4: 6, 5:-1, 6:-1, 7: 3},
-               {0: 3, 1: 4, 2: 3, 3: 4, 4:-1, 5:-1, 6:-1, 7:-1},
-               {0: 5, 1: 4, 2: 3, 3: 4, 4: 5, 5:-1, 6:-1, 7: 3}]
+                 {0: 3, 1: 4, 2: 3, 3: 4, 4:-1, 5:-1, 6:-1, 7:-1},
+                 {0: 5, 1: 4, 2: 3, 3: 4, 4: 5, 5:-1, 6:-1, 7: 3}]
 
 ll_ts_1 = _msprime.TreeSequence()
 ll_ts_1.load_records(records_1)
@@ -188,13 +189,7 @@ try:
     [ x.draw(path="tree_{}.svg".format(k)) for k,x in enumerate(ts_1.trees()) ]
 except Exception as e:
     print('plotting trees fails.')
-
-# Error at:
-#     if (first_tree) {
-#         if (out_count != 0 || in_count != self->sample_size - 1) {
-#             ret = MSP_ERR_BAD_COALESCENCE_RECORDS_11;
-#             goto out;
-#         }
+    print(e)
 
 try:
     for x,(y,z) in zip(true_trees_1,trees(list(records_1))):
@@ -206,13 +201,24 @@ except Exception as e:
     print('python fails.')
     print(e)
 
+try:
+    for x,y in zip(true_trees_1,ts_1.trees()):
+        print(x)
+        print(y)
+        assert( all( [ x[k]==y.parent(k) for k in x.keys() ] ) )
+        pass
+except Exception as e:
+    print('msprime does not agree.')
+    print(e)
+
+
 
 
 ########
 print("Can have partial tips, if numbered increasing towards root(s)?")
 print("--------------------------")
 
-# No.
+# Yes!
 
 
 # Same, but renumbered:
@@ -265,14 +271,15 @@ except Exception as e:
     print('fails in c with')
     print('  ', e)
 
-# Error at:
-
-#     if (first_tree) {
-#     } else {
-#         if (in_count != out_count) {
-#             ret = MSP_ERR_BAD_COALESCENCE_RECORDS_12;
-#             goto out;
-#         }
+try:
+    for x,y in zip(true_trees_2,ts_2.trees()):
+        print(x)
+        print(y)
+        assert( all( [ x[k]==y.parent(k) for k in x.keys() ] ) )
+        pass
+except Exception as e:
+    print('msprime does not agree.')
+    print(e)
 
 
 
@@ -353,6 +360,7 @@ except Exception as e:
 ########
 print("Can have coalescence records with the same parent referring to different times?")
 print("--------------------------")
+print("No, as expected:")
 
 # No.
 
@@ -360,14 +368,14 @@ print("--------------------------")
 #
 # 1.0             7
 # 0.7            / \                                                                     6
-#               /   \                                                                   / \
-# 0.5          /     5                           5                                     /   5
-#             /     / \                         / \                                   /   / \
-# 0.4        /     /   4                       /   4                                 /   /   4
-#           /     /   / \                     /   / \                               /   /   / \
-#          /     /   3   \                   /   /   \                             /   /   3   \
-#         /     /         \                 /   /     \                           /   /         \
-# 0.0    0     1           2               1   0       2                         0   1           2
+# 0.6           /   \   ....................    5     ..............................    / \
+# 0.5          /     5                         / \                                     /   5
+#             /     / \                       /   \                                   /   / \
+# 0.4        /     /   4                     /     4                                 /   /   4
+#           /     /   / \                   /     / \                               /   /   / \
+#          /     /   3   \                 /     /   \                             /   /   3   \
+#         /     /         \               /     /     \                           /   /         \
+# 0.0    0     1           2             1     0       2                         0   1           2
 #
 #          (0.0, 0.2),                   (0.2, 0.8),                             (0.8, 1.0)
 
@@ -376,7 +384,9 @@ records_4 = [
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=4,  children=(2,  3),  time=0.4,  population=0),  # left seg for 3
     msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=4,  children=(0,  2),  time=0.4,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=4,  children=(2,  3),  time=0.4,  population=0),  # right seg for 3
-    msprime.CoalescenceRecord(left=0.0,  right=1.0,  node=5,  children=(1,  4),  time=0.5,  population=0),
+    msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=5,  children=(1,  4),  time=0.5,  population=0),
+    msprime.CoalescenceRecord(left=0.2,  right=0.8,  node=5,  children=(1,  4),  time=0.6,  population=0),
+    msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=5,  children=(1,  4),  time=0.5,  population=0),
     msprime.CoalescenceRecord(left=0.8,  right=1.0,  node=6,  children=(0,  5),  time=0.7,  population=0),
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=7,  children=(0,  5),  time=1.0,  population=0),
     ]
@@ -396,6 +406,8 @@ except Exception as e:
 
 # Unsuprisingly, fails at lib/tree_sequence.c :
 #         } else if (self->trees.nodes.time[node] != records[j].time) {
+# with:
+#     Times associated with nodes not consistent between records
 
 try:
     for x,(y,z) in zip(true_trees_4,trees(list(records_4))):
@@ -442,7 +454,7 @@ records_5 = [
     msprime.CoalescenceRecord(left=0.0,  right=0.2,  node=7,  children=(0,  6),  time=1.0,  population=0),
     ]
 
-true_trees = [ {0: 7, 1: 5, 2: 4, 3: 4, 4: 5, 5: 6, 6: 7, 7:-1},
+true_trees_5 = [ {0: 7, 1: 5, 2: 4, 3: 4, 4: 5, 5: 6, 6: 7, 7:-1},
                {0: 4, 1: 5, 2: 4, 3:-1, 4: 5, 5:-1, 6:-1, 7:-1},
                {0: 6, 1: 5, 2: 4, 3: 4, 4: 5, 5: 6, 6:-1, 7:-1}]
 
@@ -454,10 +466,9 @@ try :
 except Exception as e:
     print(e)
 
-# fails with ValueError: Must be >= 2 children
 
 try:
-    for x,(y,z) in zip(true_trees,trees(list(records_5))):
+    for x,(y,z) in zip(true_trees_5,trees(list(records_5))):
         print(x)
         print(y)
         assert( all( [ x[k]==y[k] for k in range(len(y)) ] ) )
@@ -466,5 +477,15 @@ except Exception as e:
     print('python gets wrong tree.')
     print(e)
 
+
+
+try:
+    for x,y in zip(ts_5.trees(),true_trees_5):
+        assert(all( [ x.get_parent(k)==y[k] for k in y.keys() ] ))
+        print(x)
+        print(y)
+except Exception as e:
+    print('wrong tree!')
+    print(e)
 
 
