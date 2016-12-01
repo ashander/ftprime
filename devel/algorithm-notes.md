@@ -1,3 +1,16 @@
+# Requirements of coalescence records in a tree sequence
+
+1. Offspring must be born after their parents (and hence, no loops).
+2. The set of intervals on which individual $a$ is a child must be disjoint, for every $a$.
+3. The set of intervals on which individual $a$ is a parent must be disjoint, for every $a$.
+4. All records with the same parent must occur at the same time.
+
+The first two disallow time travel and multiple inheritance;
+the third is an algorithmic requirement; 
+and the fourth implies that we measure branch lengths in clock time
+(and hence get ultrametric trees).
+
+
 # Sparse trees
 
 A sparse tree is a sequence $\pi$ of integers, 
@@ -36,8 +49,12 @@ when 'removing' records.
 2.  Can we have the same internal node be the parent of more than on coalescent record
     at different times?
 
+    * **No.**
+
 
 ## Python version from Jerome
+
+... slightly modified.
 
 ```{python}
 
@@ -45,8 +62,9 @@ def trees(records):
     M = len(records)
     I = sorted(range(M), key=lambda j: (records[j].left, records[j].time))
     O = sorted(range(M), key=lambda j: (records[j].right, -records[j].time))
-    pi = [-1 for j in range(max(r.node for r in records) + 1)]
-    chi = [[] for j in range(max(r.node for r in records) + 1)]
+    N = 1 + max( max(r.node,max(r.children)) for r in records)
+    pi = [-1 for j in range(N)]
+    chi = [[] for j in range(N)]
     j = 0
     k = 0
     while j < M:
@@ -58,6 +76,7 @@ def trees(records):
             for q in records[h].children:
                 pi[q] = -1
             k += 1
+
         while j < M and records[I[j]].left == x:
             h = I[j]
             print("\tin:", records[h])
@@ -584,7 +603,7 @@ t  |   trees       |             lineages                                    |  
 
 # (a,?,1.0)->b , t=1
 1  |        a      |                         a                               |                                  |                        
-   |       / \     |                        / \                              |    ( 0.0, 1.0, a, (a,b), 1 )     |  
+   |       / \     |                        / \                              |    ( 0.0, 1.0, a, (b,), 1 )      |  
    |      a   b    |                       a   b                             |                                  |                        
 
 # (a,b,0.5)->c , t=2
@@ -592,49 +611,68 @@ t  |   trees       |             lineages                                    |  
    |       / \     |            / \                         / \              |                                  |                        
    |      a   b    |           a   b                       a   b             |                                  |   
    |     / \ / \   |          / \   \                     /   / \            |                                  |   
-   |    a   c   b  |         a   c   b                   a   c   b           |    ( 0.0, 1.0, a, (b,c), 1 )     |                         
-   |               |                                                         |    ( 0.5, 1.0, a, (b),   1 )     |                         
-   |               |         [0.0,0.5)                    [0.5,1.0)          |    ( 0.5, 1.0, b, (c),   2 )     |                         
+   |    a   c   b  |         a   c   b                   a   c   b           |    ( 0.0, 0.5, a, (b,c), 1 )     |                         
+   |               |                                                         |    ( 0.5, 1.0, a, (b,),  1 )     |                         
+   |               |         [0.0,0.5)                    [0.5,1.0)          |    ( 0.5, 1.0, b, (c,),  2 )     |                         
                                                                     
 # (a,c,0.2)->d , t=3                                                
 3  |       a       |       a             a                    a              |                                  |                         
    |      / \      |      / \           / \                  / \             |                                  |                         
-   |     a   b     |     a   b         a   b                a   b            |                                  |
-   |    / \ / \    |    / \   \       / \   \              /   / \           |     ( 0.0, 1.0, a, (b,c), 1 )    |
-   |   a   c   b   |   a   c   b     a   c   b            a   c   b          |     ( 0.5, 1.0, a, (b),   1 )    |
-   |  / \ /        |  / \           /   /|               /   /|              |     ( 0.5, 1.0, b, (c),   2 )    |                        
-   | a   d         | a   d         a   d c              a   d c              |                                  |                        
+   |     a   b     |     a   b         a   b                a   b            |     ( 0.0, 0.2, a, (b,c,d), 1 )  |
+   |    / \ / \    |    / \   \       / \   \              /   / \           |     ( 0.2, 0.5, a, (b,c),   1 )  |
+   |   a   c   b   |   a   c   b     a   c   b            a   c   b          |     ( 0.5, 1.0, a, (b,),    1 )  |  <-- this one gets split next time
+   |  / \ /        |  / \           /   /|               /   /|              |     ( 0.5, 1.0, b, (c,),    2 )  |                        
+   | a   d         | a   d         a   d c              a   d c              |     ( 0.2, 0.8, c, (d,),    3 )  |  <-- so does this one
    |               |                                                         |                                  |                        
    |               |                                                         |                                  |                        
    |               |  [0.0,0.2)      [0.2,0.5)             [0.5,1.0)         |                                  |                        
 
 # (c,b,0.6)->e , still t=3
-3  |       a       |       1             1           1              1        |                                  |                        
-   |      / \      |      / \           / \         / \            / \       |                                  |                        
-   |     a   b     |     2   3         2   3       2   3          2   3      |                                  |                        
-   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                                  |   ( 0.0, 0.2, 6, (9,10), 3 )
-   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |    7:a                           |   ( 0.2, 0.6, 6, (8,9,10), 3 )   ** split
-   |  / \ / \ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |    8:d                           |   ( 0.6, 1.0, 6, (8,9), 3 )      ** split
-   | a   d   e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |    9:c                           |                        
-   |               |                                                         |   10:e                           |                                   
-   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |   11:b                           |   ( 0.6, 1.0, 5, (10,11), 3 )
+3  |       a       |       a             a           a              a        |                                  |                        
+   |      / \      |      / \           / \         / \            / \       |     ( 0.0, 0.2, a, (b,c,d), 1 )  |
+   |     a   b     |     a   b         a   b       a   b          a   b      |     ( 0.2, 0.5, a, (b,c),   1 )  |
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |     ( 0.5, 1.0, a, (b,),    1 )  |
+   |   a   c   b   |   a   c   b     a   c   b   a   c   b      a   c   b    |     ( 0.5, 0.6, b, (c,),    2 )  |
+   |  / \ / \ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |     ( 0.6, 1.0, b, (c,e),   2 )  |
+   | a   d   e   b | a d   c e   b   a d c e   b a d c e   b  a   d c   e  b |     ( 0.0, 0.2, c, (e,),    3 )  |  <-- this is a 'new' record
+   |               |                                                         |     ( 0.2, 0.6, c, (d,e),   3 )  |
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |     ( 0.6, 0.8, c, (d,),    3 )  |  <-- so is this
                                                                            
-# a,b die; sample c,d,e at t=4
-3  |       a       |       1             1           1              1        |                                  |                        
-   |      / \      |      / \           / \         / \            / \       |                                  |  
-   |     a   b     |     2   3         2   3       2   3          2   3      |                                  |  
-   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                                  |  
-   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |                                  |  
-   |  / \ /|\ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |    8:d                           |  
-   | a   d | e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |                                  |  
-   |    /  |  \    |   |   |  \       /  |  \     /  |  \        /  |   |    |    9:c                           |  
-   |   d   c   e   |   8   9   10    8   9   10  8   9   10     8   9  10    |   10:e                           |  
-   |               |                                                         |                                  |  
-   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                                  |  
-   |               |                                                         |                                  |  
+# a,b die at t=4
+4  |       a       |       1             1           1              1        |                                  |                        
+   |      / \      |      / \           / \         / \            / \       |                                  |  ( 0.0, 0.2, a, (b,c,d), 1 )
+   |     a   b     |     2   3         2   3       2   3          2   3      |                                  |  ( 0.2, 0.5, a, (b,c),   1 )
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                                  |  ( 0.5, 1.0, a, (b,),    1 )
+   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |                                  |  ( 0.5, 0.6, b, (c,),    2 )
+   |  / \ /|\ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |                                  |  ( 0.6, 1.0, b, (c,e),   2 )
+   | a   d | e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |     ( 0.0, 0.2, c, (e,),    3 )  |
+   |    /  |  \    |   |   |  \       /  |  \     /  |  \        /  |   |    |     ( 0.2, 0.6, c, (d,e),   3 )  |
+   |   d   c   e   |   8   9   10    8   9   10  8   9   10     8   9  10    |     ( 0.6, 0.8, c, (d,),    3 )  |
+   |               |                                                         |                                  |
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                                  |
+
+# sample c,d,e still at t=4
+4  |       a       |       1             1           1              1        |                                  |                        
+   |      / \      |      / \           / \         / \            / \       |                                  |
+   |     a   b     |     2   3         2   3       2   3          2   3      |                                  |
+   |    / \ / \    |    / \   \       / \   \     /   / \        /   / \     |                                  |
+   |   a   c   b   |   4   6   5     4   6   5   4   6   5      4   6   5    |                                  |
+   |  / \ /|\ / \  |  /|   |\   \    |  /|\   \  |  /|\   \    /   /|   |\   |                                  |
+   | a   d | e   b | 7 8   9 10 11   7 8 9 10 11 7 8 9 10 11  7   8 9  10 11 |                                  |  ( 0.0, 0.2, c, (e,),    3 )
+   |    /  |  \    |   |   |  \       /  |  \     /  |  \        /  |   |    |                                  |  ( 0.2, 0.6, c, (d,e),   3 )
+   |   d   c   e   |   8   9   10    8   9   10  8   9   10     8   9  10    |                                  |  ( 0.6, 0.8, c, (d,),    3 )
+   |               |                                                         |                                  |
+   |               |  [0.0,0.2)      [0.2,0.5)    [0.5,0.6)      [0.6,1.0)   |                                  |
 
 ````
 
+What happens there?
+
+- Every time we produce a new offspring
+    we check for any overlapping records that share a parent with that offspring,
+    and merge the new 'record' with the existing one(s).
+
+- When individuals die we output all records for which they are the parent.
 
 
 # Another example situation:

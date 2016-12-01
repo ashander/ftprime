@@ -1,6 +1,11 @@
 ftprime
 ======
 
+Important files:
+
+-  [devel/algorithm-notes.md]: The writeup of algorithmic considerations.
+-  [devel/test_msprime.py]: An exploration of the capabilities of msprime to digest various notions of a tree sequence.
+
 
 Development
 -----------
