@@ -1,5 +1,38 @@
 # Algorithm to output a tree sequence from forwards-time computation:
 
+We need to keep track of a list of coalescence records.
+We may need to update those with parents who are still alive,
+so we'll keep these in two lists, *active* and *inactive*.
+The *time* associated with each coalescence record will be the
+*birth time* of the parent 
+(so, we are measuring clock time assuming that all future gametes are differentiated from each other at birth).
+
+At each time point:
+
+1.  For each birth event: suppose the new offspring `c` 
+    inherits odd genomic intervals from `a` and even intervals from `b`,
+    with intervals separated by breakpoints `0 < x[0] < x[1] < ... < x[n] <= 1`.
+    First record the birth time of `c` as `t[c]`.
+    Then, for each interval, with parent `x` (either `a` or `b`) and endpoints `u < v`:
+
+    a.  Let `r` be the set of records with parent `x` that overlap with `[u,v)`,
+        ordered by left endpoint.  For each such record, with endpoints `l<r` 
+        and children C:
+
+        -  Add a new record `(l,min(v,r),x,(C,c),t[x])`.
+        -  If `l < u`, modify the record to `(l,u,x,C,t[x])`.
+        -  If `l >= u` and `r > v` then modify the record to `(v,r,x,C,t[x])`.
+        -  If `l >= u` and `r <= v` then delete the record.
+        -  If `l > u`, then add a new record `(u,l,x,(c),t[x])`.
+        -  If `r < v`, then set `u=r` and proceed to the next record;
+        -  and if there are no more records and `u<v` then add a new record `(u,v,x,(c),t[x])`.
+
+2.  Mark each record whose parent has died as inactive.
+
+Node labels will be *increasing*, starting from the root
+with a nubmer *larger* than the sample size we eventually want to take.
+Then at the end, we'll just renumber the *samples* to be `0...n-1`.
+
 
 ## Example
 
