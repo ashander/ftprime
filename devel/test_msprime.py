@@ -426,7 +426,7 @@ except Exception as e:
 print("Can have single-offspring coalescence records?")
 print("--------------------------")
 
-# No.
+# Yes!
 
 
 #
