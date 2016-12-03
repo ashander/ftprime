@@ -489,3 +489,97 @@ except Exception as e:
     print(e)
 
 
+########
+print("A more complex test with single offspring")
+print("--------------------------")
+
+# With `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
+# 1. Begin with an individual `3` (and another anonymous one) at `t=0`.
+# 2. `(3,?,1.0)->4` and `(3,?,1.0)->5` at `t=1`
+# 3. `(4,3,0.9)->6` and `(3,5,0.1)->7` and then `3` dies at `t=2`
+# 4. `(6,7,0.7)->8` at `t=3`
+# 5. `(8,6,0.8)->9` and `(7,8,0.2)->10` at `t=4`.
+# 6. `(3,9,0.6)->0` and `(9,10,0.5)->1` and `(10,4,0.4)->2` at `t=5`.
+# 7. We sample `0`, `1`, and `2`.
+# Here are the trees:
+# t                  |              |              |             |             |             |             |             |             |            
+#                                                                                                                                                   
+# 0       --3--      |     --3--    |     --3--    |    --3--    |    --3--    |    --3--    |    --3--    |    --3--    |    --3--    |    --3--   
+#        /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
+# 1     4   |   5    |   4   |   5  |   4       5  |  4       5  |  4       5  |  4       5  |  4       5  |  4       5  |  4       5  |  4   |   5 
+#       |\ / \ /|    |   |\   \     |   |\     /   |  |\     /   |  |\     /|  |  |\     /|  |   \     /|  |   \     /|  |   \     /|  |     /   /| 
+# 2     | 6   7 |    |   | 6   7    |   | 6   7    |  | 6   7    |  | 6   7 |  |  | 6   7 |  |    6   7 |  |    6   7 |  |    6   7 |  |    6   7 | 
+#       | |\ /| |    |   |  \  |    |   |  \  |    |  |  \       |  |  \    |  |  |  \    |  |     \    |  |       /  |  |    |  /  |  |    |  /  | 
+# 3     | | 8 | |    |   |   8 |    |   |   8 |    |  |   8      |  |   8   |  |  |   8   |  |      8   |  |      8   |  |    | 8   |  |    | 8   | 
+#       | |/ \| |    |   |  /  |    |   |  /  |    |  |  / \     |  |  / \  |  |  |  / \  |  |     / \  |  |     / \  |  |    |  \  |  |    |  \  | 
+# 4     | 9  10 |    |   | 9  10    |   | 9  10    |  | 9  10    |  | 9  10 |  |  | 9  10 |  |    9  10 |  |    9  10 |  |    9  10 |  |    9  10 | 
+#       |/ \ / \|    |   |  \   \   |   |  \   \   |  |  \   \   |  |  \    |  |  |    /  |  |   /   /  |  |   /   /  |  |   /   /  |  |   /   /  | 
+# 5     0   1   2    |   0   1   2  |   0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2  |  0   1   2 
+#                                                                                                                                                   
+#                    |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
+
+
+true_trees_6 = [
+        { 0:4, 1:9, 2:10, 3:-1, 4:3, 5:3, 6:4, 7:3, 8:6, 9:8, 10:7 },
+        { 0:4, 1:9, 2:10, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:6, 9:8, 10:7 },
+        { 0:4, 1:9, 2:10, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:6, 9:8, 10:8 },
+        { 0:4, 1:9, 2:5, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:6, 9:8, 10:8 },
+        { 0:4, 1:10, 2:5, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:6, 9:8, 10:8 },
+        { 0:9, 1:10, 2:5, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:6, 9:8, 10:8 },
+        { 0:9, 1:10, 2:5, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:7, 9:8, 10:8 },
+        { 0:9, 1:10, 2:5, 3:-1, 4:3, 5:3, 6:4, 7:5, 8:7, 9:6, 10:8 },
+        { 0:9, 1:10, 2:5, 3:-1, 4:3, 5:3, 6:3, 7:5, 8:7, 9:6, 10:8 }
+    ]
+
+records_6 = [ 
+       msprime.CoalescenceRecord( left=0.5, right=1.0,  node=10, children=   (1,),  time=5.0-4.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.4,  node=10, children=   (2,),  time=5.0-4.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.6, right=1.0,  node=9,  children=   (0,),  time=5.0-4.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.5,  node=9,  children=   (1,),  time=5.0-4.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.8, right=1.0,  node=8,  children=  (10,),  time=5.0-3.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.2, right=0.8,  node=8,  children= (9,10),  time=5.0-3.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.2,  node=8,  children=   (9,),  time=5.0-3.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.7, right=1.0,  node=7,  children=   (8,),  time=5.0-2.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.2,  node=7,  children=  (10,),  time=5.0-2.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.8, right=1.0,  node=6,  children=   (9,),  time=5.0-2.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.7,  node=6,  children=   (8,),  time=5.0-2.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.4, right=1.0,  node=5,  children=  (2,7),  time=5.0-1.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.1, right=0.4,  node=5,  children=   (7,),  time=5.0-1.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.6, right=0.9,  node=4,  children=   (6,),  time=5.0-1.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.6,  node=4,  children=  (0,6),  time=5.0-1.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.9, right=1.0,  node=3,  children=(4,5,6),  time=5.0-0.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.1, right=0.9,  node=3,  children=  (4,5),  time=5.0-0.0, population=0 ),
+       msprime.CoalescenceRecord( left=0.0, right=0.1,  node=3,  children=(4,5,7),  time=5.0-0.0, population=0 ),
+       ]
+
+
+ll_ts_6 = _msprime.TreeSequence()
+try :
+    ll_ts_6.load_records(records_6)
+    ts_6 = msprime.TreeSequence(ll_ts_6)
+except Exception as e:
+    print(e)
+
+
+try:
+    for x,(y,z) in zip(true_trees_6,trees(list(records_6))):
+        print(x)
+        print(y)
+        assert( all( [ x[k]==y[k] for k in range(len(y)) ] ) )
+        pass
+except Exception as e:
+    print('python gets wrong tree.')
+    print(e)
+
+
+
+try:
+    for x,y in zip(ts_6.trees(),true_trees_6):
+        assert(all( [ x.get_parent(k)==y[k] for k in y.keys() ] ))
+        print(x)
+        print(y)
+except Exception as e:
+    print('wrong tree!')
+    print(e)
+
+

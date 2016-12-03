@@ -5,6 +5,7 @@ def trees(records):
     N = 1 + max( max(r.node,max(r.children)) for r in records)
     pi = [-1 for j in range(N)]
     chi = [[] for j in range(N)]
+    time = [0.0 for j in range(N)]
     j = 0
     k = 0
     while j < M:
@@ -21,7 +22,13 @@ def trees(records):
             h = I[j]
             print("\tin:", records[h])
             chi[records[h].node] = records[h].children
+            if time[records[h].node]==0.0:
+                time[records[h].node]=records[h].time
+            elif time[records[h].node]!=records[h].time:
+                raise ValueError("Inconsistent node times.")
             for q in records[h].children:
+                if time[q] >= time[records[h].node]:
+                    raise ValueError("Node times must be stictly increasing within a tree.")
                 pi[q] = records[h].node
             j += 1
         yield pi, chi
