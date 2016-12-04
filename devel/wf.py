@@ -25,7 +25,7 @@ def merge_records(new,existing) :
             raise ValueError("Trying to merge records with different parents.")
         if new.time != time:
             raise ValueError("Trying to merge records with different times.")
-        if right<cur_left:
+        if right<=cur_left:
             # no overlap
             print("no overlap")
             k+=1
@@ -47,23 +47,28 @@ def merge_records(new,existing) :
                 mod_rec=CoalescenceRecord(
                         left=new.right, right=right, node=node, children=children, time=time, population=population )
                 existing[k]=mod_rec
+                k+=1
                 existing.insert(k,combined_rec)
+                k+=1
             else:
                 print("dangling right")
                 existing[k]=combined_rec
+                k+=1
         else:
             # here we know that left < cur_left < right
             print("overlap left")
             mod_rec=CoalescenceRecord(
                     left=left, right=cur_left, node=node, children=children, time=time, population=population )
             existing[k]=mod_rec
-            existing.insert(k+1,combined_rec)
+            k+=1
+            existing.insert(k,combined_rec)
+            k+=1
             if new.right < right:
                 print("overlap right")
-                existing.insert(k+2,CoalescenceRecord(
+                existing.insert(k,CoalescenceRecord(
                     left=new.right, right=right, node=node, children=children, time=time, population=new.population))
+                k+=1
         cur_left=min(new.right,right)
-        k+=1
     # add whatever's left at the end
     if cur_left < new.right:
         existing.insert(k,CoalescenceRecord(

@@ -26,8 +26,37 @@ right_answer=[
 if not all([ a==b for a,b in zip(right_answer,old_recs) ]):
     raise ValueError('whoops')
 
+new_rec = msprime.CoalescenceRecord(left=0.5, right=1.0, node=4, children=(13,), time=6, population=0)
+old_recs = [ msprime.CoalescenceRecord(left=0.0, right=0.9, node=4, children=(7, 12), time=6, population=0), 
+             msprime.CoalescenceRecord(left=0.9, right=1.0, node=4, children=(7,), time=6, population=0) ]
+merge_records(new_rec,old_recs)
 
-records = wf(N=5,ngens=5,nsamples=2,survival=0.5)
+right_answer=[
+    msprime.CoalescenceRecord(left=0.0, right=0.5, node=4, children=(7, 12), time=6, population=0),
+    msprime.CoalescenceRecord(left=0.5, right=0.9, node=4, children=(7, 12, 13), time=6, population=0),
+    msprime.CoalescenceRecord(left=0.9, right=1.0, node=4, children=(7, 13), time=6, population=0)
+    ]
+
+if not all([ a==b for a,b in zip(right_answer,old_recs) ]):
+    raise ValueError('whoops')
+
+# test 3
+
+new_rec = msprime.CoalescenceRecord(left=0.1, right=1.0, node=9, children=(11,), time=4, population=0)
+old_recs = [msprime.CoalescenceRecord(left=0.0, right=0.1, node=9, children=(11,), time=4, population=0)]
+merge_records(new_rec,old_recs)
+
+right_answer=[
+    msprime.CoalescenceRecord(left=0.0, right=0.1, node=9, children=(11,), time=4, population=0),
+    msprime.CoalescenceRecord(left=0.1, right=1.0, node=9, children=(11,), time=4, population=0)
+    ]
+
+if not all([ a==b for a,b in zip(right_answer,old_recs) ]):
+    raise ValueError('whoops')
+
+####
+
+records = wf(N=5,ngens=50,nsamples=5,survival=0.5)
 
 for x in records:
     print(x)
