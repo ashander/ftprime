@@ -1,14 +1,6 @@
 import msprime
-import _msprime
-from trees import trees
 from wf import wf
 from pedrecorder import merge_records
-
-def build_tree_sequence(records, mutations=[]):
-    ts = _msprime.TreeSequence()
-    ts.load_records(records)
-    ts.set_mutations(mutations)
-    return msprime.TreeSequence(ts)
 
 # test 1
 
@@ -72,5 +64,6 @@ ts = records.tree_sequence()
 for t in ts.trees():
     print(t)
 
-ts.get_pairwise_diversity()
+print("Mean pairwise diversity:",ts.get_pairwise_diversity())
+print("(should be zero)")
 

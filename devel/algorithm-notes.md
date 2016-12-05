@@ -5,6 +5,8 @@
 3. The set of intervals on which individual $a$ is a parent must be disjoint, for every $a$.
 4. All records with the same parent must occur at the same time.
 5. The samples must be numbered 0,...,n-1, and the smallest non-sampled label must be an internal node.
+6. The list of offspring in a coalescence record must be sorted.
+7. Records must be sorted in nondecreasing time order.
 
 The first two disallow time travel and multiple inheritance;
 the third and fifth are algorithmic requirements; 

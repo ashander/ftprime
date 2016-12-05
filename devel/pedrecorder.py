@@ -9,6 +9,9 @@ class PedigreeRecorder(OrderedDict):
     then records can easily be output ordered by time.
     '''
 
+    def add_individual(self,name):
+        self[name]=[]
+
     def add_record(self,left,right,parent,children,time,population):
         '''
         Add records corresponding to a reproduction event
