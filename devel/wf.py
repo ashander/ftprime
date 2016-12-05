@@ -54,4 +54,4 @@ def wf(N,ngens,nsamples,survival=0.0) :
     for k,parent in enumerate(samples):
         records.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=time[parent], population=0)
 
-    return [ r for a in reversed(records.values()) for r in a ]
+    return records

@@ -1,4 +1,5 @@
 import msprime
+import _msprime
 from collections import OrderedDict
 
 class PedigreeRecorder(OrderedDict):
@@ -17,6 +18,25 @@ class PedigreeRecorder(OrderedDict):
             self[parent]=[]
         new_rec=msprime.CoalescenceRecord(left=left,right=right,node=parent,children=children,time=time,population=population)
         merge_records(new_rec,self[parent])
+
+    def dump_records(self):
+        return flatten_once(reversed(self.values()))
+
+    def tree_sequence(self,mutations=None):
+        ts = _msprime.TreeSequence()
+        ts.load_records(list(self.dump_records()))
+        if mutations is not None:
+            ts.set_mutations(mutations)
+        return msprime.TreeSequence(ts)
+
+
+def flatten_once(x):
+    '''
+    Returns an iterator over the elements of a once-nested list.
+    '''
+    for y in x:
+        for z in y:
+            yield z
 
 
 def merge_records(new,existing) :

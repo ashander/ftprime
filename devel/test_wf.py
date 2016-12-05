@@ -64,12 +64,13 @@ if not all([ a==b for a,b in zip(right_answer,old_recs) ]):
 
 records = wf(N=5,ngens=5,nsamples=5,survival=0.5)
 
-for x in records:
+for x in records.dump_records():
     print(x)
 
-ts = build_tree_sequence(records)
+ts = records.tree_sequence()
 
 for t in ts.trees():
     print(t)
 
+ts.get_pairwise_diversity()
 
