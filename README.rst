@@ -39,5 +39,5 @@ We'll try to use PEP8, which you can enforce using these vim plugins:
 Notes
 -----
 
-Since we aren't tracking genotypes explicitly,
-we can take our individuals to be diploid without even telling simuPOP about it.
+Chromosomes are labeled via a 1-to-2 map from individual IDs,
+so that IDs for msprime are the floor of the ID from simuPOP divided by two.
