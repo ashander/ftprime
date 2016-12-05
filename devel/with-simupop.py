@@ -1,20 +1,27 @@
 import simuPOP as sim
 import msprime
 import random
-from meiosis import MeiosisTagger
+from meiosis import MeiosisTagger, ind_to_chrom, mapa_labels
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
 import simuOpt
 simuOpt.setOptions(optimized=False, debug='DBG_WARNING')
 sim.turnOnDebug('DBG_ALL')
 # sim.turnOnDebug('DBG_POPULATION,DBG_INDIVIDUAL')
+from trees import trees
 
-popSize=20
-generations=10
+popSize=5
+generations=3
 replications=1
 nsamples=5
 
-meioser=MeiosisTagger(nsamples)
-
+meioser=MeiosisTagger(nsamples,ngens=1+generations)
+def step_gen(pop,param):
+    # function to increment internal clock in MeiosisTagger
+    # as in http://simupop.sourceforge.net/manual_svn/build/userGuide_ch5_sec14.html#python-operator-pyoperator
+    dt,=param
+    print("Time was", meioser.gen," and now is ",meioser.gen+dt)
+    meioser.gen+=dt
+    return True
 
 reproduction = sim.RandomMating(
     ops=[
@@ -36,6 +43,7 @@ simu.evolve(
         # sim.PyOperator(func=init_labels),
         meioser
     ],
+    preOps = sim.PyOperator(func=step_gen,param=(1,)),
     matingScheme = reproduction,
     gen = generations
 )
@@ -48,13 +56,20 @@ print("final individuals:")
 for ind in pop.individuals():
     print("id: ", ind.info('ind_id'))
 
+samples=random.sample(pop_ids,nsamples)
+# need chromosome ids
+chrom_samples = [ ind_to_chrom(x,a) for x in samples for a in mapa_labels ]
+times=[ meioser.time[x] for x in samples for a in mapa_labels ]
+meioser.records.add_samples(samples=chrom_samples,times=times,populations=[0 for x in chrom_samples])
+
 for x in meioser.records.dump_records():
     print(x)
 
-samples=random.sample(pop_ids,nsamples)
-times=[meioser.time[x] for x in samples]
-meioser.records.add_samples(samples=samples,times=times,populations=[0 for x in samples])
+# print("Python trees:")
+# for t in trees(list(meioser.records.dump_records())):
+#     print(t)
 
+print("msprime trees:")
 ts=meioser.records.tree_sequence()
 
 for t in ts.trees():

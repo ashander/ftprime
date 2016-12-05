@@ -7,6 +7,7 @@
 5. The samples must be numbered 0,...,n-1, and the smallest non-sampled label must be an internal node.
 6. The list of offspring in a coalescence record must be sorted.
 7. Records must be sorted in nondecreasing time order.
+8. Node times must be strictly greater than zero.
 
 The first two disallow time travel and multiple inheritance;
 the third and fifth are algorithmic requirements; 

@@ -34,7 +34,8 @@ class PedigreeRecorder(OrderedDict):
 
     def add_samples(self,samples,times,populations):
         # add phony records that stand in for sampling the IDs in samples
-        # with corresponding times
+        #   with corresponding times
+        # Note these are *chromosome* IDs!
         for k,parent in enumerate(samples):
             self.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=times[k], population=populations[k])
 
@@ -57,9 +58,9 @@ def merge_records(new,existing) :
     '''
     k=0
     cur_left=new.left
-    # print("MR: -----")
-    # print("adding", new)
-    # print("    to", existing)
+    print("MR: -----")
+    print("adding", new)
+    print("    to", existing)
     while (k<len(existing)) and (cur_left<new.right):
         left,right,node,children,time,population=existing[k]
         # print("k:",k)

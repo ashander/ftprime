@@ -5,7 +5,7 @@ from pedrecorder import PedigreeRecorder
 from math import floor
 
 # first is 'maternal', second is 'paternal'
-mapa_labels = [ 2, 1 ]
+mapa_labels = ( 2, 1 )
 
 def random_breakpoint() :
     return min(1.0,max(0.0, 2*np_random.random()-0.5)) 
@@ -18,15 +18,19 @@ def make_labeler(nsamples):
         next_id += 1.0
 
 def ind_to_chrom(ind,mapa):
-    # mapa is either 1 or 2
-    return 2*ind+mapa-1
+    # mapa is either 1 or 2 (see above)
+    # and chrom IDs are ints...
+    return int(2*ind+mapa-1)
 
 def chrom_to_ind(chrom):
-    return floor(chrom/2)
+    # but ind IDs are floats (simuPOP)
+    return floor(float(chrom)/2)
 
 class MeiosisTagger(sim.PyOperator):
-    def __init__(self, nsamples, *args, **kwargs):
+    def __init__(self, nsamples, ngens, *args, **kwargs):
         self.nsamples = nsamples  # number of INDIVIDUALS
+        self.gen=0   # the current time (in forwards-time)
+        self.ngens = ngens # maximum number of generations
         self.labeler=make_labeler(nsamples)  # returns INDIVIDUAL labels
         self.records=PedigreeRecorder()  # indexed by CHROMOSOMES
         self.time={}  # indexed by INDIVIDUALS
@@ -40,7 +44,7 @@ class MeiosisTagger(sim.PyOperator):
             next_id = next(self.labeler)
             for mapa in mapa_labels: # mapa_labels.values():
                 self.records.add_individual(ind_to_chrom(next_id,mapa))
-            self.time[next_id]=99
+            self.time[next_id]=self.ngens
             ind.setInfo(next_id,'ind_id')
         return True
 
@@ -49,11 +53,12 @@ class MeiosisTagger(sim.PyOperator):
         This gives new indivdiuals a unique ID
         but also along the way records parental IDs and recombination locations
         in records.
+        Note that self.gen must be kept up to date externally!
         '''
         # print("new_off:",self.records)
         child=next(self.labeler)
         ## Figure out how to get time in here from simuPOP
-        self.time[child]=99
+        self.time[child]=self.ngens-self.gen
         # which parent and which chrom in offspring
         for parent,mapa in zip(ind_id,mapa_labels): #mapa_labels.values()):
             bp=random_breakpoint()

@@ -39,5 +39,17 @@ We'll try to use PEP8, which you can enforce using these vim plugins:
 Notes
 -----
 
-Chromosomes are labeled via a 1-to-2 map from individual IDs,
+**Diploidy:** Chromosomes are labeled via a 1-to-2 map from individual IDs,
 so that IDs for msprime are the floor of the ID from simuPOP divided by two.
+
+**Division of labor:** We've split the work out into two parts: 
+
+1. one part that interfaces with simuPOP
+to assign IDs, choose recombination breakpoints, and say which chromsome is which other's parent;
+
+2. and the second part (pedrecorder.py) the push all this into msprime's coalescence records.
+
+To-do
+=====
+
+1. Change recombination to be Poisson, and **check** we are not missing a factor of 2 in the definition of Morgans.
