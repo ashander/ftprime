@@ -1,4 +1,6 @@
 import simuPOP as sim
+import msprime
+import random
 from meiosis import MeiosisTagger
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
 import simuOpt
@@ -40,10 +42,20 @@ simu.evolve(
 
 # temporary reference to 0-th replicate population
 pop=simu.population(0)
+pop_ids = [ ind.info('ind_id') for ind in pop.individuals() ]
 
 print("final individuals:")
 for ind in pop.individuals():
     print("id: ", ind.info('ind_id'))
 
-for x in meioser.dump_records():
+for x in meioser.records.dump_records():
     print(x)
+
+samples=random.sample(pop_ids,nsamples)
+times=[meioser.time[x] for x in samples]
+meioser.records.add_samples(samples=samples,times=times,populations=[0 for x in samples])
+
+ts=meioser.records.tree_sequence()
+
+for t in ts.trees():
+    print(t)
