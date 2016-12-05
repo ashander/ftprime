@@ -12,6 +12,7 @@ Important files:
 -  [devel/test_msprime.py](devel/test_msprime.py): An exploration of the capabilities of msprime to digest various notions of a tree sequence.
 
 
+
 Development
 -----------
 
@@ -38,4 +39,5 @@ We'll try to use PEP8, which you can enforce using these vim plugins:
 Notes
 -----
 
-
+Since we aren't tracking genotypes explicitly,
+we can take our individuals to be diploid without even telling simuPOP about it.

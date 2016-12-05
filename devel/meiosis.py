@@ -2,27 +2,34 @@ import simuPOP as sim
 import numpy.random as np_random
 from itertools import count
 from pedrecorder import PedigreeRecorder
+from math import floor
 
-# *_chromo fields are in the dict of values;
-#  ... this MUST be synchronized with the set that `f_chromo` and `m_chromo` are chosen from below:
-labels = { 'paternal' : 1, 'maternal' : 2 }
+# first is 'maternal', second is 'paternal'
+mapa_labels = [ 2, 1 ]
 
 def random_breakpoint() :
     return min(1.0,max(0.0, 2*np_random.random()-0.5)) 
 
 def make_labeler(nsamples):
+    # simuPOP's infoFields are coerced to floats
     next_id=float(nsamples)
     while True:
         yield next_id
         next_id += 1.0
 
+def ind_to_chrom(ind,mapa):
+    # mapa is either 1 or 2
+    return 2*ind+mapa-1
+
+def chrom_to_ind(chrom):
+    return floor(chrom/2)
 
 class MeiosisTagger(sim.PyOperator):
     def __init__(self, nsamples, *args, **kwargs):
-        self.nsamples = nsamples
-        self.labeler=make_labeler(nsamples)
-        self.records=PedigreeRecorder()
-        self.time={}
+        self.nsamples = nsamples  # number of INDIVIDUALS
+        self.labeler=make_labeler(nsamples)  # returns INDIVIDUAL labels
+        self.records=PedigreeRecorder()  # indexed by CHROMOSOMES
+        self.time={}  # indexed by INDIVIDUALS
         sim.PyOperator.__init__(self, func=self.init_labels, *args, **kwargs)
 
     def init_labels(self,pop):
@@ -31,7 +38,8 @@ class MeiosisTagger(sim.PyOperator):
         '''
         for ind in pop.individuals():
             next_id = next(self.labeler)
-            self.records.add_individual(next_id)
+            for mapa in mapa_labels: # mapa_labels.values():
+                self.records.add_individual(ind_to_chrom(next_id,mapa))
             self.time[next_id]=99
             ind.setInfo(next_id,'ind_id')
         return True
@@ -42,21 +50,22 @@ class MeiosisTagger(sim.PyOperator):
         but also along the way records parental IDs and recombination locations
         in records.
         '''
-        print("new_off:",self.records)
+        # print("new_off:",self.records)
         child=next(self.labeler)
-        bp=random_breakpoint()
-        if np_random.random() < 0.5:
-            lparent,rparent=ind_id
-        else:
-            rparent,lparent=ind_id
-        print('meiosis:',child,lparent,rparent,bp)
         ## Figure out how to get time in here from simuPOP
         self.time[child]=99
-        self.records.add_individual(child)
-        if bp > 0.0 :
-            self.records.add_record(left=0.0, right=bp, parent=lparent, children=(child,), time=self.time[lparent], population=0)
-        if bp < 1.0 :
-            self.records.add_record( left=bp, right=1.0, parent=rparent, children=(child,), time=self.time[rparent], population=0)
+        # which parent and which chrom in offspring
+        for parent,mapa in zip(ind_id,mapa_labels): #mapa_labels.values()):
+            bp=random_breakpoint()
+            # order of inheritance from parent
+            lparent,rparent=np_random.permutation(mapa_labels) #mapa_labels.values())
+            print('meiosis:',child,parent,mapa,lparent,rparent,bp)
+            chrom_id=ind_to_chrom(child,mapa)
+            self.records.add_individual(chrom_id)
+            if bp > 0.0 :
+                self.records.add_record(left=0.0, right=bp, parent=ind_to_chrom(parent,lparent), children=(chrom_id,), time=self.time[parent], population=0)
+            if bp < 1.0 :
+                self.records.add_record( left=bp, right=1.0, parent=ind_to_chrom(parent,rparent), children=(chrom_id,), time=self.time[parent], population=0)
         # return label for new individual
         return child
 
