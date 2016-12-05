@@ -49,6 +49,9 @@ to assign IDs, choose recombination breakpoints, and say which chromsome is whic
 
 2. and the second part (pedrecorder.py) the push all this into msprime's coalescence records.
 
+**The clock:** I haven't figured out how to get simuPOP to say what time it is in during-reproduction operators,
+so we've just got an external clock that we have to update (not a big deal).
+
 To-do
 =====
 
