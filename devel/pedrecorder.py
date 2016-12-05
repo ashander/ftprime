@@ -32,6 +32,12 @@ class PedigreeRecorder(OrderedDict):
             ts.set_mutations(mutations)
         return msprime.TreeSequence(ts)
 
+    def add_samples(self,samples,times,populations):
+        # add phony records that stand in for sampling the IDs in samples
+        # with corresponding times
+        for k,parent in enumerate(samples):
+            self.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=times[k], population=populations[k])
+
 
 def flatten_once(x):
     '''
@@ -112,7 +118,7 @@ def merge_records(new,existing) :
         existing.insert(k,msprime.CoalescenceRecord(
             left=cur_left, right=new.right, node=new.node, children=new.children, time=new.time, population=new.population) )
     # print("getting")
-    for x in existing:
-        print("   ", x)
+    # for x in existing:
+    #     print("   ", x)
     return None
 

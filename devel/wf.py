@@ -51,7 +51,8 @@ def wf(N,ngens,nsamples,survival=0.0) :
 
     # add phony records that stand in for sampling
     samples=random.sample(pop,nsamples)
-    for k,parent in enumerate(samples):
-        records.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=time[parent], population=0)
+    records.add_samples(samples=samples,times=[time[x] for x in samples], populations=[0 for x in samples])
+    # for k,parent in enumerate(samples):
+    #     records.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=time[parent], population=0)
 
     return records
