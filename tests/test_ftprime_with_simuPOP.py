@@ -1,13 +1,12 @@
 import simuPOP as sim
-import msprime
 import random
-from meiosis import MeiosisTagger, ind_to_chrom, mapa_labels
+from ftprime import MeiosisTagger, ind_to_chrom, mapa_labels
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
 import simuOpt
 simuOpt.setOptions(optimized=False, debug='DBG_WARNING')
-#sim.turnOnDebug('DBG_ALL')
+# sim.turnOnDebug('DBG_ALL')
 # sim.turnOnDebug('DBG_POPULATION,DBG_INDIVIDUAL')
-from trees import trees
+sim.setOptions(seed=111)
 
 popSize=5
 generations=3

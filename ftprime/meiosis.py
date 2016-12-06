@@ -1,14 +1,14 @@
 import simuPOP as sim
 import numpy.random as np_random
 from itertools import count
-from pedrecorder import PedigreeRecorder
+from .pedrecorder import PedigreeRecorder
 from math import floor
 
 # first is 'maternal', second is 'paternal'
 mapa_labels = ( 2, 1 )
 
 def random_breakpoint() :
-    return min(1.0,max(0.0, 2*np_random.random()-0.5)) 
+    return min(1.0,max(0.0, 2*np_random.random()-0.5))
 
 def make_labeler(nsamples):
     # simuPOP's infoFields are coerced to floats
