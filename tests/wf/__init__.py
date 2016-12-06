@@ -1,9 +1,9 @@
-from pedrecorder import PedigreeRecorder
+from ftprime import PedigreeRecorder
 from itertools import count
 import random
 
 def random_breakpoint() :
-    return min(1.0,max(0.0, 2*random.random()-0.5)) 
+    return min(1.0,max(0.0, 2*random.random()-0.5))
 
 def wf(N,ngens,nsamples,survival=0.0) :
     '''
