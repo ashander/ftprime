@@ -21,7 +21,7 @@ refers to these as "individuals".
     with `tree_sequence`.  Note that this needs to be given upper bounds on the total number of generations and the total number of samples
     at the start.  The work of adding a newly inherited segment to the list of coalescence records is done by `merge_records`.
 
--  [ftprime/meiosis.py](ftprime/meiosis.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
+-  [ftprime/meiosistagger.py](ftprime/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
     with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
 
 Tests and examples:
