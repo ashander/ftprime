@@ -1,4 +1,4 @@
-from ftprime import PedigreeRecorder
+from ftprime import ARGrecorder
 from itertools import count
 import random
 
@@ -25,7 +25,7 @@ def wf(N,ngens,nsamples,survival=0.0) :
     pop = [ next(labels) for k in range(N) ]
     time = dict( (x,ngens+1) for x in pop )
     # insert individuals into records in order of birth to ensure we output records in time-sorted order
-    records = PedigreeRecorder((x,[]) for x in pop)
+    records = ARGrecorder((x,[]) for x in pop)
 
     for t in range(ngens) :
         print("t:",t)

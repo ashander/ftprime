@@ -1,7 +1,7 @@
 import simuPOP as sim
 import numpy.random as np_random
 from itertools import count
-from .pedrecorder import PedigreeRecorder
+from .argrecorder import ARGrecorder
 from math import floor
 
 # first is 'maternal', second is 'paternal'
@@ -11,28 +11,58 @@ def random_breakpoint() :
     return min(1.0,max(0.0, 2*np_random.random()-0.5))
 
 def make_labeler(nsamples):
-    # simuPOP's infoFields are coerced to floats
+    '''
+    Returns sequential integers starting from nsamples,
+    suitable for assigning unique IDs to individuals.
+    (These are floats, as that is what simuPOP uses for IDs.)
+    '''
     next_id=float(nsamples)
     while True:
         yield next_id
         next_id += 1.0
 
 def ind_to_chrom(ind,mapa):
-    # mapa is either 1 or 2 (see above)
-    # and chrom IDs are ints...
+    '''
+    Returns the unique *chromosome ID* corresponding to
+    the chromosome of individual 'ind' inherited from 
+    parent 'mapa' (either 1 or 2).  (Chromosome IDs are ints.)
+    '''
     return int(2*ind+mapa-1)
 
 def chrom_to_ind(chrom):
-    # but ind IDs are floats (simuPOP)
+    '''
+    Provides the 2-to-1 inverse map from chromosome ID back to
+    the corresponding individual ID (a float, as above).
+    '''
     return floor(float(chrom)/2)
 
 class MeiosisTagger(sim.PyOperator):
+    '''
+    This class provides an interface between simuPOP and the ARGrecorder,
+    which requires we keep track of:
+
+        - `gen` : keeps track of the current time (must be updated)
+
+        - `ngens` : total number of generations that we will simulate for,
+            so that at the end we can convert to reverse-time
+
+        - `labeler` : used to output unique individual IDs
+
+        - `time` : a dictionary of birth times of individuals,
+            which only needs to be currently alive individuals
+            but we don't bother to remove dead ones from it
+        
+    All the work is done in `new_offspring`; from simuPOP's point of view
+    all that does is return a new individual ID; but internally it also
+    generates recombination events and stores them in an ARGrecorder.
+    '''
+    
     def __init__(self, nsamples, ngens, *args, **kwargs):
         self.nsamples = nsamples  # number of INDIVIDUALS
         self.gen=0   # the current time (in forwards-time)
         self.ngens = ngens # maximum number of generations
         self.labeler=make_labeler(nsamples)  # returns INDIVIDUAL labels
-        self.records=PedigreeRecorder()  # indexed by CHROMOSOMES
+        self.records=ARGrecorder()  # indexed by CHROMOSOMES
         self.time={}  # indexed by INDIVIDUALS
         sim.PyOperator.__init__(self, func=self.init_labels, *args, **kwargs)
 

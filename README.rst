@@ -1,24 +1,43 @@
 ftprime
 ======
 
-Important files
---------------
+Contents
+--------
 
-Core module:
+This package does two things: provides code to simulate the outcome of mating of diploid individuals, in terms of stretches of chromosome inherited;
+and to keep track of these in a forwards-time simulation in a way appropriate for input into [msprime](https://github.com/jeromekelleher/msprime).
+This also provides a class to facilitate doing this with [simuPOP](https://github.com/BoPeng/simuPOP).
 
--  [ftprime/pedrecorder.py](ftprime/pedrecorder.py): Implementation of the forwards algorithm.
--  [ftprime/meiosis.py](ftprime/meiosis.py): Wraps the storage mechanism in pedrecorder.py into a tagger that can be used in simuPOP.
+Since from the point of view of the ARG it is natural for the unit of populations to be *chromsomes* rather than (diploid) individuals,
+we deal with two types of IDs: *individual* and *chromosome*; the population simulation software deals with individuals;
+while the interface to msprime deals with chromosome IDs, **but** as it doesn't know about higher-level individuals,
+refers to these as "individuals".
+
+[Core module:](ftprime/)
+
+-  [ftprime/argrecorder.py](ftprime/argrecorder.py): Provides `ARGrecorder`, really just an ordered dict whose keys are chromosome IDs
+    and whose values are ordered lists of nonoverlapping coalescence records.  This must be initialized using `add_individual`; and
+    kept up to date using `add_record`; at the end samples are designated using `add_samples` and the msprime tree sequence is output 
+    with `tree_sequence`.  Note that this needs to be given upper bounds on the total number of generations and the total number of samples
+    at the start.  The work of adding a newly inherited segment to the list of coalescence records is done by `merge_records`.
+
+-  [ftprime/meiosis.py](ftprime/meiosis.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
+    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
 
 Tests and examples:
 
 -  [tests/test_ftprime_with_simuPOP.py](tests/test_ftprime_with_simuPOP.py): Example of using the simuPOP interface.
--  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the pedigree recorder.
--  [tests/test_ftprime_with_wf.py](tests/test_ftprime_with_simuPOP.py): Example of using the wf interface.
+-  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
+-  [tests/test_merge_records_with_wf.py](tests/test_merge_records_with_simuPOP.py): Example of using the wf interface.
 
-Algorithm notes, etc:
+[Documentation of the problem and the methods:](writeups/)
 
--  [devel/forwards_algorithm.md](devel/forwards_algorithm.md): Description of the algorithm for outputting a valid tree sequence from a forwards-time simulation.
--  [devel/algorithm-notes.md](devel/algorithm-notes.md): A writeup of algorithmic considerations.
+Since there are many different ways to store an ARG as a set of coalescence records,
+a good deal of this is devoted to describing and verifying msprime's requirements
+for such a set, and thinking about different ways to do it.
+
+-  [writeups/forwards_algorithm.md](writeups/forwards_algorithm.md): Description of the algorithm for outputting a valid tree sequence from a forwards-time simulation.
+-  [writeups/algorithm-notes.md](writeups/algorithm-notes.md): A writeup of algorithmic considerations.
 -  [devel/test_msprime.py](devel/test_msprime.py): An exploration of the capabilities of msprime to digest various notions of a tree sequence.
 
 
@@ -34,33 +53,6 @@ Install in locally editable (``-e``) mode and run the tests:
     pip install -e .[test]
     pytest
 
-    
-Style
-----
-
-We'll try to use PEP8, which you can enforce using these vim plugins:
-
-.. code-block:: console
-
-    Plugin'klen/python-mode'
-    Plugin 'scrooloose/syntastic'
-
-
-Notes
------
-
-**Diploidy:** Chromosomes are labeled via a 1-to-2 map from individual IDs,
-so that IDs for msprime are the floor of the ID from simuPOP divided by two.
-
-**Division of labor:** We've split the work out into two parts: 
-
-1. one part that interfaces with simuPOP
-to assign IDs, choose recombination breakpoints, and say which chromsome is which other's parent;
-
-2. and the second part (pedrecorder.py) the push all this into msprime's coalescence records.
-
-**The clock:** I haven't figured out how to get simuPOP to say what time it is in during-reproduction operators,
-so we've just got an external clock that we have to update (not a big deal).
 
 To-do
 =====

@@ -2,20 +2,26 @@ import msprime
 import _msprime
 from collections import OrderedDict
 
-class PedigreeRecorder(OrderedDict):
+class ARGrecorder(OrderedDict):
     '''
-    Keys are individuals whose values are ordered lists of nonoverlapping CoalescenceRecords.
+    Keys are individuals, and values are ordered lists of nonoverlapping CoalescenceRecords.
     This inherits from OrderedDict so that if individuals are added by birth order
     then records can easily be output ordered by time.
     '''
 
     def add_individual(self,name):
+        '''Add a new individual.
+        We need to add individuals when they are *born*,
+        rather than the first time they reproduce, to ensure
+        that records are output in order by birth time of the parent.
+        '''
         self[name]=[]
 
     def add_record(self,left,right,parent,children,time,population):
         '''
-        Add records corresponding to a reproduction event
-        in which children inherits from parent on the interval [left,right). 
+        Add records corresponding to a reproduction event in which children (a
+        tuple of IDs) inherit from parent (a single ID) on the interval
+        [left,right). 
         '''
         if not parent in self:
             self[parent]=[]
@@ -23,9 +29,18 @@ class PedigreeRecorder(OrderedDict):
         merge_records(new_rec,self[parent])
 
     def dump_records(self):
+        '''
+        Returns an iterator of CoalescenceRecords, sorted in reverse order by
+        the order the parents were input; so if parents are input in order
+        by birth time, the output will be in the time order required by
+        msprime.
+        '''
         return flatten_once(reversed(self.values()))
 
     def tree_sequence(self,mutations=None):
+        '''
+        Produce a tree sequence from the ARG.
+        '''
         ts = _msprime.TreeSequence()
         ts.load_records(list(self.dump_records()))
         if mutations is not None:
@@ -33,11 +48,14 @@ class PedigreeRecorder(OrderedDict):
         return msprime.TreeSequence(ts)
 
     def add_samples(self,samples,times,populations):
-        # add phony records that stand in for sampling the IDs in samples
-        #   with corresponding times
-        # Note these are *chromosome* IDs!
+        '''
+        Add phony records that stand in for sampling the IDs in `samples`, whose
+        birth times are given in `times` and whose populations are given in 
+        `populations`.  All three must be lists of the same length.
+        '''
         for k,parent in enumerate(samples):
-            self.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=times[k], population=populations[k])
+            self.add_record(left=0.0, right=1.0, parent=parent, 
+                        children=(k,), time=times[k], population=populations[k])
 
 
 def flatten_once(x):
