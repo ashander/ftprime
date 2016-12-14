@@ -1,2 +1,2 @@
-from .meiosis import *
+from .meiosistagger import *
 from .argrecorder import *

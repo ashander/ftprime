@@ -44,7 +44,8 @@ class MeiosisTagger(sim.PyOperator):
         - `gen` : keeps track of the current time (must be updated)
 
         - `ngens` : total number of generations that we will simulate for,
-            so that at the end we can convert to reverse-time
+            so that at the end we can convert to reverse-time; this must be
+            strictly larger than the birth generation of any sampled individual.
 
         - `labeler` : used to output unique individual IDs
 

@@ -7,6 +7,8 @@ class ARGrecorder(OrderedDict):
     Keys are individuals, and values are ordered lists of nonoverlapping CoalescenceRecords.
     This inherits from OrderedDict so that if individuals are added by birth order
     then records can easily be output ordered by time.
+    
+    Note that the 'time' fields must all be *strictly* greater than 0.
     '''
 
     def add_individual(self,name):
@@ -76,9 +78,9 @@ def merge_records(new,existing) :
     '''
     k=0
     cur_left=new.left
-    print("MR: -----")
-    print("adding", new)
-    print("    to", existing)
+    # print("MR: -----")
+    # print("adding", new)
+    # print("    to", existing)
     while (k<len(existing)) and (cur_left<new.right):
         left,right,node,children,time,population=existing[k]
         # print("k:",k)
