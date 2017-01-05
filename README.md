@@ -48,8 +48,6 @@ Development
 
 Install in locally editable (``-e``) mode and run the tests:
 
-.. code-block:: console
-
     pip install -e .[test]
     pytest
 
