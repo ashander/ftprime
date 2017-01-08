@@ -69,3 +69,31 @@ so we want
 $$\begin{aligned}
     f(x_1,x_2) = x_1 (n_2-x_2) + (n_1-x_1) x_2 .
 \end{aligned}$$
+
+# Y statistic
+
+By $Y(a;b,c)$ we mean the mean length of any branches from which either ($a$), or (both of $b$ and $c$),
+but not $a$ and any of $b$ and $c$, inherit.
+With $A_1=\{a\}$ and $A_2 = \{b,c\}$, this therefore corresponds to the function
+$$\begin{aligned}
+    f(x_1,x_2) = (( (x_1==1) \text{and} (x_2==0) ) \text{or} ( (x_1==0) \text{and} (x_2==2) ))
+\end{aligned}$$
+The generalization gives the length of the internal branches 
+that separate $A_1$ from $A_2$, if any, using
+$$\begin{aligned}
+    f(x_1,x_2) = (( (x_1==n_1) \text{and} (x_2==0) ) \text{or} ( (x_1==0) \text{and} (x_2==n_2) ))
+\end{aligned}$$
+
+
+$f_4$ statistic
+
+The statistic $f_4(A_1,A_2,A_3,A_4)$
+is the mean path length from MRCA$(a_1,a_3)$ to MRCA$(a_2,a_4)$,
+minus the mean path length from MRCA$(a_1,a_4)$ to MRCA$(a_2,a_3)$.
+Note that those will often be zeros.
+Equivalently (see my arXiv paper), this uses the function
+$$\begin{aligned}
+    f(x_1,x_2,x_3,x_4)
+    = \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_3}{n_3} - \frac{x_4}{n_4} \right)
+\end{aligned}$$
+
