@@ -33,8 +33,9 @@ def test_simupop_runs():
 
     # note that 'pop' is a temporary object.
     pop = sim.Population(size=popSize, infoFields=['ind_id'])
+    simu = sim.Simulator(pop, stealPops=False)
 
-    pop.evolve(
+    simu.evolve(
         # everyone initially will have the same allele frequency
         initOps = [
             sim.InitSex(),
@@ -48,6 +49,7 @@ def test_simupop_runs():
     )
 
     # temporary reference to 0-th replicate population
+    pop=simu.population(0)
     pop_ids = [ ind.info('ind_id') for ind in pop.individuals() ]
 
     print("final individuals:")
