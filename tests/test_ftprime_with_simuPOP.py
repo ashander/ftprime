@@ -33,7 +33,6 @@ def test_simupop_runs():
 
     # note that 'pop' is a temporary object.
     pop = sim.Population(size=popSize, infoFields=['ind_id'])
-    simu = sim.Simulator(pop)
 
     pop.evolve(
         # everyone initially will have the same allele frequency
