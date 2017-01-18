@@ -35,7 +35,7 @@ def test_simupop_runs():
     pop = sim.Population(size=popSize, infoFields=['ind_id'])
     simu = sim.Simulator(pop)
 
-    simu.evolve(
+    pop.evolve(
         # everyone initially will have the same allele frequency
         initOps = [
             sim.InitSex(),
