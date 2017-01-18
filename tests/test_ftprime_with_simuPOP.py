@@ -49,7 +49,6 @@ def test_simupop_runs():
     )
 
     # temporary reference to 0-th replicate population
-    pop=simu.population(0)
     pop_ids = [ ind.info('ind_id') for ind in pop.individuals() ]
 
     print("final individuals:")
