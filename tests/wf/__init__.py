@@ -23,9 +23,10 @@ def wf(N,ngens,nsamples,survival=0.0) :
     '''
     labels = count(nsamples,1)
     pop = [ next(labels) for k in range(N) ]
-    time = dict( (x,ngens+1) for x in pop )
     # insert individuals into records in order of birth to ensure we output records in time-sorted order
-    records = ARGrecorder((x,[]) for x in pop)
+    records = ARGrecorder()
+    for x in pop:
+        records.add_individual(x,ngens+1)
 
     for t in range(ngens) :
         print("t:",t)
@@ -33,7 +34,9 @@ def wf(N,ngens,nsamples,survival=0.0) :
         dead = [ (random.random() > survival) for k in pop ]
 
         # this is: offspring ID, lparent, rparent, breakpoint
-        new_inds = [ (next(labels),random.choice(pop),random.choice(pop),random_breakpoint()) for k in range(sum(dead)) ]
+        new_inds = [ 
+                (next(labels),random.choice(pop),random.choice(pop),random_breakpoint()) 
+                for k in range(sum(dead)) ]
         j=0
         for offspring,lparent,rparent,bp in new_inds :
             print(offspring,lparent,rparent,bp)
@@ -41,18 +44,15 @@ def wf(N,ngens,nsamples,survival=0.0) :
                 j+=1
             pop[j]=offspring
             j+=1
-            time[offspring]=ngens-t
-            records[offspring]=[]
+            records.add_individual(offspring,ngens-t)
             if bp > 0.0 :
-                records.add_record(left=0.0, right=bp, parent=lparent, children=(offspring,), time=time[lparent], population=0)
+                records.add_record(left=0.0, right=bp, parent=lparent, children=(offspring,))
             if bp < 1.0 :
-                records.add_record( left=bp, right=1.0, parent=rparent, children=(offspring,), time=time[rparent], population=0)
+                records.add_record( left=bp, right=1.0, parent=rparent, children=(offspring,))
         # print(records)
 
     # add phony records that stand in for sampling
     samples=random.sample(pop,nsamples)
-    records.add_samples(samples=samples,times=[time[x] for x in samples], populations=[0 for x in samples])
-    # for k,parent in enumerate(samples):
-    #     records.add_record(left=0.0, right=1.0, parent=parent, children=(k,), time=time[parent], population=0)
+    records.add_samples(samples=samples)
 
     return records

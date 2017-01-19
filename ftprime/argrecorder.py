@@ -4,31 +4,40 @@ from collections import OrderedDict
 
 class ARGrecorder(OrderedDict):
     '''
-    Keys are individuals, and values are ordered lists of nonoverlapping CoalescenceRecords.
+    Keys are individuals, and values are tuples, whose first entry is the birth time of the parent,
+    and the second entry is a ordered list of nonoverlapping CoalescenceRecords.
     This inherits from OrderedDict so that if individuals are added by birth order
     then records can easily be output ordered by time.
     
     Note that the 'time' fields must all be *strictly* greater than 0.
     '''
 
-    def add_individual(self,name):
+    def add_individual(self,name,time):
         '''Add a new individual.
         We need to add individuals when they are *born*,
         rather than the first time they reproduce, to ensure
         that records are output in order by birth time of the parent.
         '''
-        self[name]=[]
+        if not name in self:
+            self[name]=(time,[])
 
-    def add_record(self,left,right,parent,children,time,population):
+    def add_record(self,left,right,parent,children,population=0):
         '''
         Add records corresponding to a reproduction event in which children (a
         tuple of IDs) inherit from parent (a single ID) on the interval
         [left,right). 
         '''
-        if not parent in self:
-            self[parent]=[]
-        new_rec=msprime.CoalescenceRecord(left=left,right=right,node=parent,children=children,time=time,population=population)
-        merge_records(new_rec,self[parent])
+        if not parent in self.keys():
+            raise ValueError("Parent "+str(parent)+"'s birth time has not been recorded with .add_individual().")
+        time=self[parent][0]
+        new_rec=msprime.CoalescenceRecord(
+                left=left,
+                right=right,
+                node=parent,
+                children=children,
+                time=time,
+                population=population)
+        merge_records(new_rec,self[parent][1])
 
     def dump_records(self):
         '''
@@ -37,7 +46,9 @@ class ARGrecorder(OrderedDict):
         by birth time, the output will be in the time order required by
         msprime.
         '''
-        return flatten_once(reversed(self.values()))
+        for y in reversed(self.values()):
+            for z in y[1]:
+                yield z
 
     def tree_sequence(self,mutations=None):
         '''
@@ -49,24 +60,16 @@ class ARGrecorder(OrderedDict):
             ts.set_mutations(mutations)
         return msprime.TreeSequence(ts)
 
-    def add_samples(self,samples,times,populations):
+    def add_samples(self,samples,populations=None):
         '''
-        Add phony records that stand in for sampling the IDs in `samples`, whose
-        birth times are given in `times` and whose populations are given in 
-        `populations`.  All three must be lists of the same length.
+        Add phony records that stand in for sampling the IDs in `samples`,
+        whose populations are given in `populations`.
         '''
+        if populations is None:
+            populations = [0 for x in samples]
         for k,parent in enumerate(samples):
             self.add_record(left=0.0, right=1.0, parent=parent, 
-                        children=(k,), time=times[k], population=populations[k])
-
-
-def flatten_once(x):
-    '''
-    Returns an iterator over the elements of a once-nested list.
-    '''
-    for y in x:
-        for z in y:
-            yield z
+                        children=(k,), population=populations[k])
 
 
 def merge_records(new,existing) :
@@ -97,20 +100,35 @@ def merge_records(new,existing) :
             continue
         if cur_left < left:
             # print("dangling left")
-            existing.insert( k, msprime.CoalescenceRecord(
-                left=cur_left, right=min(new.right,left), node=node, children=new.children, time=time, population=new.population) )
+            existing.insert(k, msprime.CoalescenceRecord(
+                left=cur_left, 
+                right=min(new.right,left), 
+                node=node, 
+                children=new.children, 
+                time=time, 
+                population=new.population))
             cur_left=min(new.right,left)
             k+=1
             continue
         combined_children=tuple(sorted(children+new.children))
         combined_rec=msprime.CoalescenceRecord(
-            left=cur_left, right=min(new.right,right), node=new.node, children=combined_children, time=new.time, population=new.population)
+            left=cur_left, 
+            right=min(new.right,right), 
+            node=new.node, 
+            children=combined_children, 
+            time=new.time, 
+            population=new.population)
         if cur_left == left:
             # print("equal left")
             if new.right < right:
                 # print("overlap right")
                 mod_rec=msprime.CoalescenceRecord(
-                        left=new.right, right=right, node=node, children=children, time=time, population=population )
+                        left=new.right, 
+                        right=right, 
+                        node=node, 
+                        children=children, 
+                        time=time, 
+                        population=population)
                 existing[k]=mod_rec
                 k+=1
                 existing.insert(k,combined_rec)
@@ -123,7 +141,12 @@ def merge_records(new,existing) :
             # here we know that left < cur_left < right
             # print("overlap left")
             mod_rec=msprime.CoalescenceRecord(
-                    left=left, right=cur_left, node=node, children=children, time=time, population=population )
+                    left=left, 
+                    right=cur_left, 
+                    node=node, 
+                    children=children, 
+                    time=time, 
+                    population=population)
             existing[k]=mod_rec
             k+=1
             existing.insert(k,combined_rec)
@@ -131,13 +154,23 @@ def merge_records(new,existing) :
             if new.right < right:
                 # print("overlap right")
                 existing.insert(k,msprime.CoalescenceRecord(
-                    left=new.right, right=right, node=node, children=children, time=time, population=new.population))
+                    left=new.right, 
+                    right=right, 
+                    node=node, 
+                    children=children, 
+                    time=time, 
+                    population=new.population))
                 k+=1
         cur_left=min(new.right,right)
     # add whatever's left at the end
     if cur_left < new.right:
         existing.insert(k,msprime.CoalescenceRecord(
-            left=cur_left, right=new.right, node=new.node, children=new.children, time=new.time, population=new.population) )
+            left=cur_left, 
+            right=new.right, 
+            node=new.node, 
+            children=new.children, 
+            time=new.time, 
+            population=new.population))
     # print("getting")
     # for x in existing:
     #     print("   ", x)

@@ -59,8 +59,7 @@ def test_simupop_runs():
     samples=random.sample(pop_ids,nsamples)
     # need chromosome ids
     chrom_samples = [ ind_to_chrom(x,a) for x in samples for a in mapa_labels ]
-    times=[ meioser.time[x] for x in samples for a in mapa_labels ]
-    meioser.records.add_samples(samples=chrom_samples,times=times,populations=[0 for x in chrom_samples])
+    meioser.records.add_samples(samples=chrom_samples)
 
     for x in meioser.records.dump_records():
         print(x)

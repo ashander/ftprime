@@ -63,21 +63,18 @@ def test_case():
             { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'e', 'g':'d', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
             { 'b':'a', 'c':'a', 'd':'a', 'e':'c', 'f':'e', 'g':'d', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
         ]
-    def f(lparent,rparent,breakpoint,child,btime):
-        arg.add_individual(ids[child])
-        times[child]=btime
-        if breakpoint>0.0:
-            arg.add_record(0.0,breakpoint,ids[lparent],(ids[child],),end_time-times[lparent],0)
-        if breakpoint<1.0:
-            arg.add_record(breakpoint,1.0,ids[rparent],(ids[child],),end_time-times[rparent],0)
-
-    ids = dict( [ (y,3+x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
-    times = {}
     end_time = 6.0
+    ids = dict( [ (y,3+x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
+    def f(lparent,rparent,breakpoint,child,btime):
+        arg.add_individual(ids[child],end_time-btime)
+        if breakpoint>0.0:
+            arg.add_record(0.0,breakpoint,ids[lparent],(ids[child],))
+        if breakpoint<1.0:
+            arg.add_record(breakpoint,1.0,ids[rparent],(ids[child],))
+
     arg=ARGrecorder()
     # 1. Begin with an individual `a` (and another anonymous one) at `t=0`.
-    arg.add_individual(ids['a'])
-    times['a'] = 0.0
+    arg.add_individual(ids['a'],end_time-0.0)
     # 2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
     f('a','z',1.0,'b',1.0)
     f('a','z',1.0,'c',1.0)
@@ -94,9 +91,7 @@ def test_case():
     f('g','h',0.5,'j',5.0)
     f('c','h',0.4,'k',5.0)
     # 7. We sample `i`, `j` and `k`.
-    arg.add_samples(samples=[ids[x] for x in ('i','j','k')],
-                    times=[end_time-times[x] for x in ('i','j','k')],
-                    populations=[0 for x in ('i','j','k')] )
+    arg.add_samples(samples=[ids[x] for x in ('i','j','k')])
     ts=arg.tree_sequence()
     samples = [ (0,ids['i']), (1,ids['j']), (2,ids['k']) ]
     try:

@@ -49,10 +49,6 @@ class MeiosisTagger(sim.PyOperator):
 
         - `labeler` : used to output unique individual IDs
 
-        - `time` : a dictionary of birth times of individuals,
-            which only needs to be currently alive individuals
-            but we don't bother to remove dead ones from it
-        
     All the work is done in `new_offspring`; from simuPOP's point of view
     all that does is return a new individual ID; but internally it also
     generates recombination events and stores them in an ARGrecorder.
@@ -64,7 +60,6 @@ class MeiosisTagger(sim.PyOperator):
         self.ngens = ngens # maximum number of generations
         self.labeler=make_labeler(nsamples)  # returns INDIVIDUAL labels
         self.records=ARGrecorder()  # indexed by CHROMOSOMES
-        self.time={}  # indexed by INDIVIDUALS
         sim.PyOperator.__init__(self, func=self.init_labels, *args, **kwargs)
 
     def init_labels(self,pop):
@@ -74,8 +69,7 @@ class MeiosisTagger(sim.PyOperator):
         for ind in pop.individuals():
             next_id = next(self.labeler)
             for mapa in mapa_labels: # mapa_labels.values():
-                self.records.add_individual(ind_to_chrom(next_id,mapa))
-            self.time[next_id]=self.ngens
+                self.records.add_individual(ind_to_chrom(next_id,mapa),self.ngens)
             ind.setInfo(next_id,'ind_id')
         return True
 
@@ -89,7 +83,6 @@ class MeiosisTagger(sim.PyOperator):
         # print("new_off:",self.records)
         child=next(self.labeler)
         ## Figure out how to get time in here from simuPOP
-        self.time[child]=self.ngens-self.gen
         # which parent and which chrom in offspring
         for parent,mapa in zip(ind_id,mapa_labels): #mapa_labels.values()):
             bp=random_breakpoint()
@@ -97,10 +90,18 @@ class MeiosisTagger(sim.PyOperator):
             lparent,rparent=np_random.permutation(mapa_labels) #mapa_labels.values())
             # print('meiosis:',child,parent,mapa,lparent,rparent,bp)
             chrom_id=ind_to_chrom(child,mapa)
-            self.records.add_individual(chrom_id)
+            self.records.add_individual(chrom_id,self.ngens-self.gen)
             if bp > 0.0 :
-                self.records.add_record(left=0.0, right=bp, parent=ind_to_chrom(parent,lparent), children=(chrom_id,), time=self.time[parent], population=0)
+                self.records.add_record(
+                        left=0.0, 
+                        right=bp, 
+                        parent=ind_to_chrom(parent,lparent), 
+                        children=(chrom_id,))
             if bp < 1.0 :
-                self.records.add_record( left=bp, right=1.0, parent=ind_to_chrom(parent,rparent), children=(chrom_id,), time=self.time[parent], population=0)
+                self.records.add_record( 
+                        left=bp, 
+                        right=1.0, 
+                        parent=ind_to_chrom(parent,rparent), 
+                        children=(chrom_id,))
         # return label for new individual
         return child
