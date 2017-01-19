@@ -91,7 +91,7 @@ def test_case():
     f('g','h',0.5,'j',5.0)
     f('c','h',0.4,'k',5.0)
     # 7. We sample `i`, `j` and `k`.
-    arg.add_samples(samples=[ids[x] for x in ('i','j','k')])
+    arg.add_samples(samples=[ids[x] for x in ('i','j','k')],length=1.0)
     ts=arg.tree_sequence()
     samples = [ (0,ids['i']), (1,ids['j']), (2,ids['k']) ]
     try:

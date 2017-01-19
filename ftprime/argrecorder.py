@@ -60,15 +60,16 @@ class ARGrecorder(OrderedDict):
             ts.set_mutations(mutations)
         return msprime.TreeSequence(ts)
 
-    def add_samples(self,samples,populations=None):
+    def add_samples(self,samples,length,populations=None):
         '''
         Add phony records that stand in for sampling the IDs in `samples`,
-        whose populations are given in `populations`.
+        whose populations are given in `populations`, on a chromosome of
+        total length `length`.
         '''
         if populations is None:
             populations = [0 for x in samples]
         for k,parent in enumerate(samples):
-            self.add_record(left=0.0, right=1.0, parent=parent, 
+            self.add_record(left=0.0, right=length, parent=parent, 
                         children=(k,), population=populations[k])
 
 

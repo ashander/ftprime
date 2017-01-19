@@ -53,6 +53,6 @@ def wf(N,ngens,nsamples,survival=0.0) :
 
     # add phony records that stand in for sampling
     samples=random.sample(pop,nsamples)
-    records.add_samples(samples=samples)
+    records.add_samples(samples=samples,length=1.0)
 
     return records
