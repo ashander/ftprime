@@ -59,7 +59,7 @@ def test_simulation_runs():
     for x in records.dump_records():
         print(x)
 
-    ts = records.tree_sequence()
+    ts = records.tree_sequence(samples=[0,1,2,3,4])
 
     for t in ts.trees():
         print(t)

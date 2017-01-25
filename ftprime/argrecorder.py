@@ -50,12 +50,14 @@ class ARGrecorder(OrderedDict):
             for z in y[1]:
                 yield z
 
-    def tree_sequence(self,mutations=None):
+    def tree_sequence(self,samples,mutations=None):
         '''
         Produce a tree sequence from the ARG.
         '''
         ts = _msprime.TreeSequence()
-        ts.load_records(list(self.dump_records()))
+        ts.load_records(
+                coalescence_records=list(self.dump_records()),
+                samples=tuple(samples))
         if mutations is not None:
             ts.set_mutations(mutations)
         return msprime.TreeSequence(ts)
