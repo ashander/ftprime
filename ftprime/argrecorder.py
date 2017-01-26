@@ -57,7 +57,7 @@ class ARGrecorder(OrderedDict):
         ts = _msprime.TreeSequence()
         ts.load_records(
                 coalescence_records=list(self.dump_records()),
-                samples=tuple(samples))
+                samples=samples)
         if mutations is not None:
             ts.set_mutations(mutations)
         return msprime.TreeSequence(ts)

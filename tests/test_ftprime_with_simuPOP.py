@@ -69,7 +69,10 @@ def test_simupop_runs():
     #     print(t)
 
     print("msprime trees:")
-    ts=meioser.records.tree_sequence(samples=chrom_samples)
+    # this is location,time for the samples
+    samp_locs = [ (0,0) for _ in chrom_samples ]
+    print(list(zip(chrom_samples,samp_locs)))
+    ts=meioser.records.tree_sequence(samples=samp_locs)
 
     for t in ts.trees():
         print(t)

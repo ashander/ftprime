@@ -93,8 +93,8 @@ def test_case():
     # 7. We sample `i`, `j` and `k`.
     samples = [ids[x] for x in ('i','j','k')]
     arg.add_samples(samples=samples,length=1.0)
-    samples = [ (0,ids['i']), (1,ids['j']), (2,ids['k']) ]
-    ts=arg.tree_sequence(samples=samples)
+    sample_locs = [ (0,0) for _ in samples ]
+    ts=arg.tree_sequence(samples=sample_locs)
     try:
         for x,y in zip(ts.trees(),true_trees):
             print(x)
