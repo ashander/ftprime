@@ -2,6 +2,9 @@ from ftprime import merge_records
 import msprime
 from wf import wf
 
+def cr(l,r,n,ch,t,pop=0):
+    msprime.CoalescenceRecord(left=l, right=r, node=n, children=ch, time=t, population=pop)
+
 def test_1():
 
     new_rec=msprime.CoalescenceRecord(left=0.8, right=1.0, node=18, children=(22,), time=2, population=0)
@@ -68,3 +71,6 @@ def test_simulation_runs():
     print("Mean pairwise diversity:",ts.get_pairwise_diversity())
     print("(should be zero)")
     assert ts.get_pairwise_diversity() == 0.0
+
+    tss=ts.simplify()
+    assert tss.get_pairwise_diversity() == 0.0

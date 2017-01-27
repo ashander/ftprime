@@ -51,6 +51,14 @@ def wf(N,ngens,nsamples,survival=0.0) :
                 records.add_record( left=bp, right=1.0, parent=rparent, children=(offspring,))
         # print(records)
 
+    # Hackishly, add imaginary entry so smallest internal node is equal to number of samples
+    for ind in records.keys():
+        print("ind:",ind)
+        if len(records[ind][1])>0:
+            if ind > nsamples:
+                records.add_record(left=0.0,right=1.0,parent=nsamples,children=(next(labels),))
+            break
+
     # add phony records that stand in for sampling
     samples=random.sample(pop,nsamples)
     records.add_samples(samples=samples,length=1.0)
