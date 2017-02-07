@@ -132,9 +132,9 @@ def merge_records(new,existing) :
                         children=children, 
                         time=time, 
                         population=population)
-                existing[k]=mod_rec
+                existing[k]=combined_rec
                 k+=1
-                existing.insert(k,combined_rec)
+                existing.insert(k,mod_rec)
                 k+=1
             else:
                 # print("dangling right")
