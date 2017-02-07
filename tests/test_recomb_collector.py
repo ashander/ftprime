@@ -36,6 +36,9 @@ def test_simupop_runs():
 
         init_geno = [sim.InitGenotype(freq=[0.9,0.1],loci=sim.ALL_AVAIL)]
 
+        id_tagger=sim.IdTagger(begin=0)
+        id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
+
         pop = sim.Population(
                 size=[popsize],
                 loci=[nloci], 
@@ -45,7 +48,7 @@ def test_simupop_runs():
         pop.evolve(
             initOps=[
                 sim.InitSex(),
-                sim.IdTagger(),
+                id_tagger
             ]+init_geno,
             preOps=[],
             matingScheme=sim.RandomMating(
