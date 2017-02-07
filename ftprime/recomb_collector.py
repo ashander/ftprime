@@ -1,4 +1,3 @@
-import simuPOP as sim
 from .argrecorder import ARGrecorder
 from .meiosistagger import ind_to_chrom, mapa_labels
 import math
@@ -38,6 +37,7 @@ class RecombCollector:
         self.args.add_record(0.0,self.length,self.universal_ancestor,tuple(first_gen))
         for k in range(1,self.N+1): 
             for p in [0,1]:
+                print("Adding:",k,p,self.i2c(k,p),self.ind_to_time(k))
                 self.args.add_individual(self.i2c(k,p),self.ind_to_time(k))
 
     def ind_to_time(self,k):
@@ -49,7 +49,7 @@ class RecombCollector:
         # "1+" is for the universal common ancestor added in initialization
         out=1+2*self.nsamples+ind_to_chrom(k,mapa_labels[p])
         return out
-    
+
     def collect_recombs(self,lines):
         for line in lines.strip().split('\n'):
             # print("A: "+line)
@@ -65,16 +65,16 @@ class RecombCollector:
             else:
                 child_p=0
                 self.last_child=child
-            # print(child,child_p,parent,ploid)
             if self.ind_to_time(child) > self.ind_to_time(parent):
                 raise ValueError(str(child)+" at "+str(self.ind_to_time(child))+" does not come after " + str(parent)+" at "+str(self.ind_to_time(parent)))
             start=0.0
             child_chrom=self.i2c(child, child_p)
-            # print(".. Adding",child_chrom)
+            # print("  existing parent:",parent,ploid,"-i2c->",self.i2c(parent,ploid))
+            # print("  adding child:",child,child_p,"-i2c->",child_chrom,self.ind_to_time(child))
             self.args.add_individual(child_chrom, self.ind_to_time(child))
             for r in rec:
                 breakpoint=random.uniform(self.locus_position[r],self.locus_position[r+1])
-                # print("--- ",start,breakpoint)
+                # print("--- ",start,self.locus_position[r],"<=",breakpoint,"<=",self.locus_position[r+1])
                 self.args.add_record(
                         left=start,
                         right=breakpoint,
