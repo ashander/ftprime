@@ -24,7 +24,7 @@ refers to these as "individuals".
 -  [ftprime/recomb_collector.py](ftprime/recomb_collector.py): Provides `RecombCollector`, whose function `collect_recombs` can be used
     as output for simuPOP's `Recombinator` operator.
 
--  [ftprime/meiosistagger.py](ftprime/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
+-  [attic/meiosistagger.py](attic/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
     with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
     *(Note: [currently disabled](ftprime/__init__.py) so that we can load simuPOP with the options we want elsewhere.)*
 

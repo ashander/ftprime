@@ -1,7 +1,17 @@
 from .argrecorder import ARGrecorder
-from .meiosistagger import ind_to_chrom, mapa_labels
 import math
 import random
+
+# first is 'maternal', second is 'paternal'
+mapa_labels = ( 2, 1 )
+
+def ind_to_chrom(ind,mapa):
+    '''
+    Returns the unique *chromosome ID* corresponding to
+    the chromosome of individual 'ind' inherited from 
+    parent 'mapa' (either 1 or 2).  (Chromosome IDs are ints.)
+    '''
+    return int(2*ind+mapa-1)
 
 class RecombCollector:
     '''
@@ -37,7 +47,7 @@ class RecombCollector:
         self.args.add_record(0.0,self.length,self.universal_ancestor,tuple(first_gen))
         for k in range(1,self.N+1): 
             for p in [0,1]:
-                print("Adding:",k,p,self.i2c(k,p),self.ind_to_time(k))
+                # print("Adding:",k,p,self.i2c(k,p),self.ind_to_time(k))
                 self.args.add_individual(self.i2c(k,p),self.ind_to_time(k))
 
     def ind_to_time(self,k):
