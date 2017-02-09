@@ -21,14 +21,19 @@ refers to these as "individuals".
     with `tree_sequence`.  Note that this needs to be given upper bounds on the total number of generations and the total number of samples
     at the start.  The work of adding a newly inherited segment to the list of coalescence records is done by `merge_records`.
 
+-  [ftprime/recomb_collector.py](ftprime/recomb_collector.py): Provides `RecombCollector`, whose function `collect_recombs` can be used
+    as output for simuPOP's `Recombinator` operator.
+
 -  [ftprime/meiosistagger.py](ftprime/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
     with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
+    *(Note: [currently disabled](ftprime/__init__.py) so that we can load simuPOP with the options we want elsewhere.)*
 
 Tests and examples:
 
--  [tests/test_ftprime_with_simuPOP.py](tests/test_ftprime_with_simuPOP.py): Example of using the simuPOP interface.
 -  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
 -  [tests/test_merge_records_with_wf.py](tests/test_merge_records_with_simuPOP.py): Example of using the wf interface.
+-  [tests/test_recomb_collector.py](tests/test_recomb_collector.py): Uses a RecombCollector with simuPOP.
+-  [tests/test_ftprime_with_simuPOP.py](tests/test_ftprime_with_simuPOP.py): Example of using the other simuPOP interface.
 
 [Documentation of the problem and the methods:](writeups/)
 
