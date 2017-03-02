@@ -40,6 +40,9 @@ class RecombCollector:
 
         self.args=ARGrecorder()
         self.universal_ancestor=2*nsamples
+        # will record IDs of diploid samples here when they are chosen
+        self.diploid_samples=None
+
         self.args.add_individual(name=self.universal_ancestor,time=float(1+self.generations+self.ancestor_age))
         # add initial generation
         first_gen = [self.i2c(k,p) for k in range(1,self.N+1) for p in [0,1]]
@@ -102,9 +105,9 @@ class RecombCollector:
     def add_samples(self):
         # some messing around to fill up the required samples
         pop_ids = range(1+self.generations*self.N,1+(1+self.generations)*self.N)
-        diploid_samples=random.sample(pop_ids,self.nsamples)
-        # print("Samples ("+str(self.nsamples)+" of them): "+str(diploid_samples)+"\n")
+        self.diploid_samples = random.sample(pop_ids,self.nsamples)
+        # print("Samples ("+str(self.nsamples)+" of them): "+str(self.diploid_samples)+"\n")
         # need chromosome ids
-        chrom_samples = [ ind_to_chrom(x,a) for x in diploid_samples for a in mapa_labels ]
+        chrom_samples = [ ind_to_chrom(x,a) for x in self.diploid_samples for a in mapa_labels ]
         self.args.add_samples(samples=chrom_samples,length=self.length)
 
