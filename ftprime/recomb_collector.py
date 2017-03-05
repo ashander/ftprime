@@ -15,7 +15,7 @@ def ind_to_chrom(ind,mapa):
 
 class RecombCollector:
     '''
-    Collect and parse recombination events as output my simuPOP's Recombinator,
+    Collect and parse recombination events as output by simuPOP's Recombinator,
     which outputs like:
     offspringID parentID startingPloidy rec1 rec2 ....
     ... coming in *pairs*

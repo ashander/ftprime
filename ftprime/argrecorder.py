@@ -95,7 +95,7 @@ def merge_records(new,existing) :
             raise ValueError("Trying to merge records with different parents.")
         if new.time != time:
             raise ValueError("Trying to merge records with different times.")
-        if right<=cur_left:
+        if right <= cur_left:
             # no overlap
             # print("no overlap")
             k+=1
