@@ -50,12 +50,24 @@ for such a set, and thinking about different ways to do it.
 Development
 -----------
 
+Clone:
 
-Install in locally editable (``-e``) mode and run the tests:
+    git clone https://github.com/ashander/ftprime.git
+    cd ftprime 
 
-    pip install -e .[test]
+
+For best results, use [miniconda](https://conda.io/miniconda.html).
+Once you have conda installed, make a new conda environment to do development:
+
+    conda config --add channels conda-forge
+    conda env create -f environment.yml python=3.5
+
+Install ``tortoisim`` in locally editable (``-e``) mode and run the tests.
+After the ``pip`` command you should see a bunch of messages about requirements
+already satisfied (because you've installed them with ``conda``, above):
+
+    pip install -e .[dev]  # Technically you don't need the [dev]
     pytest
-
 
 To-do
 =====
