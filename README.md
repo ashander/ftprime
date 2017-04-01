@@ -24,16 +24,19 @@ refers to these as "individuals".
 -  [ftprime/recomb_collector.py](ftprime/recomb_collector.py): Provides `RecombCollector`, whose function `collect_recombs` can be used
     as output for simuPOP's `Recombinator` operator.
 
--  [attic/meiosistagger.py](attic/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
-    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
-    *(Note: [currently disabled](ftprime/__init__.py) so that we can load simuPOP with the options we want elsewhere.)*
 
 Tests and examples:
 
 -  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
 -  [tests/test_merge_records_with_wf.py](tests/test_merge_records_with_simuPOP.py): Example of using the wf interface.
 -  [tests/test_recomb_collector.py](tests/test_recomb_collector.py): Uses a RecombCollector with simuPOP.
--  [tests/test_ftprime_with_simuPOP.py](tests/test_ftprime_with_simuPOP.py): Example of using the other simuPOP interface.
+
+
+Legacy interface:
+
+-  [attic/meiosistagger.py](attic/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
+    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
+-  [tests/dont_test_ftprime_with_simuPOP.py](tests/dont_test_ftprime_with_simuPOP.py): Example of using the legacy simuPOP interface.
 
 [Documentation of the problem and the methods:](writeups/)
 
