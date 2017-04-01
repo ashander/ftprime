@@ -53,9 +53,9 @@ for such a set, and thinking about different ways to do it.
 Development
 -----------
 
-Test status:
+Test status and code coverage:
 
-[![CircleCI](https://circleci.com/gh/ashander/ftprime/tree/master.svg?style=svg)](https://circleci.com/gh/ashander/ftprime/tree/master)
+[![CircleCI](https://circleci.com/gh/ashander/ftprime/tree/master.svg?style=svg)](https://circleci.com/gh/ashander/ftprime/tree/master) [![Coverage Status](https://coveralls.io/repos/github/ashander/ftprime/badge.svg?branch=master)](https://coveralls.io/github/ashander/ftprime?branch=master)
 
 Clone:
 
