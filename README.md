@@ -52,7 +52,7 @@ Development
 
 Test status:
 
-![](https://circleci.com/gh/ashander/ftprime.svg?style=svg)
+[![CircleCI](https://circleci.com/gh/ashander/ftprime/tree/master.svg?style=svg)](https://circleci.com/gh/ashander/ftprime/tree/master)
 
 Clone:
 
