@@ -23,6 +23,7 @@ dependencies:
   - click==6.7
   - commonmark==0.5.4
   - coverage==4.3.4
+  - coveralls==1.1
   - docutils==0.13.1
   - imagesize==0.7.1
   - jinja2==2.9.5
