@@ -39,15 +39,15 @@ jobs:
           name: Run tests || report coverage
           command: |
             source activate ftprime
-            coverage run --source ftprime -m py.test --junitxml=/tmp/test-results tests || FAILED="TRUE"
-            coverage html -d /tmp/test-coverage
+            coverage run --source ftprime -m py.test --junitxml=/tmp/test-reports/pytest.xml tests || FAILED="TRUE"
+            coverage html -d /tmp/test-reports
             if [[ -z "$FAILED" ]] ; then
                exit 0;
             else
                exit 1;
             fi
       - store_test_results:
-          path: /tmp/test-results
+          path: "/tmp/test-reports"
       - store_artifacts:
-          path: /tmp/test-coverage
+          path: "/tmp/test-reports"
           destination: ftprime
