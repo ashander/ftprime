@@ -59,17 +59,19 @@ Clone:
     git clone https://github.com/ashander/ftprime.git
     cd ftprime
 
-For best results, use [miniconda](https://conda.io/miniconda.html).
-Once you have conda installed, make a new conda environment to do development:
+For best results, use [miniconda](https://conda.io/miniconda.html),
+which provides the command line dependency manager `conda`.
+Once you have it installed, make a new environment to do development:
 
     conda config --add channels conda-forge
-    conda env create -f environment.yml python=3.5
+    conda env create -f environment.yml -n ftprime python=3.5
+    source activate ftprime  # Enter the development environment
 
 Install ``tortoisim`` in locally editable (``-e``) mode and run the tests.
 After the ``pip`` command you should see a bunch of messages about requirements
 already satisfied (because you've installed them with ``conda``, above):
 
-    pip install -e .[dev]  # Technically you don't need the [dev]
+    pip install -e .[dev]  # Don't need the [dev] if you used conda above
     pytest
 
 To-do
