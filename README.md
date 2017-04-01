@@ -50,11 +50,14 @@ for such a set, and thinking about different ways to do it.
 Development
 -----------
 
+Test status:
+
+![](https://circleci.com/gh/ashander/ftprime.svg?style=svg)
+
 Clone:
 
     git clone https://github.com/ashander/ftprime.git
-    cd ftprime 
-
+    cd ftprime
 
 For best results, use [miniconda](https://conda.io/miniconda.html).
 Once you have conda installed, make a new conda environment to do development:

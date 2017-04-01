@@ -6,7 +6,7 @@ jobs:
         - gh-pages
         - /.*\/wip-.*/
     docker:
-      - image: ashander/miniconda3gcc
+      - image: ashander/miniconda3gcc:2.0
     working_directory: /home/ftprime
     steps:
       - checkout
