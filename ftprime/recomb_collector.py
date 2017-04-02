@@ -55,6 +55,7 @@ class RecombCollector:
 
     def ind_to_time(self,k):
         # simuPOP has nonoverlapping gens so we can map indiv ID to time
+        # with fixed population size
         return 1+self.generations-math.floor((k-1)/self.N)
 
     def i2c(self,k,p):
@@ -102,10 +103,11 @@ class RecombCollector:
                     parent=self.i2c(parent,ploid),
                     children=(child_chrom,))
 
-    def add_samples(self):
+    def add_samples(self, sample_ids):
         # some messing around to fill up the required samples
-        pop_ids = range(1+self.generations*self.N,1+(1+self.generations)*self.N)
-        self.diploid_samples = random.sample(pop_ids,self.nsamples)
+        # sample_ids is the list of diploid IDs to draw the samples from
+        # pop_ids = range(1+self.generations*self.N,1+(1+self.generations)*self.N)
+        self.diploid_samples = random.sample(sample_ids,self.nsamples)
         # print("Samples ("+str(self.nsamples)+" of them): "+str(self.diploid_samples)+"\n")
         # need chromosome ids
         chrom_samples = [ ind_to_chrom(x,a) for x in self.diploid_samples for a in mapa_labels ]

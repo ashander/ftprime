@@ -64,7 +64,7 @@ def test_simupop_runs():
             gen = generations
         )
 
-        rc.add_samples()
+        rc.add_samples(pop.indInfo("ind_id"))
 
         check_record_order(rc.args)
 
