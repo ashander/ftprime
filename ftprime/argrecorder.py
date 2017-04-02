@@ -56,8 +56,7 @@ class ARGrecorder(OrderedDict):
         '''
         ts = _msprime.TreeSequence()
         ts.load_records(
-                coalescence_records=list(self.dump_records()),
-                samples=samples)
+                records=list(self.dump_records()))
         if mutations is not None:
             ts.set_mutations(mutations)
         return msprime.TreeSequence(ts)
@@ -96,7 +95,7 @@ def merge_records(new,existing) :
             raise ValueError("Trying to merge records with different parents.")
         if new.time != time:
             raise ValueError("Trying to merge records with different times.")
-        if right<=cur_left:
+        if right <= cur_left:
             # no overlap
             # print("no overlap")
             k+=1

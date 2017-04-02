@@ -1,0 +1,44 @@
+name: ftprime
+channels: !!python/tuple
+- conda-forge
+- defaults
+dependencies:
+- ca-certificates=2017.1.23=0
+- certifi=2017.1.23=py35_0
+- ncurses=5.9=10
+- openssl=1.0.2h=3
+- pip=9.0.1=py35_0
+- python=3.5.3=1
+- readline=6.2=0
+- setuptools=33.1.1=py35_0
+- conda-forge::simupop=1.1.8.3=py35_0
+- sqlite=3.13.0=1
+- tk=8.5.19=1
+- wheel=0.29.0=py35_0
+- xz=5.2.2=0
+- zlib=1.2.11=0
+- pip:
+  - alabaster==0.7.10
+  - babel==2.3.4
+  - click==6.7
+  - commonmark==0.5.4
+  - coverage==4.3.4
+  - coveralls==1.1
+  - docutils==0.13.1
+  - imagesize==0.7.1
+  - jinja2==2.9.5
+  - markupsafe==1.0
+  - "--editable=git+https://github.com/ashander/msprime.git@8a894a99b42bb3a58e85fe7cbf7200e3cc9bd595#egg=msprime"
+  - py==1.4.33
+  - pygments==2.2.0
+  - pyparsing==2.2.0
+  - pytest==3.0.7
+  - pytest-cov==2.4.0
+  - pytz==2016.10
+  - recommonmark==0.4.0
+  - requests==2.13.0
+  - six==1.10.0
+  - snowballstemmer==1.2.1
+  - svgwrite==1.1.10
+  - sphinx==1.5.3
+  - sphinx-rtd-theme==0.2.4

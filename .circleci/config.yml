@@ -1,0 +1,53 @@
+version: 2
+jobs:
+  build:
+    branches:
+      ignore:
+        - gh-pages
+        - /.*\/wip-.*/
+    docker:
+      - image: ashander/miniconda3gcc:2.0
+    working_directory: /home/ftprime
+    steps:
+      - checkout
+      - restore_cache:
+          key: ftprime-{{ .Branch }}
+      - run:
+          name: Configure conda
+          command: |
+            conda config --add channels conda-forge
+            # see https://conda.io/docs/travis.html
+            conda config --set always_yes yes --set changeps1 no
+            conda update -q conda
+            conda info -a
+            if [[ ! -d "/opt/conda/envs/ftprime" ]] ; then
+               conda create -q -n ftprime python=3.5
+            fi
+      - run:
+          name: Install deps
+          command: conda env update -q -n ftprime -f environment.yml
+      - save_cache:
+          key: ftprime-{{ .Branch }}
+          paths:
+            - "/opt/conda/envs/ftprime"
+      - run:
+          name: Install ftprime
+          command: |
+            source activate ftprime
+            pip install -e .
+      - run:
+          name: Run tests || report coverage
+          command: |
+            source activate ftprime
+            pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests || FAILED="TRUE"
+            coveralls
+            if [[ -z "$FAILED" ]] ; then
+               exit 0;
+            else
+               exit 1;
+            fi
+      - store_test_results:
+          path: "/tmp/test-reports"
+      - store_artifacts:
+          path: "/tmp/test-reports"
+          destination: ftprime

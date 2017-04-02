@@ -21,14 +21,22 @@ refers to these as "individuals".
     with `tree_sequence`.  Note that this needs to be given upper bounds on the total number of generations and the total number of samples
     at the start.  The work of adding a newly inherited segment to the list of coalescence records is done by `merge_records`.
 
--  [ftprime/meiosistagger.py](ftprime/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
-    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
+-  [ftprime/recomb_collector.py](ftprime/recomb_collector.py): Provides `RecombCollector`, whose function `collect_recombs` can be used
+    as output for simuPOP's `Recombinator` operator.
+
 
 Tests and examples:
 
--  [tests/test_ftprime_with_simuPOP.py](tests/test_ftprime_with_simuPOP.py): Example of using the simuPOP interface.
 -  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
 -  [tests/test_merge_records_with_wf.py](tests/test_merge_records_with_simuPOP.py): Example of using the wf interface.
+-  [tests/test_recomb_collector.py](tests/test_recomb_collector.py): Uses a RecombCollector with simuPOP.
+
+
+Legacy interface:
+
+-  [attic/meiosistagger.py](attic/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
+    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
+-  [tests/dont_test_ftprime_with_simuPOP.py](tests/dont_test_ftprime_with_simuPOP.py): Example of using the legacy simuPOP interface.
 
 [Documentation of the problem and the methods:](writeups/)
 
@@ -45,12 +53,29 @@ for such a set, and thinking about different ways to do it.
 Development
 -----------
 
+Test status and code coverage:
 
-Install in locally editable (``-e``) mode and run the tests:
+[![CircleCI](https://circleci.com/gh/ashander/ftprime/tree/master.svg?style=svg)](https://circleci.com/gh/ashander/ftprime/tree/master) [![Coverage Status](https://coveralls.io/repos/github/ashander/ftprime/badge.svg?branch=master)](https://coveralls.io/github/ashander/ftprime?branch=master)
 
-    pip install -e .[test]
+Clone:
+
+    git clone https://github.com/ashander/ftprime.git
+    cd ftprime
+
+For best results, use [miniconda](https://conda.io/miniconda.html),
+which provides the command line dependency manager `conda`.
+Once you have it installed, make a new environment to do development:
+
+    conda config --add channels conda-forge
+    conda env create -f environment.yml -n ftprime python=3.5
+    source activate ftprime  # Enter the development environment
+
+Install ``tortoisim`` in locally editable (``-e``) mode and run the tests.
+After the ``pip`` command you should see a bunch of messages about requirements
+already satisfied (because you've installed them with ``conda``, above):
+
+    pip install -e .[dev]  # Don't need the [dev] if you used conda above
     pytest
-
 
 To-do
 =====
