@@ -91,19 +91,19 @@ def test_case():
     f('g','h',0.5,'j',5.0)
     f('c','h',0.4,'k',5.0)
     # 7. We sample `i`, `j` and `k`.
-    samples = [ids[x] for x in ('i','j','k')]
+    sample_ids = ('i','j','k')
+    samples = [ids[x] for x in sample_ids]
     arg.add_samples(samples=samples,length=1.0)
     sample_locs = [ (0,0) for _ in samples ]
-    ts=arg.tree_sequence(samples=sample_locs)
-    try:
-        for x,y in zip(ts.trees(),true_trees):
-            print(x)
-            print(y)
-            z = dict([ (ids[i],ids[y[i]]) for i in y.keys()] + samples)
-            print(z)
-            assert(all( [ x.get_parent(k)==z[k] for k in z.keys() ] ))
-    except Exception as e:
-        print('wrong tree!')
-        print(e)
+    ts=arg.tree_sequence()
+    for x,y in zip(ts.trees(),true_trees):
+        print("observed:",x)
+        print("truth:", y)
+        print("sample ids:", sample_ids)
+        zlist = [(ids[i],ids[y[i]]) for i in y.keys()]
+        print(zlist)
+        z = dict(zlist)
+        print(z)
+        assert(all( [ x.get_parent(k)==z[k] for k in z.keys() ] ))
 
 

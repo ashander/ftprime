@@ -61,18 +61,21 @@ def test_simupop_runs():
     chrom_samples = [ ind_to_chrom(x,a) for x in samples for a in mapa_labels ]
     meioser.records.add_samples(samples=chrom_samples,length=1.0)
 
-    for x in meioser.records.dump_records():
+    for x in meioser.records.edgesets():
+        print(x)
+
+    for x in meioser.records.nodes():
         print(x)
 
     # print("Python trees:")
-    # for t in trees(list(meioser.records.dump_records())):
+    # for t in trees(list(meioser.records.edgesets())):
     #     print(t)
 
     print("msprime trees:")
     # this is location,time for the samples
     samp_locs = [ (0,0) for _ in chrom_samples ]
     print(list(zip(chrom_samples,samp_locs)))
-    ts=meioser.records.tree_sequence(samples=samp_locs)
+    ts=meioser.records.tree_sequence()
 
     for t in ts.trees():
         print(t)

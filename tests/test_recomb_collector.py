@@ -1,12 +1,7 @@
 import simuPOP as sim
 import random
 from ftprime import RecombCollector, ind_to_chrom, mapa_labels
-import math
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
-import simuOpt
-simuOpt.setOptions(optimized=False, debug='DBG_WARNING')
-# sim.turnOnDebug('DBG_ALL')
-# sim.turnOnDebug('DBG_POPULATION,DBG_INDIVIDUAL')
 sim.setOptions(seed=111)
 
 def check_record_order(args):
@@ -18,6 +13,20 @@ def check_record_order(args):
                     print("bad record order:",ind,args[ind])
                     raise ValueError
                 x=cr.right
+
+def check_tables(args):
+    nodes = args.node_table()
+    assert(nodes.num_rows == args.num_nodes)
+    edgesets = args.edgeset_table()
+    # check edgesets are in order and all parents are recorded
+    node_times = nodes.time
+    last_time = 0.0
+    for p in edgesets.parent:
+        assert(node_times[p] >= last_time)
+        last_time = node_times[p]
+        assert(p < args.num_nodes)
+    for ch in edgesets.children:
+        assert(ch < args.num_nodes)
 
 def test_simupop_runs():
     for popsize in [5,10,20]:
@@ -67,8 +76,14 @@ def test_simupop_runs():
         rc.add_samples(pop.indInfo("ind_id"))
 
         check_record_order(rc.args)
+        check_tables(rc.args)
 
-        ts = rc.args.tree_sequence(samples=[(0,0) for x in range(rc.nsamples)])
+        for x in rc.args:
+            print(rc.args[x])
+        print(rc.args.node_table())
+        print(rc.args.edgeset_table())
+
+        ts = rc.args.tree_sequence()
 
         print("coalescence records:")
         for x in ts.records():

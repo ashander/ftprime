@@ -47,7 +47,11 @@ class RecombCollector:
         # add initial generation
         first_gen = [self.i2c(k,p) for k in range(1,self.N+1) for p in [0,1]]
         first_gen.sort()
-        self.args.add_record(0.0,self.length,self.universal_ancestor,tuple(first_gen))
+        self.args.add_record(
+                left=0.0,
+                right=self.length,
+                parent=self.universal_ancestor,
+                children=tuple(first_gen))
         for k in range(1,self.N+1): 
             for p in [0,1]:
                 # print("Adding:",k,p,self.i2c(k,p),self.ind_to_time(k))

@@ -5,7 +5,7 @@ import random
 def random_breakpoint() :
     return min(1.0,max(0.0, 2*random.random()-0.5))
 
-def wf(N,ngens,nsamples,survival=0.0) :
+def wf(N, ngens, nsamples, survival=0.0, debug=False) :
     '''
     SIMPLE simulation of a bisexual, haploid Wright-Fisher population
     of size N for ngens generations,
@@ -13,12 +13,10 @@ def wf(N,ngens,nsamples,survival=0.0) :
     and only those who die are replaced.
 
     Keeps track of a dict whose keys are individuals
-    and whose entries are CoalescenceRecords.
+    and whose entries are Edgesets.
 
-    Outputs a list of CoalescenceRecords.
-       CoalescenceRecord(left, right, node, children, time-from-end, population)
-    in nondecreasing order by time-from-end;
-    in the final generation, a random set of nsamples individuals are labeled 1...nsamples.
+    Outputs an ARGrecorder object for the simulation.
+    In the final generation, a random set of nsamples individuals are labeled 1...nsamples.
 
     '''
     labels = count(nsamples,1)
@@ -29,8 +27,9 @@ def wf(N,ngens,nsamples,survival=0.0) :
         records.add_individual(x,ngens+1)
 
     for t in range(ngens) :
-        print("t:",t)
-        print("pop:", pop)
+        if debug:
+            print("t:",t)
+            print("pop:", pop)
         dead = [ (random.random() > survival) for k in pop ]
 
         # this is: offspring ID, lparent, rparent, breakpoint
@@ -39,7 +38,8 @@ def wf(N,ngens,nsamples,survival=0.0) :
                 for k in range(sum(dead)) ]
         j=0
         for offspring,lparent,rparent,bp in new_inds :
-            print(offspring,lparent,rparent,bp)
+            if debug:
+                print(offspring,lparent,rparent,bp)
             while not dead[j] :
                 j+=1
             pop[j]=offspring
