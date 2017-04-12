@@ -73,7 +73,9 @@ def test_simupop_runs():
             gen = generations
         )
 
-        rc.add_samples(pop.indInfo("ind_id"))
+
+        locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
+        rc.add_diploid_samples(pop.indInfo("ind_id"),locations)
 
         check_record_order(rc.args)
         check_tables(rc.args)

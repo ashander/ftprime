@@ -50,16 +50,14 @@ def test_simupop_runs():
 
     # temporary reference to 0-th replicate population
     pop=simu.population(0)
-    pop_ids = [ ind.info('ind_id') for ind in pop.individuals() ]
+    pop_ids = pop.indInfo("ind_id")
 
     print("final individuals:")
     for ind in pop.individuals():
         print("id: ", ind.info('ind_id'))
 
-    samples=random.sample(pop_ids,nsamples)
-    # need chromosome ids
-    chrom_samples = [ ind_to_chrom(x,a) for x in samples for a in mapa_labels ]
-    meioser.records.add_samples(samples=chrom_samples,length=1.0)
+    locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
+    meioser.add_diploid_samples(pop_ids,locations)
 
     for x in meioser.records.edgesets():
         print(x)
@@ -73,8 +71,6 @@ def test_simupop_runs():
 
     print("msprime trees:")
     # this is location,time for the samples
-    samp_locs = [ (0,0) for _ in chrom_samples ]
-    print(list(zip(chrom_samples,samp_locs)))
     ts=meioser.records.tree_sequence()
 
     for t in ts.trees():
