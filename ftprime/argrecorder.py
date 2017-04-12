@@ -79,14 +79,23 @@ class ARGrecorder(OrderedDict):
         '''
         table = msprime.NodeTable()
         empty_node = msprime.Node(time=0.0)
-        for id in range(self.num_nodes):
+        for k in range(self.num_nodes):
             try:
-                node = self[id][0]
+                node = self[k][0]
             except KeyError:
                 node = empty_node
             table.add_row(flags=node.flags, time=node.time, population=node.population)
         return table 
 
+    def dump_sample_table(self, out):
+        '''
+        Write out the table of info about the samples.
+        '''
+        out.write("id\tflags\tpopulation\ttime\n")
+        for idx in self:
+            node = self[idx][0]
+            if node.is_sample():
+                out.write("{}\t{}\t{}\t{}\n".format(idx, node.flags, node.time, node.population))
 
     def tree_sequence(self,sites=None,mutations=None):
         '''
