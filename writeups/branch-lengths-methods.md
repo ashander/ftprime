@@ -99,6 +99,40 @@ $$\begin{aligned}
 \end{aligned}$$
 
 
+## Covariance
+
+If the genotype of the $x^\text{th}$ individual at site $i$ is $G_{xi}$,
+then the genetic covariance is
+$$\begin{aligned}
+    \Sigma_{xy} 
+        &= \frac{1}{n^2} \sum_{uv} (G_{xi} - G_{ui})(G_{yi} - G_{vi}) \\
+        &= \left(G_{xi} - \frac{1}{n}\sum_v G_{ui}\right)\left(G_{yi} - \frac{1}{n}\sum_v G_{vi}\right) 
+\end{aligned}$$
+
+Note that the function $(a-b)(c-d)$ 
+takes the value $+1$ if $a=c \neq b=d$ 
+and takes the value $-1$ if $a=d \neq b=c$,
+and is zero otherwise.
+Therefore, the function we need to implement takes the value $z$, where
+
+- if $G_x=G_y$, with $f$ the frequency of the *other* allele, $z=f^2$.
+- if $G_x \neq G_y$, with $f$ the frequency of one allele (doesn't matter which), $z=-f(1-f)=f^2-f=(1-f)^2-(1-f)$.
+
+If we let $A_1=\{x}$, $A_2=\{y\}$, and $A_3=X$ (all the samples, including $x$ and $y$),
+then this is
+$$\begin{aligned}
+    f(x,y,z)
+    =
+    -\frac{z}{n}\left(1-\frac{z}{n}\right) +
+    \begin{cases}
+        (z/n) \qquad & \text{if}\; x=y=0 \\
+        (1-z/n) \qquad & \text{if}\; x=y=1  .
+    \end{cases}
+\end{aligned}$$
+
+Note that theory tells us that the function of branch lengths that this estimates is actually different.
+
+
 # Multiple mutations
 
 Observation: branches are equivalent to splits (i.e., bipartitions) are equivalent to biallelic sites.
