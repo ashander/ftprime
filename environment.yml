@@ -28,7 +28,7 @@ dependencies:
   - imagesize==0.7.1
   - jinja2==2.9.5
   - markupsafe==1.0
-  - "--editable=git+https://github.com/ashander/msprime.git@06589980d050982390b35f527bb38af9bafd5721#egg=msprime"
+  - "--editable=git+https://github.com/jeromekelleher/msprime.git@06589980d050982390b35f527bb38af9bafd5721#egg=msprime"
   - py==1.4.33
   - pygments==2.2.0
   - pyparsing==2.2.0
