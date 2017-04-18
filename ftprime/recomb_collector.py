@@ -40,6 +40,10 @@ class RecombCollector:
         self.time = 0
 
         self.args=ARGrecorder()
+
+        # TODO is this needed with refactoring in msprime to nodes/tables?
+        # here we assign the max ID based on the number of samples we will take
+        # perhaps not -- maybe just need an upper bound.
         self.universal_ancestor=2*nsamples
         # will record IDs of diploid samples here when they are chosen
         # but note we don't keep anything else about them here (time, location)
@@ -48,6 +52,8 @@ class RecombCollector:
 
         self.args.add_individual(name=self.universal_ancestor,time=float(1+self.generations+self.ancestor_age))
         # add initial generation
+        # uses the fact that simupop will number inds in first gen like 1..n
+        # TODO - make sure this matches up with ind ids in first gen
         first_gen = [self.i2c(k,p) for k in range(1,self.N+1) for p in [0,1]]
         first_gen.sort()
         self.args.add_record(
