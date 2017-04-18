@@ -37,6 +37,7 @@ class RecombCollector:
         self.length=length
         self.locus_position=locus_position
         self.last_child=-1
+        self.time = 0
 
         self.args=ARGrecorder()
         self.universal_ancestor=2*nsamples
@@ -59,16 +60,14 @@ class RecombCollector:
                 # print("Adding:",k,p,self.i2c(k,p),self.ind_to_time(k))
                 self.args.add_individual(self.i2c(k,p),self.ind_to_time(k))
 
-    def ind_to_time(self,k):
-        # simuPOP has nonoverlapping gens so we can map indiv ID to time
-        # with fixed population size
-        return 1+self.generations-math.floor((k-1)/self.N)
-
     def i2c(self,k,p):
         # individual ID to chromsome ID
         # "1+" is for the universal common ancestor added in initialization
         out=1+2*self.nsamples+ind_to_chrom(k,mapa_labels[p])
         return out
+
+    def increment_time(self):
+        self.time += 1
 
     def collect_recombs(self,lines):
         for line in lines.strip().split('\n'):
@@ -85,13 +84,13 @@ class RecombCollector:
             else:
                 child_p=0
                 self.last_child=child
-            if self.ind_to_time(child) > self.ind_to_time(parent):
-                raise ValueError(str(child)+" at "+str(self.ind_to_time(child))+" does not come after " + str(parent)+" at "+str(self.ind_to_time(parent)))
+            # if self.ind_to_time(child) > self.ind_to_time(parent):
+            #     raise ValueError(str(child)+" at "+str(self.ind_to_time(child))+" does not come after " + str(parent)+" at "+str(self.ind_to_time(parent)))
             start=0.0
             child_chrom=self.i2c(child, child_p)
             # print("  existing parent:",parent,ploid,"-i2c->",self.i2c(parent,ploid))
             # print("  adding child:",child,child_p,"-i2c->",child_chrom,self.ind_to_time(child))
-            self.args.add_individual(child_chrom, self.ind_to_time(child))
+            self.args.add_individual(child_chrom, self.time)
             for r in rec:
                 breakpoint=random.uniform(self.locus_position[r],self.locus_position[r+1])
                 # print("--- ",start,self.locus_position[r],"<=",breakpoint,"<=",self.locus_position[r+1])

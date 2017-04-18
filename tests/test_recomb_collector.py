@@ -62,6 +62,7 @@ def test_simupop_runs():
             preOps=[],
             matingScheme=sim.RandomMating(
                 ops=[
+                    sim.pyEval("rc.increment_time()"),
                     sim.IdTagger(),
                     sim.Recombinator(intensity=recomb_rate,
                         output=rc.collect_recombs,
