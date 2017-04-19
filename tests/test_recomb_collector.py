@@ -1,4 +1,6 @@
+import pytest
 import simuPOP as sim
+
 from ftprime import RecombCollector
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
 sim.setOptions(seed=111)
@@ -30,7 +32,56 @@ def check_tables(args):
         assert(ch < args.num_nodes)
 
 
-def test_simupop_runs():
+@pytest.fixture(scope="function", params=[
+    lambda recombinator, popsize: sim.RandomMating(
+        ops=[
+            sim.IdTagger(),
+            recombinator
+        ]),
+    # Overlapping generations mating system
+    lambda recombinator, popsize: sim.HeteroMating([sim.RandomMating(
+        ops=[
+            sim.IdTagger(),
+            recombinator
+        ]),
+        sim.CloneMating()],
+        subPopSize=popsize * 2)
+    ])
+def make_pop(request):
+    # request.param stores a lambda function to make mating scheme
+    # each test that uses this fixture will be run for both entries in 'params'
+    mating_scheme_factory = request.param
+
+    def _make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
+                  recomb_rate, rc, generations):
+        recombinator = sim.Recombinator(intensity=recomb_rate,
+                                        output=rc.collect_recombs,
+                                        infoFields="ind_id")
+        pop = sim.Population(
+                size=[popsize],
+                loci=[nloci],
+                lociPos=locus_position,
+                infoFields=['ind_id'])
+        pop.evolve(
+            initOps=[
+                sim.InitSex(),
+                id_tagger
+            ]+init_geno,
+            preOps=[
+                sim.PyOperator(lambda pop: rc.increment_time() or True),
+                # Must return true or false. True keeps whole population (?)
+            ],
+            matingScheme=mating_scheme_factory(recombinator, popsize),
+            postOps=[
+                sim.PyEval(r"'Gen: %2d\n' % (gen, )", step=1)
+            ],
+            gen=generations
+        )
+        return pop
+    return _make_pop
+
+
+def test_simupop(make_pop):
     for popsize in [5, 10, 20]:
         print("Popsize: ", popsize)
         generations = 3
@@ -49,35 +100,8 @@ def test_simupop_runs():
 
         id_tagger = sim.IdTagger(begin=0)
         id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
-
-        pop = sim.Population(
-                size=[popsize],
-                loci=[nloci],
-                lociPos=locus_position,
-                infoFields=['ind_id'])
-
-        pop.evolve(
-            initOps=[
-                sim.InitSex(),
-                id_tagger
-            ]+init_geno,
-            preOps=[
-                sim.PyOperator(lambda pop: rc.increment_time() or True),
-                # Must return true or false. True keeps whole population (?)
-            ],
-            matingScheme=sim.RandomMating(
-                ops=[
-                    sim.IdTagger(),
-                    sim.Recombinator(intensity=recomb_rate,
-                                     output=rc.collect_recombs,
-                                     infoFields="ind_id"),
-                ]),
-            postOps=[
-                sim.PyEval(r"'Gen: %2d\n' % (gen, )", step=1)
-            ],
-            gen=generations
-        )
-
+        pop = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
+                       recomb_rate, rc, generations)
         locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
         rc.add_diploid_samples(pop.indInfo("ind_id"), locations)
 
