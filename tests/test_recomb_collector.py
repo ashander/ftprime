@@ -59,10 +59,12 @@ def test_simupop_runs():
                 sim.InitSex(),
                 id_tagger
             ]+init_geno,
-            preOps=[],
+            preOps=[
+                sim.PyOperator(lambda pop: rc.increment_time() or True),
+                # Must return true or false. True keeps whole population (?)
+            ],
             matingScheme=sim.RandomMating(
                 ops=[
-                    sim.pyEval("rc.increment_time()"),
                     sim.IdTagger(),
                     sim.Recombinator(intensity=recomb_rate,
                         output=rc.collect_recombs,

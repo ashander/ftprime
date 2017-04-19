@@ -37,7 +37,7 @@ class RecombCollector:
         self.length=length
         self.locus_position=locus_position
         self.last_child=-1
-        self.time = 0
+        self.time = float(generations) + 1
 
         self.args=ARGrecorder()
 
@@ -63,8 +63,8 @@ class RecombCollector:
                 children=tuple(first_gen))
         for k in range(1,self.N+1): 
             for p in [0,1]:
-                # print("Adding:",k,p,self.i2c(k,p),self.ind_to_time(k))
-                self.args.add_individual(self.i2c(k,p),self.ind_to_time(k))
+                # print("Adding:",k,p,self.i2c(k,p), self.time)
+                self.args.add_individual(self.i2c(k,p), self.time)
 
     def i2c(self,k,p):
         # individual ID to chromsome ID
@@ -73,7 +73,7 @@ class RecombCollector:
         return out
 
     def increment_time(self):
-        self.time += 1
+        self.time -= 1.0
 
     def collect_recombs(self,lines):
         for line in lines.strip().split('\n'):
@@ -95,7 +95,7 @@ class RecombCollector:
             start=0.0
             child_chrom=self.i2c(child, child_p)
             # print("  existing parent:",parent,ploid,"-i2c->",self.i2c(parent,ploid))
-            # print("  adding child:",child,child_p,"-i2c->",child_chrom,self.ind_to_time(child))
+            # print("  adding child:",child,child_p,"-i2c->",child_chrom, self.time)
             self.args.add_individual(child_chrom, self.time)
             for r in rec:
                 breakpoint=random.uniform(self.locus_position[r],self.locus_position[r+1])
@@ -128,5 +128,4 @@ class RecombCollector:
         # locations - repeated twice as it's for haploids
         sample_populations = [populations[k] for k in sample_indices for _ in range(2)]
         self.args.add_samples(samples=chrom_samples, length=self.length, 
-                                populations=sample_populations)
-
+                              populations=sample_populations)
