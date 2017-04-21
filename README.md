@@ -55,7 +55,8 @@ Development
 
 Test status and code coverage:
 
-[![CircleCI](https://circleci.com/gh/ashander/ftprime/tree/master.svg?style=svg)](https://circleci.com/gh/ashander/ftprime/tree/master) [![Coverage Status](https://coveralls.io/repos/github/ashander/ftprime/badge.svg?branch=master)](https://coveralls.io/github/ashander/ftprime?branch=master)
+[![CircleCI](https://circleci.com/gh/ashander/ftprime/tree/master.svg?style=svg)](https://circleci.com/gh/ashander/ftprime/tree/master) [![Coverage Status](https://coveralls.io/repos/github/ashander/ftprime/badge.svg?branch=master)](https://coveralls.io/github/ashander/ftprime?branch=master) [![codecov](https://codecov.io/gh/ashander/ftprime/branch/master/graph/badge.svg)](https://codecov.io/gh/ashander/ftprime)
+
 
 Clone:
 
