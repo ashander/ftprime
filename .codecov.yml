@@ -1,0 +1,27 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 95%
+      unit:
+        flags: unit
+        target: 50%
+      argrecorder:
+        flags: argrecorder
+        target: 95%
+      recombcollector:
+        flags: recombcollector
+        target: 95%
+    patch:
+      unit:
+        target: 90%
+
+flags:
+  argrecorder:
+    paths:
+      - ftprime/argrecoder.py
+  recombcollector:
+    paths:
+      - ftprime/recomb_collector.py
+
+
