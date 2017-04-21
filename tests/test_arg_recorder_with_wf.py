@@ -1,4 +1,6 @@
+import pytest
 import random
+
 from wf import wf
 
 
@@ -16,11 +18,15 @@ def check_tables(args):
     for ch in edgesets.children:
         assert(ch < args.num_nodes)
 
-
-def test_simulation_runs():
+@pytest.mark.parametrize(('N', 'gen', 'samples'), [
+    (2, 2, 2),
+    (5, 5, 5),
+    (10, 10, 5),
+])
+def test_simulation_runs(N, gen, samples):
 
     random.seed(123)
-    records = wf(N=5,ngens=5,nsamples=5,survival=0.5)
+    records = wf(N=N, ngens=gen, nsamples=samples, survival=0.5)
 
     check_tables(records)
 
