@@ -39,7 +39,7 @@ jobs:
           name: Run tests || report coverage
           command: |
             source activate ftprime
-            pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests/unit || FAILED="TRUE"
+            pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests/test_arg_recorder_unit.py || FAILED="TRUE"
             bash <(curl -s https://codecov.io/bash) -c -F unit
             pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests || FAILED="TRUE"
             bash <(curl -s https://codecov.io/bash) -c
