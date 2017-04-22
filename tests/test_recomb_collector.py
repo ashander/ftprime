@@ -3,8 +3,6 @@ import simuPOP as sim
 
 from ftprime import RecombCollector
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
-sim.setOptions(seed=111)
-
 
 def check_record_order(args):
     for ind in args:
@@ -54,6 +52,7 @@ def make_pop(request):
 
     def _make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                   recomb_rate, rc, generations):
+        sim.setOptions(seed=111)
         recombinator = sim.Recombinator(intensity=recomb_rate,
                                         output=rc.collect_recombs,
                                         infoFields="ind_id")
@@ -80,47 +79,57 @@ def make_pop(request):
         return pop
     return _make_pop
 
+# occasional failures marked below
+# ValueError: Parent 3's birth time has not been recorded with .add_individual()
+@pytest.mark.parametrize(('generations', 'popsize'), [
+    (3, 5),  # stochastic fail
+    (3, 10), # stochastic fail
+    (3, 20),
+    (5, 5),
+    (5, 10),
+    (5, 20),
+    (10, 5),
+    (10, 10),
+    (10, 20),
+])
+def test_simupop(make_pop, generations, popsize):
+    print("Popsize: ", popsize)
+    # replications = 1
+    nsamples = 2
+    length = 10
+    nloci = 5
+    locus_position = list(range(0, length, int(length/nloci)))
+    recomb_rate = 0.05
 
-def test_simupop(make_pop):
-    for popsize in [5, 10, 20]:
-        print("Popsize: ", popsize)
-        generations = 3
-        # replications = 1
-        nsamples = 2
-        length = 10
-        nloci = 5
-        locus_position = list(range(0, length, int(length/nloci)))
-        recomb_rate = 0.05
+    rc = RecombCollector(
+            nsamples=nsamples, generations=generations, N=popsize,
+            ancestor_age=10, length=length, locus_position=locus_position)
 
-        rc = RecombCollector(
-                nsamples=nsamples, generations=generations, N=popsize,
-                ancestor_age=10, length=length, locus_position=locus_position)
+    init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
 
-        init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
+    id_tagger = sim.IdTagger(begin=0)
+    id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
+    pop = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
+                   recomb_rate, rc, generations)
+    locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
+    rc.add_diploid_samples(pop.indInfo("ind_id"), locations)
 
-        id_tagger = sim.IdTagger(begin=0)
-        id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
-        pop = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
-                       recomb_rate, rc, generations)
-        locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
-        rc.add_diploid_samples(pop.indInfo("ind_id"), locations)
+    check_record_order(rc.args)
+    check_tables(rc.args)
 
-        check_record_order(rc.args)
-        check_tables(rc.args)
+    for x in rc.args:
+        print(rc.args[x])
+    print(rc.args.node_table())
+    print(rc.args.edgeset_table())
 
-        for x in rc.args:
-            print(rc.args[x])
-        print(rc.args.node_table())
-        print(rc.args.edgeset_table())
+    ts = rc.args.tree_sequence()
 
-        ts = rc.args.tree_sequence()
+    print("coalescence records:")
+    for x in ts.records():
+        print(x)
 
-        print("coalescence records:")
-        for x in ts.records():
-            print(x)
+    ts.simplify(samples=list(range(nsamples)))
 
-        ts.simplify(samples=list(range(nsamples)))
-
-        print("trees:")
-        for x in ts.trees():
-            print(x)
+    print("trees:")
+    for x in ts.trees():
+        print(x)
