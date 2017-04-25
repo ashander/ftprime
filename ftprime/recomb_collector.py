@@ -28,6 +28,16 @@ class RecombCollector:
     ancestor_age - number of generations before beginning of simulation that common ancestor lived
     length - length of chromosome
     locus_position - list of positions of the loci simuPOP refers to along the chromosome
+
+    This keeps track of *time* - so when used, the time must be updated -
+    in simuPOP, by adding rc.increment_time() to the PreOps.  It should be in PreOps
+    because if so
+        - the initial generation is recorded at time generations + 1
+        - calling increment_time() decrements the time by 1
+        - the first generation is recorded at time generations
+        - ...
+        - the final generation is at time 1
+        - the samples are at time 0
     '''
 
     def __init__(self, nsamples, generations, N, ancestor_age, length,
