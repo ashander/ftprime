@@ -28,19 +28,22 @@ def test_simulation_runs(N, gen, samples):
     random.seed(123)
     records = wf(N=N, ngens=gen, nsamples=samples, survival=0.5)
 
-    check_tables(records)
+    # check_tables(records)
 
-    for x in records:
-        print(x, records[x])
+    # for x in records:
+    #     print(x, records[x])
 
-    print(records.edgeset_table())
-    print(records.node_table())
+    # print(records.edgeset_table())
+    # print(records.node_table())
 
-    ts = records.tree_sequence()
+    # ts = records.tree_sequence()
 
-    for t in ts.trees():
-        print(t)
+    # for t in ts.trees():
+    #     print(t)
 
-    print("Mean pairwise diversity:",ts.get_pairwise_diversity())
-    print("(should be zero)")
-    assert ts.get_pairwise_diversity() == 0.0
+    # print("Mean pairwise diversity:",ts.get_pairwise_diversity())
+    # print("(should be zero)")
+    # assert ts.get_pairwise_diversity() == 0.0
+
+if __name__ == '__main__':
+    test_simulation_runs(1000, 200, 100)

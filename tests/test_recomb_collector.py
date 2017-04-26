@@ -147,4 +147,4 @@ if __name__ == '__main__':
         ]),
         sim.CloneMating()],
         subPopSize=popsize * 2)
-    test_simupop(make_pop(mr), generations=100, popsize=500)
+    test_simupop(make_pop(mr), generations=200, popsize=1000)

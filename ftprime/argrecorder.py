@@ -1,7 +1,6 @@
 import msprime
 from collections import OrderedDict
 
-
 class ARGrecorder(OrderedDict):
     '''
     Keys are individual IDs, and values are tuples, whose first entry is a Node,
@@ -24,6 +23,7 @@ class ARGrecorder(OrderedDict):
         ret += self.edgeset_table().__str__()
         return ret
 
+    @profile
     def add_individual(self, name, time, population=msprime.NULL_POPULATION,
                        is_sample=False):
         '''Add a new individual.
@@ -36,6 +36,7 @@ class ARGrecorder(OrderedDict):
                                        name=name, is_sample=is_sample), [])
             self.num_nodes = max(self.num_nodes, 1+int(name))
 
+    @profile
     def add_record(self, left, right, parent, children):
         '''
         Add records corresponding to a reproduction event in which children (a
@@ -138,6 +139,7 @@ class ARGrecorder(OrderedDict):
                     children=(k,))
 
 
+@profile
 def merge_records(new, existing):
     '''
     Incorporate a new record (l,r,x,c,t[x])
