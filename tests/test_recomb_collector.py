@@ -30,21 +30,22 @@ def check_tables(args):
         assert(ch < args.num_nodes)
 
 
-@pytest.fixture(scope="function", params=[
-    lambda recombinator, popsize: sim.RandomMating(
-        ops=[
-            sim.IdTagger(),
-            recombinator
-        ]),
-    # Overlapping generations mating system
-    lambda recombinator, popsize: sim.HeteroMating([sim.RandomMating(
-        ops=[
-            sim.IdTagger(),
-            recombinator
-        ]),
-        sim.CloneMating()],
-        subPopSize=popsize * 2)
-    ])
+# @pytest.fixture(scope="function", params=[
+#     lambda recombinator, popsize: sim.RandomMating(
+#         ops=[
+#             sim.IdTagger(),
+#             recombinator
+#         ]),
+#     # Overlapping generations mating system
+#     lambda recombinator, popsize: sim.HeteroMating([sim.RandomMating(
+#         ops=[
+#             sim.IdTagger(),
+#             recombinator
+#         ]),
+#         sim.CloneMating()],
+#         subPopSize=popsize * 2)
+#     ])
+@profile
 def make_pop(request):
     # request.param stores a lambda function to make mating scheme
     # each test that uses this fixture will be run for both entries in 'params'
