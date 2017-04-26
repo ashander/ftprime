@@ -79,19 +79,21 @@ def make_pop(request):
         return pop
     return _make_pop
 
-# occasional failures marked below
-# ValueError: Parent 3's birth time has not been recorded with .add_individual()
-@pytest.mark.parametrize(('generations', 'popsize'), [
-    (3, 5),  # stochastic fail
-    (3, 10), # stochastic fail
-    (3, 20),
-    (5, 5),
-    (5, 10),
-    (5, 20),
-    (10, 5),
-    (10, 10),
-    (10, 20),
-])
+# # occasional failures marked below
+# # ValueError: Parent 3's birth time has not been recorded with .add_individual()
+# @pytest.mark.parametrize(('generations', 'popsize'), [
+#     (3, 5),  # stochastic fail
+#     (3, 10), # stochastic fail
+#     (3, 20),
+#     (5, 5),
+#     (5, 10),
+#     (5, 20),
+#     (10, 5),
+#     (10, 10),
+#     (10, 20),
+# ])
+
+@profile
 def test_simupop(make_pop, generations, popsize):
     print("Popsize: ", popsize)
     # replications = 1
@@ -147,4 +149,5 @@ if __name__ == '__main__':
         ]),
         sim.CloneMating()],
         subPopSize=popsize * 2)
+
     test_simupop(make_pop(mr), generations=200, popsize=1000)
