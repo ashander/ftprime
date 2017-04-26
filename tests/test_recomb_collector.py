@@ -114,22 +114,37 @@ def test_simupop(make_pop, generations, popsize):
     locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
     rc.add_diploid_samples(pop.indInfo("ind_id"), locations)
 
-    check_record_order(rc.args)
-    check_tables(rc.args)
+    # check_record_order(rc.args)
+    # check_tables(rc.args)
 
-    for x in rc.args:
-        print(rc.args[x])
-    print(rc.args.node_table())
-    print(rc.args.edgeset_table())
+    # for x in rc.args:
+    #     print(rc.args[x])
+    # print(rc.args.node_table())
+    # print(rc.args.edgeset_table())
 
-    ts = rc.args.tree_sequence()
+    # ts = rc.args.tree_sequence()
 
-    print("coalescence records:")
-    for x in ts.records():
-        print(x)
+    # print("coalescence records:")
+    # for x in ts.records():
+    #     print(x)
 
-    ts.simplify(samples=list(range(nsamples)))
+    # ts.simplify(samples=list(range(nsamples)))
 
-    print("trees:")
-    for x in ts.trees():
-        print(x)
+    # print("trees:")
+    # for x in ts.trees():
+    #     print(x)
+
+
+if __name__ == '__main__':
+    class MockRequest(object):
+        def __init__(self):
+            pass
+    mr = MockRequest()
+    mr.param = lambda recombinator, popsize: sim.HeteroMating([sim.RandomMating(
+        ops=[
+            sim.IdTagger(),
+            recombinator
+        ]),
+        sim.CloneMating()],
+        subPopSize=popsize * 2)
+    test_simupop(make_pop(mr), generations=100, popsize=500)
