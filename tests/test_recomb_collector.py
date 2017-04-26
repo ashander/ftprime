@@ -45,12 +45,12 @@ def check_tables(args):
 #         sim.CloneMating()],
 #         subPopSize=popsize * 2)
 #     ])
-@profile
 def make_pop(request):
     # request.param stores a lambda function to make mating scheme
     # each test that uses this fixture will be run for both entries in 'params'
     mating_scheme_factory = request.param
 
+    @profile
     def _make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                   recomb_rate, rc, generations):
         sim.setOptions(seed=111)
@@ -72,9 +72,6 @@ def make_pop(request):
                 # Must return true or false. True keeps whole population (?)
             ],
             matingScheme=mating_scheme_factory(recombinator, popsize),
-            postOps=[
-                sim.PyEval(r"'Gen: %2d\n' % (gen, )", step=1)
-            ],
             gen=generations
         )
         return pop
