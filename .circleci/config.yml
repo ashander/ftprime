@@ -40,10 +40,12 @@ jobs:
           command: |
             source activate ftprime
             pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests/unit || FAILED="TRUE"
-            bash <(curl -s https://codecov.io/bash) -c -F unit
+            if [[ -z "$FAILED" ]] ; then       
+               bash <(curl -s https://codecov.io/bash) -c -F unit;
+            fi
             pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests || FAILED="TRUE"
-            bash <(curl -s https://codecov.io/bash) -c
             if [[ -z "$FAILED" ]] ; then
+               bash <(curl -s https://codecov.io/bash) -c
                exit 0;
             else
                exit 1;
