@@ -128,7 +128,7 @@ def test_simupop(make_pop, generations, popsize):
     for x in ts.records():
         print(x)
 
-    ts.simplify(samples=list(range(nsamples)))
+    ts.simplify()
 
     print("trees:")
     for x in ts.trees():
