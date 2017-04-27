@@ -51,14 +51,22 @@ def check_tables(args):
             id_tagger,
             recombinator
         ]),
-    # Overlapping generations mating system
+    # Overlapping generations mating system -- popsize grows by 2x
     lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
         ops=[
             id_tagger,
             recombinator
         ]),
         sim.CloneMating()],
-        subPopSize=popsize * 2)
+        subPopSize=popsize * 2),
+    # Overlapping generations mating system -- popsize grows by 5x
+    lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
+        ops=[
+            id_tagger,
+            recombinator
+        ]),
+        sim.CloneMating()],
+        subPopSize=popsize * 5),
     ])
 def make_pop(request):
     # request.param stores a lambda function to make mating scheme
@@ -68,7 +76,6 @@ def make_pop(request):
     def _make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                   recomb_rate, generations, length):
         random.seed(123)
-        sim.setOptions(seed=111)
         pop = sim.Population(
                 size=[popsize],
                 loci=[nloci],
@@ -98,6 +105,7 @@ def make_pop(request):
         )
         return pop, rc
     return _make_pop
+
 
 @pytest.mark.parametrize(('generations', 'popsize'), [
     (3, 5),
