@@ -7,6 +7,18 @@ import random
 from ftprime import RecombCollector
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
 
+
+# increases reproducibility by
+# reset IDs and setting seed for each test
+# ('autouse' makes every test in this file run this)
+@pytest.fixture(scope='function', autouse=True)
+def reset_id_tagger():
+    print('Setup simupop tagger and seed')
+    tagger = sim.IdTagger()
+    tagger.reset(1)
+    sim.setOptions(seed=111)
+
+
 def check_record_order(args):
     for ind in args:
         if len(args[ind][1]) > 0:
