@@ -16,10 +16,10 @@ def wf(N, ngens, nsamples, survival=0.0, debug=False) :
     and whose entries are Edgesets.
 
     Outputs an ARGrecorder object for the simulation.
-    In the final generation, a random set of nsamples individuals are labeled 1...nsamples.
+    In the final generation, a random set of individuals are chosen to be samples.
 
     '''
-    labels = count(nsamples,1)
+    labels = count(0,1)
     pop = [ next(labels) for k in range(N) ]
     # insert individuals into records in order of birth to ensure we output records in time-sorted order
     records = ARGrecorder()

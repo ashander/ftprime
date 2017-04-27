@@ -135,8 +135,8 @@ class RecombCollector:
 
     def add_diploid_samples(self, nsamples, sample_ids, populations):
         # sample_ids is the list of diploid IDs to draw the samples from
+        # NOTE: does NOT remove previous samples
         self.nsamples = nsamples
-        # TODO: remove previous samples
         assert(len(sample_ids) == len(populations))
         sample_indices = random.sample(range(len(sample_ids)), nsamples)
         self.diploid_samples = [sample_ids[k] for k in sample_indices]
