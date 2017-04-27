@@ -102,7 +102,7 @@ def test_simupop(make_pop, generations, popsize):
     recomb_rate = 0.05
 
     rc = RecombCollector(
-            nsamples=nsamples, generations=generations, N=popsize,
+            generations=generations, N=popsize,
             ancestor_age=10, length=length, locus_position=locus_position)
 
     init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
@@ -112,7 +112,7 @@ def test_simupop(make_pop, generations, popsize):
     pop = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                    recomb_rate, rc, generations)
     locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
-    rc.add_diploid_samples(pop.indInfo("ind_id"), locations)
+    rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"), locations)
 
     check_record_order(rc.args)
     check_tables(rc.args)

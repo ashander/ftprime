@@ -1,4 +1,5 @@
 import msprime
+from _msprime import NODE_IS_SAMPLE
 from collections import OrderedDict
 
 
@@ -35,6 +36,8 @@ class ARGrecorder(OrderedDict):
             self[name] = (msprime.Node(time=time, population=population,
                                        name=name, is_sample=is_sample), [])
             self.num_nodes = max(self.num_nodes, 1+int(name))
+        else:
+            raise ValueError("Attempted to add " + str(name) + " as a new individual, who wasn't.")
 
     def add_record(self, left, right, parent, children):
         '''
@@ -122,21 +125,25 @@ class ARGrecorder(OrderedDict):
 
     def add_samples(self, samples, length, populations=None):
         '''
-        Add phony records that stand in for sampling the IDs in `samples`,
+        Set the `sample` flag on the samples,
+        and optionally set their populations.
+
+        Previously: Add phony records that stand in for sampling the IDs in `samples`,
         whose populations are given in `populations` (default: NULL), on a
         chromosome of total length `length`.
         '''
         if populations is None:
             populations = [msprime.NULL_POPULATION for x in samples]
-        for k, parent in enumerate(samples):
-            self.add_individual(k, time=0.0, population=populations[k],
+        for k in range(len(samples)):
+            parent = samples[k]
+            child = self.num_nodes
+            self.add_individual(child, time=0.0, population=populations[k],
                                 is_sample=True)
             self.add_record(
                     left=0.0,
                     right=length,
                     parent=parent,
-                    children=(k,))
-
+                    children=(child,))
 
 def merge_records(new, existing):
     '''

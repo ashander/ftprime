@@ -40,9 +40,8 @@ class RecombCollector:
         - the samples are at time 0
     '''
 
-    def __init__(self, nsamples, generations, N, ancestor_age, length,
+    def __init__(self, generations, N, ancestor_age, length,
                  locus_position):
-        self.nsamples = nsamples
         self.generations = generations
         self.N = N
         self.ancestor_age = ancestor_age
@@ -50,13 +49,11 @@ class RecombCollector:
         self.locus_position = locus_position
         self.last_child = -1
         self.time = float(generations) + 1
+        self.nsamples = 0
 
         self.args = ARGrecorder()
 
-        # TODO is this needed with refactoring in msprime to nodes/tables?
-        # here we assign the max ID based on the number of samples we will take
-        # perhaps not -- maybe just need an upper bound.
-        self.universal_ancestor = 2*nsamples
+        self.universal_ancestor = 0
         # will record IDs of diploid samples here when they are chosen
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder
@@ -82,7 +79,7 @@ class RecombCollector:
     def i2c(self, k, p):
         # individual ID to chromsome ID
         # "1+" is for the universal common ancestor added in initialization
-        out = 1 + 2 * self.nsamples + ind_to_chrom(k, mapa_labels[p])
+        out = 1 + ind_to_chrom(k, mapa_labels[p])
         return out
 
     def increment_time(self):
@@ -136,15 +133,12 @@ class RecombCollector:
                     parent=self.i2c(parent, ploid),
                     children=(child_chrom,))
 
-    def add_diploid_samples(self, sample_ids, populations):
-        # some messing around to fill up the required samples
+    def add_diploid_samples(self, nsamples, sample_ids, populations):
         # sample_ids is the list of diploid IDs to draw the samples from
-        # pop_ids = range(1+self.generations*self.N,
-        #                 1+(1+self.generations)*self.N)
-
-        assert(self.nsamples <= len(sample_ids))
+        self.nsamples = nsamples
+        # TODO: remove previous samples
         assert(len(sample_ids) == len(populations))
-        sample_indices = random.sample(range(len(sample_ids)), self.nsamples)
+        sample_indices = random.sample(range(len(sample_ids)), nsamples)
         self.diploid_samples = [sample_ids[k] for k in sample_indices]
         # print("Samples ("+str(self.nsamples)+" of them): "+
         #       str(self.diploid_samples)+"\n")
