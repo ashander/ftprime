@@ -147,13 +147,13 @@ class TestARGrecorderGoodSampledPopulation():
     def setup_method(self):
         '''setup for all tests in class'''
         self.arg = ARGrecorder()
-        self.arg.add_individual(0, time=3.0)
-        self.arg.add_individual(1, time=3.0)
-        self.arg.add_individual(2, time=1.0)
+        self.arg.add_individual(0, time=0.0)
+        self.arg.add_individual(1, time=0.0)
+        self.arg.add_individual(2, time=2.0)
         self.arg.add_record(left=0.0, right=0.5, parent=0, children=(2, ))
         self.arg.add_record(left=0.5, right=1.0, parent=1, children=(2, ))
         self.samples = [1, 2]
-        self.arg.add_samples(samples=self.samples, length=1.0)
+        self.arg.add_samples(samples=self.samples, length=1.0, dt=1.0)
         # trees in format of msprime.SparseTree.parent_dict:
         # {node: parent}
         # after sampling 3, 4 nodes 0, 1 have parents 3, 4
