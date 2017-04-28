@@ -66,7 +66,7 @@ def test_case():
     end_time = 6.0
     ids = dict( [ (y,3+x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
     def f(lparent,rparent,breakpoint,child,btime):
-        arg.add_individual(ids[child],end_time-btime)
+        arg.add_individual(ids[child],btime)
         if breakpoint>0.0:
             arg.add_record(0.0,breakpoint,ids[lparent],(ids[child],))
         if breakpoint<1.0:
@@ -74,7 +74,7 @@ def test_case():
 
     arg=ARGrecorder()
     # 1. Begin with an individual `a` (and another anonymous one) at `t=0`.
-    arg.add_individual(ids['a'],end_time-0.0)
+    arg.add_individual(ids['a'],0.0)
     # 2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
     f('a','z',1.0,'b',1.0)
     f('a','z',1.0,'c',1.0)

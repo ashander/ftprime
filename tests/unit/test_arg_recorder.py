@@ -92,7 +92,7 @@ class TestARGrecorderFilled():
         '''setup for all tests in class'''
         self.parent1 = 2
         self.time1 = 1.0
-        self.parent2 = 5
+        self.parent2 = 4
         self.time2 = 2.0
         self.arg = ARGrecorder()
         self.arg.add_individual(self.parent1, time=self.time1)
@@ -108,7 +108,7 @@ class TestARGrecorderFilled():
         # adding an new parent does increase the length
         self.arg.add_individual(5, time=10.0)
         self.arg.add_record(left=0.0, right=1.0, parent=5, children=(3, 4))
-        assert len(self.arg) == 2
+        assert len(self.arg) == 3
 
     def test_edgeset(self):
         self.arg.add_individual(5, time=0.0)
@@ -147,20 +147,20 @@ class TestARGrecorderGoodSampledPopulation():
     def setup_method(self):
         '''setup for all tests in class'''
         self.arg = ARGrecorder()
-        self.arg.add_individual(2, time=3.0)
-        self.arg.add_individual(3, time=3.0)
-        self.arg.add_individual(4, time=1.0)
-        self.arg.add_record(left=0.5, right=1.0, parent=3, children=(4, ))
-        self.arg.add_record(left=0.0, right=0.5, parent=2, children=(4, ))
-        self.samples = [3, 4]
-        self.arg.add_samples(samples=self.samples, length=1.0)
+        self.arg.add_individual(0, time=0.0)
+        self.arg.add_individual(1, time=0.0)
+        self.arg.add_individual(2, time=2.0)
+        self.arg.add_record(left=0.0, right=0.5, parent=0, children=(2, ))
+        self.arg.add_record(left=0.5, right=1.0, parent=1, children=(2, ))
+        self.samples = [1, 2]
+        self.arg.add_samples(samples=self.samples, length=1.0, dt=1.0)
         # trees in format of msprime.SparseTree.parent_dict:
         # {node: parent}
         # after sampling 3, 4 nodes 0, 1 have parents 3, 4
         # over the whole range; 0.5 is a breakpoint for internal node
         # switching from 2 to 3
-        self.tree_1 = {0: 3, 1: 4, 4: 2}
-        self.tree_2 = {0: 3, 1: 4, 4: 3}
+        self.tree_1 = {2: 0, 3: 1, 4: 2}
+        self.tree_2 = {2: 1, 3: 1, 4: 2}
 
     def test_add_samples(self):
         out = six.StringIO()

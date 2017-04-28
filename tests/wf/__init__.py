@@ -3,7 +3,7 @@ from itertools import count
 import random
 
 def random_breakpoint() :
-    return min(1.0,max(0.0, 2*random.random()-0.5))
+    return min(1.0, max(0.0, 2*random.random()-0.5))
 
 def wf(N, ngens, nsamples, survival=0.0, debug=False) :
     '''
@@ -16,35 +16,36 @@ def wf(N, ngens, nsamples, survival=0.0, debug=False) :
     and whose entries are Edgesets.
 
     Outputs an ARGrecorder object for the simulation.
-    In the final generation, a random set of nsamples individuals are labeled 1...nsamples.
+    In the final generation, a random set of individuals are chosen to be samples.
 
     '''
-    labels = count(nsamples,1)
+    labels = count(0, 1)
     pop = [ next(labels) for k in range(N) ]
     # insert individuals into records in order of birth to ensure we output records in time-sorted order
     records = ARGrecorder()
+    # initial population
     for x in pop:
-        records.add_individual(x,ngens+1)
+        records.add_individual(x, time=0.0)
 
-    for t in range(ngens) :
+    for t in range(1, 1+ngens) :
         if debug:
-            print("t:",t)
+            print("t:", t)
             print("pop:", pop)
         dead = [ (random.random() > survival) for k in pop ]
 
         # this is: offspring ID, lparent, rparent, breakpoint
         new_inds = [ 
-                (next(labels),random.choice(pop),random.choice(pop),random_breakpoint()) 
+                (next(labels), random.choice(pop), random.choice(pop), random_breakpoint()) 
                 for k in range(sum(dead)) ]
         j=0
-        for offspring,lparent,rparent,bp in new_inds :
+        for offspring, lparent, rparent, bp in new_inds :
             if debug:
-                print(offspring,lparent,rparent,bp)
+                print(offspring, lparent, rparent, bp)
             while not dead[j] :
                 j+=1
             pop[j]=offspring
             j+=1
-            records.add_individual(offspring,ngens-t)
+            records.add_individual(offspring, t)
             if bp > 0.0 :
                 records.add_record(left=0.0, right=bp, parent=lparent, children=(offspring,))
             if bp < 1.0 :
@@ -52,7 +53,7 @@ def wf(N, ngens, nsamples, survival=0.0, debug=False) :
         # print(records)
 
     # add phony records that stand in for sampling
-    samples=random.sample(pop,nsamples)
-    records.add_samples(samples=samples,length=1.0)
+    samples=random.sample(pop, nsamples)
+    records.add_samples(samples=samples, length=1.0)
 
     return records

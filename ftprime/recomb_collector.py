@@ -23,7 +23,6 @@ class RecombCollector:
 
     This needs:
     namples - number of *diploid* samples
-    generations - number of generations simulation will be run for
     N - number of individuals in the population per generation
     ancestor_age - number of generations before beginning of simulation that common ancestor lived
     length - length of chromosome
@@ -32,38 +31,31 @@ class RecombCollector:
     This keeps track of *time* - so when used, the time must be updated -
     in simuPOP, by adding rc.increment_time() to the PreOps.  It should be in PreOps
     because if so
-        - the initial generation is recorded at time generations + 1
-        - calling increment_time() decrements the time by 1
-        - the first generation is recorded at time generations
+        - the initial generation is recorded at time 0.0
+        - calling increment_time() increases the time by 1
+        - the first generation is recorded at time 1.0
         - ...
-        - the final generation is at time 1
-        - the samples are at time 0
     '''
 
-    def __init__(self, nsamples, generations, N, ancestor_age, length,
+    def __init__(self, N, ancestor_age, length,
                  locus_position):
-        self.nsamples = nsamples
-        self.generations = generations
         self.N = N
         self.ancestor_age = ancestor_age
         self.length = length
         self.locus_position = locus_position
         self.last_child = -1
-        self.time = float(generations) + 1
+        self.time = 0.0
+        self.nsamples = 0
 
         self.args = ARGrecorder()
 
-        # TODO is this needed with refactoring in msprime to nodes/tables?
-        # here we assign the max ID based on the number of samples we will take
-        # perhaps not -- maybe just need an upper bound.
-        self.universal_ancestor = 2*nsamples
+        self.universal_ancestor = 0
         # will record IDs of diploid samples here when they are chosen
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder
         self.diploid_samples = None
-        max_time = float(1 + self.generations + self.ancestor_age)
         self.args.add_individual(name=self.universal_ancestor,
-                                 time=max_time)
+                                 time= (-1) * self.ancestor_age)
         # add initial generation
         # uses the fact that simupop will number inds in first gen like 1..n
         # TODO - make sure this matches up with ind ids in first gen
@@ -82,11 +74,11 @@ class RecombCollector:
     def i2c(self, k, p):
         # individual ID to chromsome ID
         # "1+" is for the universal common ancestor added in initialization
-        out = 1 + 2 * self.nsamples + ind_to_chrom(k, mapa_labels[p])
+        out = 1 + ind_to_chrom(k, mapa_labels[p])
         return out
 
     def increment_time(self):
-        self.time -= 1.0
+        self.time += 1.0
 
     def collect_recombs(self, lines):
         for line in lines.strip().split('\n'):
@@ -136,15 +128,12 @@ class RecombCollector:
                     parent=self.i2c(parent, ploid),
                     children=(child_chrom,))
 
-    def add_diploid_samples(self, sample_ids, populations):
-        # some messing around to fill up the required samples
+    def add_diploid_samples(self, nsamples, sample_ids, populations):
         # sample_ids is the list of diploid IDs to draw the samples from
-        # pop_ids = range(1+self.generations*self.N,
-        #                 1+(1+self.generations)*self.N)
-
-        assert(self.nsamples <= len(sample_ids))
+        # NOTE: does NOT remove previous samples
+        self.nsamples = nsamples
         assert(len(sample_ids) == len(populations))
-        sample_indices = random.sample(range(len(sample_ids)), self.nsamples)
+        sample_indices = random.sample(range(len(sample_ids)), nsamples)
         self.diploid_samples = [sample_ids[k] for k in sample_indices]
         # print("Samples ("+str(self.nsamples)+" of them): "+
         #       str(self.diploid_samples)+"\n")
