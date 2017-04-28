@@ -5,19 +5,23 @@ from collections import OrderedDict
 
 class ARGrecorder(OrderedDict):
     '''
-    Keys are individual IDs, and values are tuples, whose first entry is a Node,
-    which is a tuple of (birth time, population, is_sample),
-    and the second entry is a ordered list of nonoverlapping Edgesets.
-    This inherits from OrderedDict so that if individuals are added by birth
-    order then records can easily be output ordered by time.
+    Keys are individual IDs, and values are tuples, whose first entry is a
+    Node, which is a tuple of (birth time, population, is_sample), and the
+    second entry is a ordered list of nonoverlapping Edgesets.  This inherits
+    from OrderedDict so that if individuals are added by birth order then
+    records can easily be output ordered by time.
 
-    Note that the 'time' fields must all be *strictly* greater than 0,
-    and is in units of generations *ago*, i.e., 'reverse time'.
+    Note that the 'time' fields are in *forwards* time, and so when a NodeTable
+    is output for msprime, they must be 'reversed' to be in units of
+    generations ago.
     '''
 
     def __init__(self):
         super(ARGrecorder, self).__init__()
+        # need to keep track of this to know where to append new individuals
+        # and how many rows in the NodeTable there are
         self.num_nodes = 0
+        self.max_time = 0
 
     def __str__(self):
         ret = self.node_table().__str__()
@@ -27,15 +31,16 @@ class ARGrecorder(OrderedDict):
 
     def add_individual(self, name, time, population=msprime.NULL_POPULATION,
                        is_sample=False):
-        '''Add a new individual.
-        We need to add individuals when they are *born*,
-        rather than the first time they reproduce, to ensure
-        that records are output in order by birth time of the parent.
+        '''
+        Add a new individual.  We need to add individuals when they are *born*,
+        rather than the first time they reproduce, to ensure that records are
+        output in order by birth time of the parent.
         '''
         if name not in self:
             self[name] = (msprime.Node(time=time, population=population,
                                        name=name, is_sample=is_sample), [])
             self.num_nodes = max(self.num_nodes, 1+int(name))
+            self.max_time = max(self.max_time, time)
         else:
             raise ValueError("Attempted to add " + str(name) + " as a new individual, who wasn't.")
 
@@ -83,6 +88,8 @@ class ARGrecorder(OrderedDict):
     def node_table(self):
         '''
         Returns a NodeTable instance, whose k-th row corresponds to node k.
+        Translates time to 'time ago' by subtracting time from max_time, which
+        by default is the largest time seen so far.
         '''
         table = msprime.NodeTable()
         empty_node = msprime.Node(time=0.0)
@@ -91,7 +98,7 @@ class ARGrecorder(OrderedDict):
                 node = self[k][0]
             except KeyError:
                 node = empty_node
-            table.add_row(flags=node.flags, time=node.time,
+            table.add_row(flags=node.flags, time=self.max_time - node.time,
                           population=node.population)
         return table
 
@@ -104,7 +111,8 @@ class ARGrecorder(OrderedDict):
             node = self[idx][0]
             if node.is_sample():
                 out.write("{}\t{}\t{}\t{}\n".format(idx, node.flags,
-                                                    node.population, node.time))
+                                                    node.population, 
+                                                    self.max_time - node.time))
 
     def tree_sequence(self, sites=None, mutations=None):
         '''
@@ -123,22 +131,21 @@ class ARGrecorder(OrderedDict):
                     edgesets=self.edgeset_table())
         return ts
 
-    def add_samples(self, samples, length, populations=None):
+    def add_samples(self, samples, length, populations=None, dt=1):
         '''
-        Set the `sample` flag on the samples,
-        and optionally set their populations.
-
-        Previously: Add phony records that stand in for sampling the IDs in `samples`,
-        whose populations are given in `populations` (default: NULL), on a
-        chromosome of total length `length`.
+        Add phony records to the end of the NodeTable that stand in for
+        sampling the IDs in `samples`, whose populations are given in
+        `populations` (default: NULL), on a chromosome of total length
+        `length`.  Will be recorded at living dt units of time after the
+        sampled individual.
         '''
         if populations is None:
             populations = [msprime.NULL_POPULATION for x in samples]
         for k in range(len(samples)):
             parent = samples[k]
             child = self.num_nodes
-            self.add_individual(child, time=0.0, population=populations[k],
-                                is_sample=True)
+            self.add_individual(child, time=self[parent][0].time + dt, 
+                                population=populations[k], is_sample=True)
             self.add_record(
                     left=0.0,
                     right=length,

@@ -23,7 +23,6 @@ class RecombCollector:
 
     This needs:
     namples - number of *diploid* samples
-    generations - number of generations simulation will be run for
     N - number of individuals in the population per generation
     ancestor_age - number of generations before beginning of simulation that common ancestor lived
     length - length of chromosome
@@ -32,23 +31,20 @@ class RecombCollector:
     This keeps track of *time* - so when used, the time must be updated -
     in simuPOP, by adding rc.increment_time() to the PreOps.  It should be in PreOps
     because if so
-        - the initial generation is recorded at time generations + 1
-        - calling increment_time() decrements the time by 1
-        - the first generation is recorded at time generations
+        - the initial generation is recorded at time 0.0
+        - calling increment_time() increases the time by 1
+        - the first generation is recorded at time 1.0
         - ...
-        - the final generation is at time 1
-        - the samples are at time 0
     '''
 
-    def __init__(self, generations, N, ancestor_age, length,
+    def __init__(self, N, ancestor_age, length,
                  locus_position):
-        self.generations = generations
         self.N = N
         self.ancestor_age = ancestor_age
         self.length = length
         self.locus_position = locus_position
         self.last_child = -1
-        self.time = float(generations) + 1
+        self.time = 0.0
         self.nsamples = 0
 
         self.args = ARGrecorder()
@@ -58,9 +54,8 @@ class RecombCollector:
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder
         self.diploid_samples = None
-        max_time = float(1 + self.generations + self.ancestor_age)
         self.args.add_individual(name=self.universal_ancestor,
-                                 time=max_time)
+                                 time= (-1) * self.ancestor_age)
         # add initial generation
         # uses the fact that simupop will number inds in first gen like 1..n
         # TODO - make sure this matches up with ind ids in first gen
@@ -83,7 +78,7 @@ class RecombCollector:
         return out
 
     def increment_time(self):
-        self.time -= 1.0
+        self.time += 1.0
 
     def collect_recombs(self, lines):
         for line in lines.strip().split('\n'):

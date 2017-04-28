@@ -101,9 +101,8 @@ def test_simupop(make_pop, generations, popsize):
     locus_position = list(range(0, length, int(length/nloci)))
     recomb_rate = 0.05
 
-    rc = RecombCollector(
-            generations=generations, N=popsize,
-            ancestor_age=10, length=length, locus_position=locus_position)
+    rc = RecombCollector(N=popsize, ancestor_age=10, length=length, 
+                         locus_position=locus_position)
 
     init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
 
