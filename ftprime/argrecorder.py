@@ -42,7 +42,7 @@ class ARGrecorder(OrderedDict):
             self.num_nodes = max(self.num_nodes, 1+int(name))
             self.max_time = max(self.max_time, time)
         else:
-            raise ValueError("Attempted to add " + str(name) + " as a new individual, who wasn't.")
+            raise ValueError("Attempted to add " + str(name) + ", who already exits, as a new individual.")
 
     def add_record(self, left, right, parent, children):
         '''
@@ -144,6 +144,7 @@ class ARGrecorder(OrderedDict):
         for k in range(len(samples)):
             parent = samples[k]
             child = self.num_nodes
+            # relies on fact that add_individual adds one to self.num_nodes
             self.add_individual(child, time=self[parent][0].time + dt, 
                                 population=populations[k], is_sample=True)
             self.add_record(
