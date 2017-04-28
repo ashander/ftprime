@@ -9,9 +9,17 @@ def ind_to_chrom(ind, mapa):
     '''
     Returns the unique *chromosome ID* corresponding to
     the chromosome of individual 'ind' inherited from
-    parent 'mapa' (either 1 or 2).  (Chromosome IDs are ints.)
+    parent 'mapa' (either 2=maternal or 1=paternal).  (Chromosome IDs are ints.)
+    This takes
+       0, paternal -> 0
+       0, maternal -> 1
+       1, paternal -> 2
+       1, maternal -> 3
+       2, paternal -> 4
+       2, maternal -> 5
+    ...
     '''
-    return int(2*ind+mapa-1)
+    return int(2 * ind + mapa - 1)
 
 
 class RecombCollector:
@@ -23,7 +31,7 @@ class RecombCollector:
 
     This needs:
     namples - number of *diploid* samples
-    N - number of individuals in the population per generation
+    first_gen - list of individuals IDs in the initial population
     ancestor_age - number of generations before beginning of simulation that common ancestor lived
     length - length of chromosome
     locus_position - list of positions of the loci simuPOP refers to along the chromosome
@@ -37,9 +45,8 @@ class RecombCollector:
         - ...
     '''
 
-    def __init__(self, N, ancestor_age, length,
+    def __init__(self, first_gen, ancestor_age, length,
                  locus_position):
-        self.N = N
         self.ancestor_age = ancestor_age
         self.length = length
         self.locus_position = locus_position
@@ -57,23 +64,20 @@ class RecombCollector:
         self.args.add_individual(name=self.universal_ancestor,
                                  time= (-1) * self.ancestor_age)
         # add initial generation
-        # uses the fact that simupop will number inds in first gen like 1..n
-        # TODO - make sure this matches up with ind ids in first gen
-        first_gen = [self.i2c(k, p) for k in range(1, self.N+1) for p in [0, 1]]
-        first_gen.sort()
+        first_haps = [self.i2c(k, p) for k in first_gen for p in [0, 1]]
+        first_haps.sort()
         self.args.add_record(
                 left=0.0,
                 right=self.length,
                 parent=self.universal_ancestor,
-                children=tuple(first_gen))
-        for k in range(1, self.N + 1):
-            for p in [0, 1]:
-                # print("Adding:",k, p,self.i2c(k, p), self.time)
-                self.args.add_individual(self.i2c(k, p), self.time)
+                children=tuple(first_haps))
+        for k in first_haps:
+            # print("Adding:",k, p, self.time)
+            self.args.add_individual(k, self.time)
 
     def i2c(self, k, p):
         # individual ID to chromsome ID
-        # "1+" is for the universal common ancestor added in initialization
+        # 1+ for the universal ancestor at slot 0
         out = 1 + ind_to_chrom(k, mapa_labels[p])
         return out
 

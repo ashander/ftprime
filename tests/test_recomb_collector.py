@@ -31,15 +31,15 @@ def check_tables(args):
 
 
 @pytest.fixture(scope="function", params=[
-    lambda recombinator, popsize: sim.RandomMating(
+    lambda recombinator, popsize, id_tagger: sim.RandomMating(
         ops=[
-            sim.IdTagger(),
+            id_tagger,
             recombinator
         ]),
     # Overlapping generations mating system
-    lambda recombinator, popsize: sim.HeteroMating([sim.RandomMating(
+    lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
         ops=[
-            sim.IdTagger(),
+            id_tagger,
             recombinator
         ]),
         sim.CloneMating()],
@@ -51,39 +51,41 @@ def make_pop(request):
     mating_scheme_factory = request.param
 
     def _make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
-                  recomb_rate, rc, generations):
+                  recomb_rate, generations, length):
         sim.setOptions(seed=111)
-        recombinator = sim.Recombinator(intensity=recomb_rate,
-                                        output=rc.collect_recombs,
-                                        infoFields="ind_id")
         pop = sim.Population(
                 size=[popsize],
                 loci=[nloci],
                 lociPos=locus_position,
                 infoFields=['ind_id'])
+        # tag the first generation so we can pass it to rc
+        id_tagger.apply(pop)
+
+        rc = RecombCollector(first_gen=pop.indInfo("ind_id"), ancestor_age=10, 
+                             length=length, locus_position=locus_position)
+        recombinator = sim.Recombinator(intensity=recomb_rate,
+                                        output=rc.collect_recombs,
+                                        infoFields="ind_id")
         pop.evolve(
             initOps=[
-                sim.InitSex(),
-                id_tagger
+                sim.InitSex()
             ]+init_geno,
             preOps=[
                 sim.PyOperator(lambda pop: rc.increment_time() or True),
                 # Must return true or false. True keeps whole population (?)
             ],
-            matingScheme=mating_scheme_factory(recombinator, popsize),
+            matingScheme=mating_scheme_factory(recombinator, popsize, id_tagger),
             postOps=[
                 sim.PyEval(r"'Gen: %2d\n' % (gen, )", step=1)
             ],
             gen=generations
         )
-        return pop
+        return pop, rc
     return _make_pop
 
-# occasional failures marked below
-# ValueError: Parent 3's birth time has not been recorded with .add_individual()
 @pytest.mark.parametrize(('generations', 'popsize'), [
-    (3, 5),  # stochastic fail
-    (3, 10), # stochastic fail
+    (3, 5),
+    (3, 10),
     (3, 20),
     (5, 5),
     (5, 10),
@@ -101,15 +103,12 @@ def test_simupop(make_pop, generations, popsize):
     locus_position = list(range(0, length, int(length/nloci)))
     recomb_rate = 0.05
 
-    rc = RecombCollector(N=popsize, ancestor_age=10, length=length, 
-                         locus_position=locus_position)
-
     init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
 
     id_tagger = sim.IdTagger(begin=0)
     id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
-    pop = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
-                   recomb_rate, rc, generations)
+    pop,rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
+                   recomb_rate, generations, length)
     locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
     rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"), locations)
 
