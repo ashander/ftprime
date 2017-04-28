@@ -1,5 +1,8 @@
 import pytest
 import simuPOP as sim
+import math
+from collections import Counter
+import random
 
 from ftprime import RecombCollector
 # from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
@@ -52,6 +55,7 @@ def make_pop(request):
 
     def _make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                   recomb_rate, generations, length):
+        random.seed(123)
         sim.setOptions(seed=111)
         pop = sim.Population(
                 size=[popsize],
@@ -100,7 +104,9 @@ def test_simupop(make_pop, generations, popsize):
     nsamples = 2
     length = 10
     nloci = 5
-    locus_position = list(range(0, length, int(length/nloci)))
+    locus_position = list(set(list(range(0, length, int(length/nloci))) + [length]))
+    locus_position.sort()
+    nloci = len(locus_position)
     recomb_rate = 0.05
 
     init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
@@ -131,3 +137,52 @@ def test_simupop(make_pop, generations, popsize):
     print("trees:")
     for x in ts.trees():
         print(x)
+
+@pytest.mark.parametrize(('generations', 'popsize', 'locus_position'), [
+    (3, 10, [0.0, 1.0]),
+    (3, 10, [0.0, 0.5, 1.0]),
+    (3, 10, [0.0, 0.5, 0.6, 1.0]),
+    (3, 10, [0.0, 0.1, 1.0]),
+    (3, 10, [0.0, 0.001, 0.01, 0.1, 0.5, 1.0]),
+])
+def test_recombination(make_pop, generations, popsize, locus_position):
+    print("Popsize: ", popsize)
+    print("locus positions: ", locus_position)
+    nsamples = 2
+    length = 1
+    nloci = len(locus_position)
+    recomb_rate = 1.0
+
+    rc = RecombCollector(first_gen=range(popsize), ancestor_age=10, length=length, 
+                         locus_position=locus_position)
+
+    init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
+
+    id_tagger = sim.IdTagger(begin=0)
+    id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
+    pop,rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
+                   recomb_rate, generations, length)
+    locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
+    rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"), locations)
+
+    print(rc.args.node_table())
+    print(rc.args.edgeset_table())
+
+    # check for uniformity of recombination breakpoints
+    edges = rc.args.edgeset_table()
+
+    breakpoints = [x for x in edges.left if (x > 0.0) and (x < 1.0)]
+    breakpoints += [x for x in edges.right if (x > 0.0) and (x < 1.0)]
+    breaks = set(breakpoints)
+
+    def check_partition(x, p):
+        # compare to binomial approximation (by normal approx)
+        n = len(x)
+        k = len([y for y in x if y < p])
+        z = (k - n * p) / math.sqrt(n * p * (1-p))
+        return z
+
+    z = [check_partition(breaks, k/10) for k in range(1,10)]
+    print(z)
+    assert(all([abs(zz) < 3.5 for zz in z]))
+

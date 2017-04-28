@@ -52,7 +52,9 @@ class RecombCollector:
         self.locus_position = locus_position
         self.last_child = -1
         self.time = 0.0
-        self.nsamples = 0
+
+        if locus_position[0] != 0.0 or locus_position[-1] != length:
+            raise ValueError("locus_position (and lociPos) must include a locus at each end of the chromosome.")
 
         self.args = ARGrecorder()
 
@@ -135,11 +137,10 @@ class RecombCollector:
     def add_diploid_samples(self, nsamples, sample_ids, populations):
         # sample_ids is the list of diploid IDs to draw the samples from
         # NOTE: does NOT remove previous samples
-        self.nsamples = nsamples
         assert(len(sample_ids) == len(populations))
         sample_indices = random.sample(range(len(sample_ids)), nsamples)
         self.diploid_samples = [sample_ids[k] for k in sample_indices]
-        # print("Samples ("+str(self.nsamples)+" of them): "+
+        # print("Samples ("+str(nsamples)+" of them): "+
         #       str(self.diploid_samples)+"\n")
         # need chromosome ids
         chrom_samples = [ind_to_chrom(x, a)
