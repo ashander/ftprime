@@ -13,9 +13,7 @@ from ftprime import RecombCollector
 # ('autouse' makes every test in this file run this)
 @pytest.fixture(scope='function', autouse=True)
 def reset_id_tagger():
-    print('Setup simupop tagger and seed')
-    tagger = sim.IdTagger()
-    tagger.reset(1)
+    print('Setup simupop seed')
     sim.setOptions(seed=111)
 
 
