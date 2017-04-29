@@ -16,7 +16,7 @@ except ImportError:
 
 
 setup(name='ftprime',
-      version='0.0.2',
+      version='0.0.3',
       description=u"fill msprime data structure in forward time",
       long_description=long_description,
       classifiers=[],
