@@ -162,6 +162,8 @@ def test_simupop(make_pop, generations, popsize):
     (3, 10, [0.0, 0.5, 0.6, 1.0]),
     (3, 10, [0.0, 0.1, 1.0]),
     (3, 10, [0.0, 0.001, 0.01, 0.1, 0.5, 1.0]),
+    (10, 20, [0.0, 0.5, 1.0]),
+    (10, 20, [k/1000 for k in range(1001)])
 ])
 def test_recombination(make_pop, generations, popsize, locus_position):
     print("Popsize: ", popsize)

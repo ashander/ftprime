@@ -116,17 +116,19 @@ class RecombCollector:
             # self.time)
             self.args.add_individual(child_chrom, self.time)
             for r in rec:
-                breakpoint = random.uniform(self.locus_position[r],
-                                            self.locus_position[r + 1])
-                # print("--- ",start, self.locus_position[r],
-                #       "< = ",breakpoint,"<=",self.locus_position[r+1])
-                self.args.add_record(
-                        left=start,
-                        right=breakpoint,
-                        parent=self.i2c(parent, ploid),
-                        children=(child_chrom,))
-                start = breakpoint
-                ploid = ((ploid + 1) % 2)
+                # do this check to avoid a simuPOP bug
+                if r < len(self.locus_position) - 1:
+                    breakpoint = random.uniform(self.locus_position[r],
+                                                self.locus_position[r + 1])
+                    # print("--- ",start, self.locus_position[r],
+                    #       "< = ",breakpoint,"<=",self.locus_position[r+1])
+                    self.args.add_record(
+                            left=start,
+                            right=breakpoint,
+                            parent=self.i2c(parent, ploid),
+                            children=(child_chrom,))
+                    start = breakpoint
+                    ploid = ((ploid + 1) % 2)
             # print("--- ",start, self.length," |")
             self.args.add_record(
                     left=start,
