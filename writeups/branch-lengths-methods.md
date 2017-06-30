@@ -21,11 +21,11 @@ For instance: we get sequence length multiplied by average TMRCA between $a$ and
 To compute this, we'll keep track of X(z) for each node of the current tree, and update these as we move along the tree sequence:
 
  0) initialize $X$
- 1) $S += u_i * L(T_i)$
+ 1) $S \mathrel{+}= u_i * L(T_i)$
  2) move to the next tree and update $X.$
 
 As for updating $X$, note that $X$ is additive: 
-if node $z$ has children $y_1, ..., y_m$ then $X(z) = sum_j X(Y_j)$.
+if node $z$ has children $y_1, ..., y_m$ then $X(z) = \sum_j X(Y_j)$.
 So, to update we just need to propagate changes up from any node that has changed.
 Concretely, we can do this by:
 
@@ -58,7 +58,24 @@ we'd be able to easily compute a large class of sequence statistics
 
 # Statistics
 
+Here we describe how to compute a collection of statistics.
+All the statistics we define will be functions of a collection of leaf sets $A_1$, \ldots, $A_n$;
+and we will require them to have the following properties:
+
+- The expected value of a statistic $T(A_1, \ldots, A_n)$
+    should not depend on the sizes of the leaf sets or the degree of overlap between them,
+    as long as all members of each leaf set are exchangeable.
+
+This is natural if you think about, say, $A_1$ as a sample of individuals from a single "population",
+so that larger samples should only give us a better estimate of whatever $T$ is estimating.
+
+This probably means they are all unbiased estimators of some (single) descriptive quantity
+in some sense.
+
 ## Divergence
+
+"Divergence" between two individuals is the mean distance between them, averaged across sites.
+Between two groups, it also averages over choices of individuals from those groups.
 
 To compute mean divergence between two groups, $A_1$ and $A_2$, of sizes $n_1$ and $n_2$,
 the weight we assign to a branch is equal to the number of paths from an element of $A_1$ to an element of $A_2$
@@ -66,24 +83,118 @@ that pass through that branch
 divided by the total number of paths, $n_1 n_2$.
 If below a branch there are $x_1$ from $A_1$ and $x_2$ from $A_2$
 then the number of such paths are $x_1 (n_2-x_2) + (n_1-x_1) x_2$,
-so we want
+suggesting that we use $f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2}$.
+
+**However,** the above does not account for a case when $A_1$ and $A_2$ overlap.
+Indeed, it may be desirable to pass in $A_1 = A_2$ to obtain the mean pairwise TMRCA between two *distinct* samples from the set.
+Not accounting for this makes the statistic depend on sample size,
+as in smaller samples, self comparisons account for a larger fraction.
+Since if the two elements are equal divergence is zero,
+we need only divide by the probability that the two chosen samples are distinct,
+resulting in
 $$\begin{aligned}
-    f(x_1,x_2) = x_1 (n_2-x_2) + (n_1-x_1) x_2 .
+    f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2 - n_{1 \cap 2}^2} ,
 \end{aligned}$$
+where $n_{1 \cap 2}$ is the number of samples in both $A_1$ and $A_2$.
 
 ## Y statistic
 
+Take a set of three distinct samples $a$, $b$, $c$.
 By $Y(a;b,c)$ we mean the mean length of any branches from which either ($a$), or (both of $b$ and $c$),
 but not $a$ and any of $b$ and $c$, inherit.
-With $A_1=\{a\}$ and $A_2 = \{b,c\}$, this therefore corresponds to the function
+With $A_1=\{a\}$ and $A_2 = \{b\}$ and $\A_3 = \{c\}$, this therefore corresponds to the function
 $$\begin{aligned}
-    f(x_1,x_2) = (( (x_1==1) \text{and} (x_2==0) ) \text{or} ( (x_1==0) \text{and} (x_2==2) ))
+    f(x_1,x_2) = (( (x_1==1) \text{and} (x_2==0) \text{and} (x_3==0) ) 
+            \text{or} 
+        ( (x_1==0) \text{and} (x_2==1) \text{and} (x_3==1) ))
 \end{aligned}$$
-The generalization gives the length of the internal branches 
-that separate $A_1$ from $A_2$, if any, using
+
+Extending this to groups we would average over choices of $a$, $b$, and $c$
+from those groups, to obtain $Y(A;B,C)$.
+This at first seems simliar to $f_3()$, but the $f_3()$ statistic involves averaging over choices of *four distinct* individuals,
+and this statistic uses only three.
+To do this, we want $f(x_A;x_B,x_C)$ to be equal to the probability that
+the chosen edge separates $a$ from $b$ and $c$, where $a$, $b$, and $c$ are uniform random samples from $A$, $B$, and $C$ respectively,
+but *chosen to be all different*, i.e., conditioned on $a \neq b \neq c \neq a$.
+
+Equivalently: suppose we have three boxes, labeled $A$, $B$, and $C$;
+in box $A$ there are $n_A$ balls, $x_A$ of which are colored red and the rest black, and on which are written some numbers; 
+same for $B$ and $C$.
+We imagine those balls in different boxes with the same number are the *same*, in particular, they have the same color.
+Suppose we pick one ball from each box.
+We want the probability that the ball from $A$ differs in color from the ones from $B$ and $C$,
+conditioned on the three balls all having different numbers.
+Write $p_A = x_A/n_A$ for the proportion of balls in box $A$ that are red,
+and $p_{B \cap C} = x_{B \cap C}/n_{B \cap C}$
+likewise for the proportion of balls in *both* $A$ and $B$ that are red.
+The probability that the three chosen balls are of the required colors without regards identiy is
 $$\begin{aligned}
-    f(x_1,x_2) = (( (x_1==n_1) \text{and} (x_2==0) ) \text{or} ( (x_1==0) \text{and} (x_2==n_2) ))
+    p_A (1-p_B) (1-p_C) + (1-p_A) p_B p_C .
 \end{aligned}$$
+However, this has included the case where $b=c$:
+the probability that $b=c$ and the balls are of the required color is
+$$\begin{aligned}
+    p_A (1-p_{B \cap C})  + (1-p_A) p_{B \cap C} .
+\end{aligned}$$
+Overall, the probability that we get three distinct numbers is
+$$\begin{aligned}
+    p_d = 1 
+    - \frac{n_{A \cap B}^2}{n_A n_B}
+    - \frac{n_{A \cap C}^2}{n_A n_C}
+    - \frac{n_{B \cap C}^2}{n_B n_C}
+    + 2 \frac{n_{A \cap B \cap C}^3}{n_A n_B n_C} .
+\end{aligned}$$
+Putting this together, we get that
+$$\begin{aligned}
+    f_Y(x_1;x_2,x_3)
+    &=
+    \frac{1}{p_d} \left( p_A (1-p_B) (1-p_C) + (1-p_A) p_B p_C 
+            - p_A (1-p_{B \cap C})  + (1-p_A) p_{B \cap C} \right) \\
+    &=
+    \frac{ x_A (n_B - x_B) (n_C - x_C) + (n_A - x_A) x_B x_C - x_A (n_{B \cap C} - x_{B \cap C}) + (1 - x_A)( n_{B \cap C} - x_{B \cap C}) }
+        { n_A n_B n_C - n_{A \cap B}^2 n_C - n_{A \cap C}^2 n_B - n_A n_{B \cap C}^2 + 2 n_{A \cap B \cap C}^3} .
+\end{aligned}$$
+
+## $f_3$ statistic
+
+The statistic $f_3(A;B,C)$ uses the function $(p_A - p_B)(p_A - p_C)$,
+corrected for sample size.
+This adds branches that separate $(a_1,a_2)$ from $(b,c)$
+and subtracts branches that separate $(a_1,b)$ from $(a_2,c)$,
+where $a_1$, $a_2$, $b$, and $c$ are *distinct* samples from $A$, $A$, $B$, and $C$ respectively.
+Chasing through the inclusion-exclusions,
+considering the cases 
+
+- a1 a2 | b c
+- a1 b  | a2 c
+- a1=a2 | b c
+- a1 a2 | b=c
+- a1=a2 | b=c
+- a1=b  | a2 c
+- a1 b  | a2=c
+- a1=b  | a2=c
+
+we get a numerator for the $f_3$ function of 
+$$\begin{aligned}
+    u_3(x_1;x_2,x_3)
+    &=
+    ( x_A^2 (n_B - x_B) (n_C - x_C) + (n_A - x_A)^2 x_B x_C )                                  
+    \\ &\qquad {} 
+    - ( x_A x_B (n_A - x_A) (n_C - x_C) + (n_A - x_A) (n_B - x_B) x_A x_C )                    
+    \\ &\qquad {} 
+    - ( x_A (n_B - x_B) (n_C - x_C) + (n_A - x_A) x_B x_C )                                    
+    \\ &\qquad {} 
+    - ( x_A^2 (n_{B \cap C} - x_{B \cap C})  + (n_A - x_A)^2 x_{B \cap C} ) 
+    \\ &\qquad {} 
+    + ( x_A (n_{B \cap C} - x_{B \cap C}) + (n_A - x_A) x_{B \cap C} )                         
+    \\ &\qquad {} 
+    + ( x_{A \cap B} (n_A - x_A) (n_C - x_C) + (n_{A \cap B} - x_{A \cap B}) x_A x_C )
+    \\ &\qquad {} 
+    + ( x_A x_B (n_{A \cap C} - x_{A \cap C})  + (n_A - x_A) (n_B - x_B) x_{A \cap C} )          
+    \\ &\qquad {} 
+    - ( x_{A \cap B} (n_{A \cap C} - x_{A \cap C}) + (n_{A \cap B} - x_{A \cap B}) x_{A \cap C} )
+\end{aligned}$$
+The denominator has 32 terms.
 
 
 ## $f_4$ statistic
@@ -118,7 +229,7 @@ Therefore, the function we need to implement takes the value $z$, where
 - if $G_x=G_y$, with $f$ the frequency of the *other* allele, $z=f^2$.
 - if $G_x \neq G_y$, with $f$ the frequency of one allele (doesn't matter which), $z=-f(1-f)=f^2-f=(1-f)^2-(1-f)$.
 
-If we let $A_1=\{x}$, $A_2=\{y\}$, and $A_3=X$ (all the samples, including $x$ and $y$),
+If we let $A_1=\{x\}$, $A_2=\{y\}$, and $A_3=X$ (all the samples, including $x$ and $y$),
 then this is
 $$\begin{aligned}
     f(x,y,z)
@@ -131,6 +242,26 @@ $$\begin{aligned}
 \end{aligned}$$
 
 Note that theory tells us that the function of branch lengths that this estimates is actually different.
+
+
+## In general
+
+The general procedure for correcting a statistic for sample size
+goes something like this.
+Suppose that our statistic counts any branch that separates
+a collection of samples, one each from $A_1$, \ldots, $A_k$,
+from another collection of samples, one each from $B_1$, \ldots, $B_m$.
+For a given subset $I$ of $\{1, \ldots, k\}$,
+let $p_I = x_{\cap_I A_i} / n_{\cap_I A_i}$ be the proportion of samples below the branch 
+among all those in the intersection of $A_i$ across $i \in I$;
+and likewise let $q_J = x_{\cap_J B_j} / n_{\cap_J B_j}$.
+The statistic without correction will be calculated with
+$\prod_i p_i \prod_j (1-q_j) + \prod_i (1-p_i) \prod_j q_j$;
+to correct it we can do inclusion-exclusion to get both a numerator and a denominator.
+The numerator sums over partitions of $\{1,\ldots,k\}$ into $I_1, \ldots, I_{\ell}$
+and of $\{1,\ldots,m\}$ into $J_1, \ldots, J_{m}$
+a constant multiplied by 
+$\prod_i p_{I_i} \prod_j (1-q_{J_j}) + \prod_i (1-p_{I_i}) \prod_j q_{J_j}$.
 
 
 # Multiple mutations
