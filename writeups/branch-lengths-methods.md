@@ -56,14 +56,16 @@ but by swapping out branch lengths for numbers of mutations,
 we'd be able to easily compute a large class of sequence statistics 
 (e.g., Patterson's $f$ statistics, which involve four groups $A_1, ... A_4$).  
 
+
+
 # Statistics
 
 Here we describe how to compute a collection of statistics.
-All the statistics we define will be functions of a collection of leaf sets $A_1$, \ldots, $A_n$;
+All the statistics we define will be functions of a collection of *disjoint* leaf sets $A_1$, \ldots, $A_n$;
 and we will require them to have the following properties:
 
 - The expected value of a statistic $T(A_1, \ldots, A_n)$
-    should not depend on the sizes of the leaf sets or the degree of overlap between them,
+    should not depend on the sizes of the leaf sets,
     as long as all members of each leaf set are exchangeable.
 
 This is natural if you think about, say, $A_1$ as a sample of individuals from a single "population",
@@ -71,6 +73,12 @@ so that larger samples should only give us a better estimate of whatever $T$ is 
 
 This probably means they are all unbiased estimators of some (single) descriptive quantity
 in some sense.
+
+It would also be natural to allow overlap between leaf sets and require statistics to be insensitive to degree of overlap,
+but this becomes onerous (see examples below).
+We can allow overlap naturally between leaf sets by setting two leaf sets equal,
+and correcting for this fact;
+the relationship of $f_2$ and $f_3$ to the $f_4$ is an example of this.
 
 ## Divergence
 
@@ -102,18 +110,118 @@ where $n_{1 \cap 2}$ is the number of samples in both $A_1$ and $A_2$.
 Take a set of three distinct samples $a$, $b$, $c$.
 By $Y(a;b,c)$ we mean the mean length of any branches from which either ($a$), or (both of $b$ and $c$),
 but not $a$ and any of $b$ and $c$, inherit.
-With $A_1=\{a\}$ and $A_2 = \{b\}$ and $\A_3 = \{c\}$, this therefore corresponds to the function
-$$\begin{aligned}
-    f(x_1,x_2) = (( (x_1==1) \text{and} (x_2==0) \text{and} (x_3==0) ) 
-            \text{or} 
-        ( (x_1==0) \text{and} (x_2==1) \text{and} (x_3==1) ))
-\end{aligned}$$
+With $A_1=\{a\}$ and $A_2 = \{b\}$ and $A_3 = \{c\}$, this therefore corresponds to the function
+$$f(x_1,x_2,x_3) = ( x_1=1 \;\text{and}\; x_2=x_3=0 ) \;\text{or}\; ( x_1=0 \;\text{and}\; x_2=x_3=1 )$$
 
 Extending this to groups we would average over choices of $a$, $b$, and $c$
 from those groups, to obtain $Y(A;B,C)$.
 This at first seems simliar to $f_3()$, but the $f_3()$ statistic involves averaging over choices of *four distinct* individuals,
 and this statistic uses only three.
-To do this, we want $f(x_A;x_B,x_C)$ to be equal to the probability that
+The weighting function for the $Y$ is then
+$$\begin{aligned}
+    f_Y(x_1,x_2,x_3) = \frac{ x_1 (n_2 - x_2) (n_3 - x_3) + (n_1 - x_1) x_2 x_3 }{ n_1 n_2 n_3 } .
+\end{aligned}$$
+
+
+## $f_4$ statistic
+
+The statistic $f_4(A_1,A_2,A_3,A_4)$
+is the mean path length from MRCA$(a_1,a_3)$ to MRCA$(a_2,a_4)$,
+minus the mean path length from MRCA$(a_1,a_4)$ to MRCA$(a_2,a_3)$.
+Note that those will often be zeros.
+To rewrite this,
+note that if $Z_1$ is a randomly chosen allele from $A_1$,
+then $\E[Z_1]=p_1=x_1/n_1$, the allele frequency in $A_1$;
+if these are independent then $(p_1-p_2)(p_3-p_4) = \E[(Z_1-Z_2)(Z_3-Z_4)]$.
+This makes it easy to rewrite the weighting function 
+(useful later in correcting for overlapping samples):
+$$\begin{aligned}
+    f_4(x_1,x_2,x_3,x_4)
+    &= \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_3}{n_3} - \frac{x_4}{n_4} \right) \\
+    &= \frac{ ( x_1 n_2 - x_2 n_1 ) ( x_3 n_4 - x_4 n_3 ) }{ n_1 n_2 n_3 n_4 } \\
+    &= \frac{ x_1 (n_2 - x_2) x_3 (n_4 - x_4) + (n_1 - x_1) x_2 (n_3 - x_3) x_4  - x_1 (n_2 - x_2) (n_3 - x_3) x_4 - (n_1 - x_1) x_2 x_3 (n_4 - x_4)  }{ n_1 n_2 n_3 n_4 } 
+\end{aligned}$$
+
+<!--
+```r
+# (a-b)(c-d) = ac + bd - ad - bc = abcd + a(1-b)c(1-d) + abcd + (1-a)b(1-c)d - abcd - a(1-b)(1-c)d - abcd (1-a)bc(1-d)
+h <- function (x,n) { (x[1]/n[1] - x[2]/n[2]) * (x[3]/n[3] - x[4]/n[4]) }
+f <- function (x,n) { ( ( x[1] * n[2] - x[2] * n[1] ) * ( x[3] * n[4] - x[4] * n[3] ) )/( n[1] * n[2] * n[3] * n[4] ) }
+g <- function (x,n) { 
+   (  x[1] * (n[2] - x[2]) * x[3] * (n[4] - x[4]) 
+    + (n[1] - x[1]) * x[2] * (n[3] - x[3]) * x[4]  
+    - x[1] * (n[2] - x[2]) * (n[3] - x[3]) * x[4] 
+    - (n[1] - x[1]) * x[2] * x[3] * (n[4] - x[4]) 
+   )/( n[1] * n[2] * n[3] * n[4] ) }
+```
+-->
+
+## $f_3$ statistic
+
+The statistic $f_3(A_1;A_2,A_3)$ is just $f_4(A_1,A_2;A_1,A_3)$ corrected for overlapping samples.
+The function we use is the probability that the branch
+separates $(a,b)$ from $(c,d)$, where $a$ and $b$ are *distinct* draws from $A_1$
+and $c$ and $d$ are from $A_2$ and $A_3$,
+minus the probability that $(a,d)$ are distinct from $(b,c)$.
+This uses the weighting function
+$$\begin{aligned}
+    f_3(x_1,x_2,x_3)
+    &= \frac{ x_1 (x_1-1) (n_2 - x_2) (n_3 - x_3) 
+            + (n_1 - x_1) (n_1 - x_1+1) x_2 x_3 
+            - x_1 (n_1 - x_1) (n_2 - x_2) x_3
+            - (n_1 - x_1) x_1 x_2 (n_3 - x_3)
+        }{ n_1 (n_1-1) n_2 n_3 } \\
+    &= \frac{n_1}{n_1-1} \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_1}{n_1} - \frac{x_3}{n_3} \right)
+        + \frac{1}{n_1-1} \left\{ 
+            - \frac{x_1}{n_1} 
+            \left(1 - \frac{x_2}{n_2}\right) 
+            \left(1 - \frac{x_3}{n_3}\right) 
+            + 
+            \left(1 - \frac{x_1}{n_1}\right) 
+            \frac{x_2}{n_2}
+            \frac{x_3}{n_3}
+        \right\} 
+\end{aligned}$$
+
+
+
+## Covariance
+
+If the genotype of the $x^\text{th}$ individual at site $i$ is $G_{xi}$,
+then the genetic covariance is
+$$\begin{aligned}
+    \Sigma_{xy} 
+        &= \frac{1}{n^2} \sum_{uv} (G_{xi} - G_{ui})(G_{yi} - G_{vi}) \\
+        &= \left(G_{xi} - \frac{1}{n}\sum_v G_{ui}\right)\left(G_{yi} - \frac{1}{n}\sum_v G_{vi}\right) 
+\end{aligned}$$
+
+Note that the function $(a-b)(c-d)$ 
+takes the value $+1$ if $a=c \neq b=d$ 
+and takes the value $-1$ if $a=d \neq b=c$,
+and is zero otherwise.
+Therefore, the function we need to implement takes the value $z$, where
+
+- if $G_x=G_y$, with $f$ the frequency of the *other* allele, $z=f^2$.
+- if $G_x \neq G_y$, with $f$ the frequency of one allele (doesn't matter which), $z=-f(1-f)=f^2-f=(1-f)^2-(1-f)$.
+
+If we let $A_1=\{x\}$, $A_2=\{y\}$, and $A_3=X$ (all the samples, including $x$ and $y$),
+then this is
+$$\begin{aligned}
+    f(x,y,z)
+    =
+    -\frac{z}{n}\left(1-\frac{z}{n}\right) +
+    \begin{cases}
+        (z/n) \qquad & \text{if}\; x=y=0 \\
+        (1-z/n) \qquad & \text{if}\; x=y=1  .
+    \end{cases}
+\end{aligned}$$
+
+Note that theory tells us that the function of branch lengths that this estimates is actually different.
+
+## Y statistic with overlapping leaf sets
+
+To compute a $Y$ statistic with overlapping leaf sets, 
+we want $f(x_A;x_B,x_C)$ to be equal to the probability that
 the chosen edge separates $a$ from $b$ and $c$, where $a$, $b$, and $c$ are uniform random samples from $A$, $B$, and $C$ respectively,
 but *chosen to be all different*, i.e., conditioned on $a \neq b \neq c \neq a$.
 
@@ -155,96 +263,49 @@ $$\begin{aligned}
         { n_A n_B n_C - n_{A \cap B}^2 n_C - n_{A \cap C}^2 n_B - n_A n_{B \cap C}^2 + 2 n_{A \cap B \cap C}^3} .
 \end{aligned}$$
 
-## $f_3$ statistic
+## $f_4$ statistic, with overlapping samples
 
-The statistic $f_3(A;B,C)$ uses the function $(p_A - p_B)(p_A - p_C)$,
+The statistic $f_4(A,B;C,D)$ uses the function $(p_A - p_C)(p_B - p_D)$,
 corrected for sample size.
-This adds branches that separate $(a_1,a_2)$ from $(b,c)$
-and subtracts branches that separate $(a_1,b)$ from $(a_2,c)$,
-where $a_1$, $a_2$, $b$, and $c$ are *distinct* samples from $A$, $A$, $B$, and $C$ respectively.
+This adds branches that separate $(a,b)$ from $(c,d)$
+and subtracts branches that separate $(a,d)$ from $(b,c)$,
+where $a$, $b$, $c$, and $d$ are *distinct* samples from $A$, $B$, $C$ and $D$ respectively.
 Chasing through the inclusion-exclusions,
 considering the cases 
 
-- a1 a2 | b c
-- a1 b  | a2 c
-- a1=a2 | b c
-- a1 a2 | b=c
-- a1=a2 | b=c
-- a1=b  | a2 c
-- a1 b  | a2=c
-- a1=b  | a2=c
+- a b | c d
+- a d | b c
+- a=b | c d
+- a b | c=d
+- a=b | c=d
+- a=d | b c
+- a d | b=c
+- a=d | b=c
 
-we get a numerator for the $f_3$ function of 
+we get a numerator for the $f_4$ function of 
 $$\begin{aligned}
-    u_3(x_1;x_2,x_3)
+    u_4(x_A,x_B;x_C,x_D)
     &=
-    ( x_A^2 (n_B - x_B) (n_C - x_C) + (n_A - x_A)^2 x_B x_C )                                  
+    ( x_A x_B (n_C - x_C) (n_D - x_D) + (n_A - x_A) (n_B - x_B) x_C x_D )                                  
     \\ &\qquad {} 
-    - ( x_A x_B (n_A - x_A) (n_C - x_C) + (n_A - x_A) (n_B - x_B) x_A x_C )                    
+    - ( x_A x_C (n_B - x_B) (n_D - x_D) + (n_A - x_A) (n_C - x_C) x_B x_D )                    
     \\ &\qquad {} 
-    - ( x_A (n_B - x_B) (n_C - x_C) + (n_A - x_A) x_B x_C )                                    
+    - ( x_{A \cap B} (n_C - x_C) (n_D - x_D) + (n_{A \cap B} - x_{A \cap B}) x_C x_D )                                    
     \\ &\qquad {} 
-    - ( x_A^2 (n_{B \cap C} - x_{B \cap C})  + (n_A - x_A)^2 x_{B \cap C} ) 
+    - ( x_A x_B (n_{C \cap D} - x_{C \cap D})  + (n_A - x_A) (n_B - x_B) x_{C \cap D} ) 
     \\ &\qquad {} 
-    + ( x_A (n_{B \cap C} - x_{B \cap C}) + (n_A - x_A) x_{B \cap C} )                         
+    + ( x_{A \cap B} (n_{C \cap D} - x_{C \cap D}) + (n_{A \cap B} - x_{A \cap B}) x_{C \cap D} )                         
     \\ &\qquad {} 
-    + ( x_{A \cap B} (n_A - x_A) (n_C - x_C) + (n_{A \cap B} - x_{A \cap B}) x_A x_C )
+    + ( x_{A \cap D} (n_B - x_B) (n_C - x_C) + (n_{A \cap D} - x_{A \cap D}) x_B x_C )
     \\ &\qquad {} 
-    + ( x_A x_B (n_{A \cap C} - x_{A \cap C})  + (n_A - x_A) (n_B - x_B) x_{A \cap C} )          
+    + ( x_A x_D (n_{B \cap C} - x_{B \cap C})  + (n_A - x_A) (n_D - x_D) x_{B \cap C} )          
     \\ &\qquad {} 
-    - ( x_{A \cap B} (n_{A \cap C} - x_{A \cap C}) + (n_{A \cap B} - x_{A \cap B}) x_{A \cap C} )
+    - ( x_{A \cap D} (n_{B \cap C} - x_{B \cap C}) + (n_{A \cap D} - x_{A \cap D}) x_{B \cap C} )
 \end{aligned}$$
 The denominator has 32 terms.
 
 
-## $f_4$ statistic
-
-The statistic $f_4(A_1,A_2,A_3,A_4)$
-is the mean path length from MRCA$(a_1,a_3)$ to MRCA$(a_2,a_4)$,
-minus the mean path length from MRCA$(a_1,a_4)$ to MRCA$(a_2,a_3)$.
-Note that those will often be zeros.
-Equivalently (see my arXiv paper), this uses the function
-$$\begin{aligned}
-    f(x_1,x_2,x_3,x_4)
-    = \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_3}{n_3} - \frac{x_4}{n_4} \right)
-\end{aligned}$$
-
-
-## Covariance
-
-If the genotype of the $x^\text{th}$ individual at site $i$ is $G_{xi}$,
-then the genetic covariance is
-$$\begin{aligned}
-    \Sigma_{xy} 
-        &= \frac{1}{n^2} \sum_{uv} (G_{xi} - G_{ui})(G_{yi} - G_{vi}) \\
-        &= \left(G_{xi} - \frac{1}{n}\sum_v G_{ui}\right)\left(G_{yi} - \frac{1}{n}\sum_v G_{vi}\right) 
-\end{aligned}$$
-
-Note that the function $(a-b)(c-d)$ 
-takes the value $+1$ if $a=c \neq b=d$ 
-and takes the value $-1$ if $a=d \neq b=c$,
-and is zero otherwise.
-Therefore, the function we need to implement takes the value $z$, where
-
-- if $G_x=G_y$, with $f$ the frequency of the *other* allele, $z=f^2$.
-- if $G_x \neq G_y$, with $f$ the frequency of one allele (doesn't matter which), $z=-f(1-f)=f^2-f=(1-f)^2-(1-f)$.
-
-If we let $A_1=\{x\}$, $A_2=\{y\}$, and $A_3=X$ (all the samples, including $x$ and $y$),
-then this is
-$$\begin{aligned}
-    f(x,y,z)
-    =
-    -\frac{z}{n}\left(1-\frac{z}{n}\right) +
-    \begin{cases}
-        (z/n) \qquad & \text{if}\; x=y=0 \\
-        (1-z/n) \qquad & \text{if}\; x=y=1  .
-    \end{cases}
-\end{aligned}$$
-
-Note that theory tells us that the function of branch lengths that this estimates is actually different.
-
-
-## In general
+## In general with overlapping leaf sets
 
 The general procedure for correcting a statistic for sample size
 goes something like this.
