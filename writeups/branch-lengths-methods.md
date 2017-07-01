@@ -80,10 +80,13 @@ We can allow overlap naturally between leaf sets by setting two leaf sets equal,
 and correcting for this fact;
 the relationship of $f_2$ and $f_3$ to the $f_4$ is an example of this.
 
-## Divergence
+## Mean TMRCA
 
-"Divergence" between two individuals is the mean distance between them, averaged across sites.
-Between two groups, it also averages over choices of individuals from those groups.
+Mean time to most recent common ancestor between two individuals is the mean distance in the tree between them, 
+averaged across sites, divided by two.
+Between two groups, it also averages over choices of individuals from those groups. 
+We assume that the sets are disjoint, but for computing "self" comparisons -- mean TMRCA of a leaf set to itself --
+we correct to exclude self comparisons.
 
 To compute mean divergence between two groups, $A_1$ and $A_2$, of sizes $n_1$ and $n_2$,
 the weight we assign to a branch is equal to the number of paths from an element of $A_1$ to an element of $A_2$
@@ -91,19 +94,16 @@ that pass through that branch
 divided by the total number of paths, $n_1 n_2$.
 If below a branch there are $x_1$ from $A_1$ and $x_2$ from $A_2$
 then the number of such paths are $x_1 (n_2-x_2) + (n_1-x_1) x_2$,
-suggesting that we use $f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2}$.
+so that we should use
+$$f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2} .$$
 
-**However,** the above does not account for a case when $A_1$ and $A_2$ overlap.
-Indeed, it may be desirable to pass in $A_1 = A_2$ to obtain the mean pairwise TMRCA between two *distinct* samples from the set.
+**For self comparisons** when $A_1 = A_2$,
+we want the mean pairwise TMRCA between two *distinct* samples from the set.
 Not accounting for this makes the statistic depend on sample size,
 as in smaller samples, self comparisons account for a larger fraction.
-Since if the two elements are equal divergence is zero,
-we need only divide by the probability that the two chosen samples are distinct,
-resulting in
 $$\begin{aligned}
-    f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2 - n_{1 \cap 2}^2} ,
+    f(x_1) = \frac{2 x_1 (n_1-x_1)}{n_1 (n_1 - 1)} .
 \end{aligned}$$
-where $n_{1 \cap 2}$ is the number of samples in both $A_1$ and $A_2$.
 
 ## Y statistic
 
@@ -217,6 +217,20 @@ $$\begin{aligned}
 \end{aligned}$$
 
 Note that theory tells us that the function of branch lengths that this estimates is actually different.
+
+## Mean TMRCA with overlapping leaf sets
+
+**However,** the above does not account for a case when $A_1$ and $A_2$ overlap.
+Indeed, it may be desirable to pass in $A_1 = A_2$ to obtain the mean pairwise TMRCA between two *distinct* samples from the set.
+Not accounting for this makes the statistic depend on sample size,
+as in smaller samples, self comparisons account for a larger fraction.
+Since if the two elements are equal divergence is zero,
+we need only divide by the probability that the two chosen samples are distinct,
+resulting in
+$$\begin{aligned}
+    f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2 - n_{1 \cap 2}^2} ,
+\end{aligned}$$
+where $n_{1 \cap 2}$ is the number of samples in both $A_1$ and $A_2$.
 
 ## Y statistic with overlapping leaf sets
 
