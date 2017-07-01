@@ -316,7 +316,7 @@ $$\begin{aligned}
     \\ &\qquad {} 
     - ( x_{A \cap D} (n_{B \cap C} - x_{B \cap C}) + (n_{A \cap D} - x_{A \cap D}) x_{B \cap C} )
 \end{aligned}$$
-The denominator has 32 terms.
+The denominator has $2^6$ terms.
 
 
 ## In general with overlapping leaf sets
