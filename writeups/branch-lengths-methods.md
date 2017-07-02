@@ -167,13 +167,13 @@ This uses the weighting function
 $$\begin{aligned}
     f_3(x_1,x_2,x_3)
     &= \frac{ x_1 (x_1-1) (n_2 - x_2) (n_3 - x_3) 
-            + (n_1 - x_1) (n_1 - x_1+1) x_2 x_3 
+            + (n_1 - x_1) (n_1 - x_1 - 1) x_2 x_3 
             - x_1 (n_1 - x_1) (n_2 - x_2) x_3
             - (n_1 - x_1) x_1 x_2 (n_3 - x_3)
         }{ n_1 (n_1-1) n_2 n_3 } \\
     &= \frac{n_1}{n_1-1} \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_1}{n_1} - \frac{x_3}{n_3} \right)
-        + \frac{1}{n_1-1} \left\{ 
-            - \frac{x_1}{n_1} 
+        - \frac{1}{n_1-1} \left\{ 
+            \frac{x_1}{n_1} 
             \left(1 - \frac{x_2}{n_2}\right) 
             \left(1 - \frac{x_3}{n_3}\right) 
             + 
