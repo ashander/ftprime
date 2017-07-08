@@ -183,6 +183,23 @@ $$\begin{aligned}
         \right\} 
 \end{aligned}$$
 
+## $f_2$ statistic
+
+The statistic $f_2(A_1;A_2)$ is just $f_4(A_1,A_2;A_1,A_2)$ corrected for overlapping samples.
+The function we use is the probability that the branch
+separates $(a,b)$ from $(c,d)$, where $a$ and $b$ are *distinct* draws from $A_1$
+and $c$ and $d$ are *distinct* draws from $A_2$,
+minus the probability that $(a,d)$ are distinct from $(b,c)$.
+This uses the weighting function
+$$\begin{aligned}
+    f_2(x_1,x_2)
+    &= \frac{ x_1 (x_1-1) (n_2 - x_2) (n_2 - x_2 - 1) 
+            + (n_1 - x_1) (n_1 - x_1 - 1) x_2 (x_2 - 1) 
+            - x_1 (n_1 - x_1) (n_2 - x_2) x_2
+            - (n_1 - x_1) x_1 x_2 (n_2 - x_2)
+        }{ n_1 (n_1-1) n_2 (n_2-1) } 
+\end{aligned}$$
+
 
 
 ## Covariance
