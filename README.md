@@ -27,6 +27,7 @@ refers to these as "individuals".
 
 Tests and examples:
 
+-  [simupop_example.py](simupop_example.py): A simple walk-through of the steps of using with simuPOP.
 -  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
 -  [tests/test_arg_recorder_with_wf.py](tests/test_arg_recorder_with_wf.py): Example of using the wf interface.
 -  [tests/test_recomb_collector.py](tests/test_recomb_collector.py): Uses a RecombCollector with simuPOP.
