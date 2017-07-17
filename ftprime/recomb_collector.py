@@ -64,7 +64,7 @@ class RecombCollector:
         # as this is recorded by the ARGrecorder
         self.diploid_samples = None
         self.args.add_individual(name=self.universal_ancestor,
-                                 time= (-1) * self.ancestor_age)
+                                 time=(-1)*self.ancestor_age)
         # add initial generation
         first_haps = [self.i2c(k, p) for k in first_gen for p in [0, 1]]
         first_haps.sort()
@@ -136,21 +136,20 @@ class RecombCollector:
                     parent=self.i2c(parent, ploid),
                     children=(child_chrom,))
 
-    def add_diploid_samples(self, nsamples, sample_ids, populations):
-        # sample_ids is the list of diploid IDs to draw the samples from
-        # NOTE: does NOT remove previous samples
-        assert(len(sample_ids) == len(populations))
+    def add_diploid_samples(self, nsamples, sample_ids):
+        """
+        Choose randomly a set of individuals, label these as samples,
+        and simplify the tree sequence.  This is irreversible.
+        """
         sample_indices = random.sample(range(len(sample_ids)), nsamples)
         self.diploid_samples = [sample_ids[k] for k in sample_indices]
-        # print("Samples ("+str(nsamples)+" of them): "+
-        #       str(self.diploid_samples)+"\n")
-        # need chromosome ids
+        self.simplify_to_samples()
+
+    def simplify_to_samples(self):
+        """
+        Label samples and simplify the tree sequence.  This is irreversible.
+        """
         chrom_samples = [ind_to_chrom(x, a)
                          for x in self.diploid_samples
                          for a in mapa_labels]
-        # locations - repeated twice as it's for haploids
-        sample_populations = [populations[k]
-                              for k in sample_indices
-                              for _ in range(2)]
-        self.args.add_samples(samples=chrom_samples, length=self.length,
-                              populations=sample_populations)
+        self.args.simplify(samples=chrom_samples)

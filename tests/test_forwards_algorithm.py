@@ -93,9 +93,8 @@ def test_case():
     # 7. We sample `i`, `j` and `k`.
     sample_ids = ('i','j','k')
     samples = [ids[x] for x in sample_ids]
-    arg.add_samples(samples=samples,length=1.0)
-    sample_locs = [ (0,0) for _ in samples ]
-    ts=arg.tree_sequence()
+    arg.mark_samples(samples=samples)
+    t = =arg.tree_sequence()
     for x,y in zip(ts.trees(),true_trees):
         print("observed:",x)
         print("truth:", y)

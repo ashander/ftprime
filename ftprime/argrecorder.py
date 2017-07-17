@@ -1,48 +1,102 @@
 import msprime
+import numpy as np
 from _msprime import NODE_IS_SAMPLE
-from collections import OrderedDict
 
+NULL_ID = -1
 
-class ARGrecorder(OrderedDict):
+class ARGrecorder(object):
     '''
-    Keys are individual IDs, and values are tuples, whose first entry is a
-    Node, which is a tuple of (birth time, population, is_sample), and the
-    second entry is a ordered list of nonoverlapping Edgesets.  This inherits
-    from OrderedDict so that if individuals are added by birth order then
-    records can easily be output ordered by time.
+    To record the ARG, this keeps track of
+        - a NodeTable and an EdgesetTable
+        - information about what has happened since the last simplification
+        - a mapping from (input) individual IDs to (output) node IDs
+    The reason for maintaining this mapping, rather than having (input)
+    individual IDs always equal to the (output) node IDs is to allow periodic
+    simplification, which decouples the two.
 
-    Note that the 'time' fields are in *forwards* time, and so when a NodeTable
-    is output for msprime, they must be 'reversed' to be in units of
-    generations ago.
+    Between simplification steps, the EdgesetTable is appended to, so it is
+    always "up to date".  However, the NodeTable is *not* kept up to date,
+    because its `time` fields are recorded in *time ago*; we also keep track of
+        - a list of birth times of individual IDs
+    which are translated to time-ago at each simplification step, and appended to the Node Table.
+
+    The internal state is stored using
+        - self.node_ids[k] : gives the output Node ID corresponding to the
+          input individual ID k+self.input_min
+    and self.birth_times and self.populations stores the corresponding birth
+    times (in forwards-time) and populations.  These need to contain information
+    about every input individual who might be seen in a new edgeset (ie, who
+    might be a parent).  
+
+    Assumes that input individual IDs are *nondecreasing*.
     '''
 
-    def __init__(self):
+    def __init__(self, max_indivs=1000):
         super(ARGrecorder, self).__init__()
-        # need to keep track of this to know where to append new individuals
-        # and how many rows in the NodeTable there are
+        # maximum number of individuals that can be kept track of in the internal state
+        self.n = max_indivs
+        # this is output node ID of the next new node
         self.num_nodes = 0
-        self.max_time = 0
+        self.max_time = 0.0
+        # last time simplify() was run
+        self.last_update_time = 0.0
+        self.ts = msprime.TreeSequence
+        # edges since the last simplify():
+        #  need to keep these separate only because they get appended in reverse order
+        self.new_edgesets = msprime.EdgesetTable()
+        # minimum currently active input ID
+        self.input_min = 0
+        # list of corresponding output node IDs
+        self.node_ids = np.empty(self.n, dtype='int32')
+        self.node_ids.fill(NULL_ID)
+        # and populations
+        self.populations = np.empty(self.n, dtype='int32')
+        self.populations.fill(NULL_ID)
+        # list of corresponding (forwards-time) birth times
+        self.birth_times = np.empty(self.n, dtype=float)
+        self.birth_times.fill(np.nan)
 
     def __str__(self):
-        ret = self.node_table().__str__()
+        ret = "Input ID offset:\n"
+        ret += self.input_min.__str__()
+        ret += "Node IDs:\n"
+        ret += self.node_ids.__str__()
+        ret += "Populations:\n"
+        ret += self.populations.__str__()
+        ret += "Birth times:\n"
+        ret += self.birth_times.__str__()
+        ret += "NodeTable:\n"
+        ret += self.node_table().__str__()
         ret += "\n---------\n"
         ret += self.edgeset_table().__str__()
         return ret
 
-    def add_individual(self, name, time, population=msprime.NULL_POPULATION,
-                       is_sample=False):
+    def ix(self, x):
+        """
+        Translate input IDs into indices in the internal arrays.
+        """
+        return x + self.input_min
+
+    def ox(self, x):
+        """
+        Translate indices in the internal arrays to input IDs.
+        """
+        return x - self.input_min
+
+    def add_individual(self, name, time, population=msprime.NULL_POPULATION):
         '''
-        Add a new individual.  We need to add individuals when they are *born*,
-        rather than the first time they reproduce, to ensure that records are
-        output in order by birth time of the parent.
+        Add a new individual, recording its birth time and assigning it a new output Node ID.
         '''
-        if name not in self:
-            self[name] = (msprime.Node(time=time, population=population,
-                                       name=name, is_sample=is_sample), [])
-            self.num_nodes = max(self.num_nodes, 1+int(name))
+        i = self.ix(name)
+        if self.node_ids[i] == NULL_ID:
+            self.node_ids[i] = self.num_nodes
+            self.num_nodes += 1
+            self.birth_times[i] = time
+            self.populations[i] = population
             self.max_time = max(self.max_time, time)
         else:
-            raise ValueError("Attempted to add " + str(name) + ", who already exits, as a new individual.")
+            raise ValueError("Attempted to add " + str(name) + 
+                             ", who already exits, as a new individual.")
 
     def add_record(self, left, right, parent, children):
         '''
@@ -51,39 +105,116 @@ class ARGrecorder(OrderedDict):
         [left,right).
         '''
         # unneeded but helpful for debugging
-        if parent not in self.keys():
+        i = self.ix(parent)
+        if self.node_ids[i] == NULL_ID:
             raise ValueError("Parent " + str(parent) +
                              "'s birth time has not been recorded with " +
                              ".add_individual().")
-        # time = self[parent][0]
-        new_rec = msprime.Edgeset(
-                parent=parent,
-                children=children,
-                left=left,
-                right=right)
-        merge_records(new_rec, self[parent][1])
+        # time = self.birth_times[parent]
+        out_parent = self.node_ids[self.ix(parent)]
+        out_children = tuple([self.node_ids[self.ix(u)] for u in children])
+        self.new_edgesets.add_row(parent=out_parent,
+                                  children=out_children,
+                                  left=left,
+                                  right=right)
 
-    def edgesets(self):
-        '''
-        Returns an iterator of Edgesets, sorted in reverse order by
-        the order the parents were input; so if parents are input in order
-        by birth time, the output will be in the time order required by
-        msprime.
-        '''
-        for y in reversed(self.values()):
-            for z in y[1]:
-                yield z
+    def update_nodes(self, nodes):
+        """
+        Updates the NodeTable to include information from `birth_times` and `populations`.
+        """
+        # number of previous nodes
+        m = nodes.num_rows
+        new_times = np.empty(self.num_nodes, dtype=float)
+        new_populations = np.empty(self.num_nodes, dtype='int32')
+        # new flags will all be 0
+        new_flags = np.zeros(self.num_nodes, dtype='uint32')
+        new_times[:m] = nodes.time + self.max_time - self.max_update_time
+        new_times[m:] = np.nan
+        new_populations[:m] = nodes.populations
+        new_populations[m:] = msprime.NULL_POPULATION
+        new_flags[:m] = nodes.flags
+        # which ones need to be added
+        add_these = (self.node_ids != NULL_ID) & (self.node_ids >= m)
+        # indices in new array of these
+        ii = self.node_ids[add_these]
+        new_times[ii] = self.birth_times[add_these]
+        new_populations[ii] = self.populations[add_these]
+        nodes.set_columns(time=new_times,
+                          flags=new_flags,
+                          population=new_populations)
 
-    def edgeset_table(self):
-        '''
-        Returns an EdgesetTable instance.
-        '''
-        table = msprime.EdgesetTable()
-        for es in self.edgesets():
-            table.add_row(
-                left=es.left, right=es.right, parent=es.parent,
-                children=es.children)
-        return table
+    def update_edgesets(self, edgesets):
+        """
+        Updates the EdgesetTable to include edges stored in new_edgesets: these
+        just need to be reversed and appended.
+        """
+        m = self.new_edgesets.num_rows
+        n = edgesets.num_rows
+        mc = edgesets.children_length)
+        nc = sum(self.new_edgesets.children_length)
+        new_left = np.empty(m+n, dtype=float)
+        new_right = np.empty(m+n, dtype=float)
+        new_parent = np.empty(m+n, dtype='int32')
+        new_children = np.empty(mc+nc, dtype='int32')
+        new_children_length = np.empty(m+n, dtype='uint32')
+        new_left[:m] = edgesets.left
+        new_left[m+n:m:-1] = self.new_edgesets.left
+        new_right[:m] = edgesets.right
+        new_right[m+n:m:-1] = self.new_edgesets.right
+        new_parent[:m] = edgesets.parent
+        new_parent[m+n:m:-1] = self.new_edgesets.parent
+        new_children_length[:m] = edgesets.children_length
+        new_children_length[m+n:m:-1] = self.new_edgesets.children_length
+        new_children[:mc] = edgesets.children
+        # can't do this as above because of requirement that children are sorted
+        k = 0
+        for j in self.new_edgesets.children_length:
+            new_children[mc+nc-k:mc+nc-(k+j+1):-1] = self.new_edgesets.children[k:k+j]
+            k += j
+        edgesets.set_columns(left=new_left,
+                          right=new_right,
+                          parent=new_parent,
+                          children=new_children,
+                          children_length=new_children_length)
+
+    def simplify(self, samples):
+        """
+        `samples` should be a list of all "currently living" input individual
+        IDs: i.e., anyone who might be a parent or a sample in the future.
+        Updates the current internal state by
+            1. adding pending nodes and edges to the tree sequence
+            2. running .simplify() on the tables to remove information
+                irrelevant to anyone not in `samples` 
+            3. updating the current state
+        """
+        # update the TreeSequence
+        nodes = msprime.NodeTable()
+        edgesets = msprime.EdgesetTable()
+        self.ts.dump_tables(nodes=nodes, edgesets=edgesets)
+        self.update_nodes(nodes)
+        self.update_edgesets(edgesets)
+        self.ts = msprime.load_tables(nodes=nodes, edgesets=edgesets)
+        self.ts.simplify(samples=self.node_ids[self.ix(samples)])
+        # update the internal state
+        old_populations = self.populations[self.ix(samples)]
+        old_birth_times = self.birth_times[self.ix(samples)]
+        self.num_nodes = self.ts.num_nodes
+        self.last_update_time = self.max_time
+        self.new_edgesets.reset()
+        self.input_min = min(samples)
+        # new indices
+        ii = self.ix(samples) # note this differs from use above as input_min has changed
+        self.node_ids.fill(NULL_ID)
+        self.node_ids[ii] = self.ts.samples()
+        self.populations.fill(NULL_ID)
+        self.populations[ii] = old_populations
+        self.birth_times.fill(np.nan)
+        self.birth_times[ii] = old_birth_times
+        ## run some checks
+        self.ts.dump_tables(nodes=nodes)
+        assert all(self.populations[ii] == nodes.population[self.ts.samples()])
+        assert all(self.max_time - self.birth_times[ii] == nodes.time[self.ts.samples()])
+
 
     def node_table(self):
         '''
@@ -91,157 +222,45 @@ class ARGrecorder(OrderedDict):
         Translates time to 'time ago' by subtracting time from max_time, which
         by default is the largest time seen so far.
         '''
-        table = msprime.NodeTable()
-        empty_node = msprime.Node(time=0.0)
-        for k in range(self.num_nodes):
-            try:
-                node = self[k][0]
-            except KeyError:
-                node = empty_node
-            table.add_row(flags=node.flags, time=self.max_time - node.time,
-                          population=node.population)
-        return table
+        nodes = msprime.NodeTable()
+        self.ts.dump_tables(nodes=nodes)
+        return(nodes)
+
+    def edgeset_table(self):
+        '''
+        Returns a NodeTable instance, whose k-th row corresponds to node k.
+        Translates time to 'time ago' by subtracting time from max_time, which
+        by default is the largest time seen so far.
+        '''
+        edgesets = msprime.EdgesetTable()
+        self.ts.dump_tables(edgesets=edgesets)
+        return(edgesets)
 
     def dump_sample_table(self, out):
         '''
         Write out the table of info about the samples.
         '''
         out.write("id\tflags\tpopulation\ttime\n")
-        for idx in self:
-            node = self[idx][0]
-            if node.is_sample():
-                out.write("{}\t{}\t{}\t{}\n".format(idx, node.flags,
-                                                    node.population, 
-                                                    self.max_time - node.time))
+        for idx in self.ts.samples():
+            node = ts.node(idx)
+            out.write("{}\t{}\t{}\t{}\n".format(idx, 
+                                                node.flags,
+                                                node.population, 
+                                                node.time))
 
-    def tree_sequence(self, sites=None, mutations=None):
-        '''
-        Produce a tree sequence from the ARG.
-        If sites and mutations is present (and are appropriate tables)
-        then these will be added to the tree.
-        '''
-        if mutations is not None and sites is not None:
-            ts = msprime.load_tables(
-                nodes=self.node_table(),
-                edgesets=self.edgeset_table(),
-                sites=sites, mutations=mutations)
-        else:
-            ts = msprime.load_tables(
-                    nodes=self.node_table(),
-                    edgesets=self.edgeset_table())
-        return ts
+    def mark_samples(self, samples):
+        """
+        Mark these individuals as samples internally (but do not simplify).
+        """
+        tables = self.ts.dump_tables()
+        nodes = tables.edges
+        new_flags = nodes.flags
+        new_flags &= ~NODE_IS_SAMPLE
+        new_flags[samples] |= NODE_IS_SAMPLE
+        nodes.fill_columns(time=nodes.time,
+                           population=nodes.population,
+                           flags=new_flags)
+        self.ts.load_tables(**tables)
 
-    def add_samples(self, samples, length, populations=None, dt=1):
-        '''
-        Add phony records to the end of the NodeTable that stand in for
-        sampling the IDs in `samples`, whose populations are given in
-        `populations` (default: NULL), on a chromosome of total length
-        `length`.  Will be recorded at living dt units of time after the
-        sampled individual.
-        '''
-        if populations is None:
-            populations = [msprime.NULL_POPULATION for x in samples]
-        for k in range(len(samples)):
-            parent = samples[k]
-            child = self.num_nodes
-            # relies on fact that add_individual adds one to self.num_nodes
-            self.add_individual(child, time=self[parent][0].time + dt, 
-                                population=populations[k], is_sample=True)
-            self.add_record(
-                    left=0.0,
-                    right=length,
-                    parent=parent,
-                    children=(child,))
-
-def merge_records(new, existing):
-    '''
-    Incorporate a new record (l,r,x,c,t[x])
-      into a list of existing ones (a,b,x,C,t[x]) sorted on left endpoint.
-    Keeping them in sorted order simplifies the procedure
-      (makes it so we don't have to split the new record).
-    '''
-    k = 0
-    cur_left = new.left
-    # print("MR: -----")
-    # print("adding", new)
-    # print("    to", existing)
-    while (k < len(existing)) and (cur_left < new.right):
-        left = existing[k].left
-        right = existing[k].right
-        parent = existing[k].parent
-        children = existing[k].children
-        # print("k:",k)
-        # print("existing:",existing[k])
-        # print("cur_left:",cur_left)
-        if new.parent != parent:
-            raise ValueError("Trying to merge records with different parents.")
-        if right <= cur_left:
-            # no overlap
-            # print("no overlap")
-            k += 1
-            continue
-        if cur_left < left:
-            # print("dangling left")
-            existing.insert(k, msprime.Edgeset(
-                left=cur_left,
-                right=min(new.right, left),
-                parent=parent,
-                children=new.children))
-            cur_left = min(new.right, left)
-            k += 1
-            continue
-        combined_children = tuple(sorted(children+new.children))
-        combined_rec = msprime.Edgeset(
-            left=cur_left,
-            right=min(new.right, right),
-            parent=new.parent,
-            children=combined_children)
-        if cur_left == left:
-            # print("equal left")
-            if new.right < right:
-                # print("overlap right")
-                mod_rec = msprime.Edgeset(
-                        left=new.right,
-                        right=right,
-                        parent=parent,
-                        children=children)
-                existing[k] = combined_rec
-                k += 1
-                existing.insert(k, mod_rec)
-                k += 1
-            else:
-                # print("dangling right")
-                existing[k] = combined_rec
-                k += 1
-        else:
-            # here we know that left < cur_left < right
-            # print("overlap left")
-            mod_rec = msprime.Edgeset(
-                    left=left,
-                    right=cur_left,
-                    parent=parent,
-                    children=children)
-            existing[k] = mod_rec
-            k += 1
-            existing.insert(k, combined_rec)
-            k += 1
-            if new.right < right:
-                # print("overlap right")
-                existing.insert(k, msprime.Edgeset(
-                    left=new.right,
-                    right=right,
-                    parent=parent,
-                    children=children))
-                k += 1
-        cur_left = min(new.right, right)
-    # add whatever's left at the end
-    if cur_left < new.right:
-        existing.insert(k, msprime.Edgeset(
-            left=cur_left,
-            right=new.right,
-            parent=new.parent,
-            children=new.children))
-    # print("getting")
-    # for x in existing:
-    #     print("   ", x)
-    return None
+    def tree_sequence(self):
+        return self.ts
