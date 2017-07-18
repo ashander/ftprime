@@ -1,7 +1,10 @@
 ftprime
 ======
 
-This code was mentioned during the Evolution 2017 talk, Ashander _et al_ (2017) "Using Genomic Data to Inform Population Viability in a Long-Lived Endangered Vertebrate". Note the code is pre-production but if you're building on the ideas here please cite this repository [![DOI](https://zenodo.org/badge/72480698.svg)](https://zenodo.org/badge/latestdoi/72480698)
+This code was mentioned during the Evolution 2017 talk:
+> Ashander, McCartney-Melstad, Ralph, Shaffer (2017) "Using Genomic Data to Inform Population Viability in a Long-Lived Endangered Vertebrate". 
+
+Note the code is pre-production but if you're building on the ideas here please cite this repository using the DOI: [![DOI](https://zenodo.org/badge/72480698.svg)](https://zenodo.org/badge/latestdoi/72480698)
 
 
 Contents
