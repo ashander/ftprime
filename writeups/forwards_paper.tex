@@ -1,0 +1,150 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage{amsmath, amssymb}
+\usepackage[hidelinks]{hyperref}
+\usepackage[utf8]{inputenc}
+
+\include{macros}
+
+\usepackage{color}
+\newcommand{\plr}[1]{{\em \color{blue} #1}}
+
+\begin{document}
+
+\title{Efficient forwards-time simulation with ancestral recombination graphs}
+\author[1]{Jerome Kelleher}
+\author[2]{Jaime Ashander}
+\author[3]{Peter L. Ralph}
+\affil[3]{University of Oregon, Eugene, Oregon}
+\maketitle
+
+
+\begin{abstract}
+Coalescent simulations are very helpful but require random mating and neutrality.
+For continuous space, polygenic selection, or detailed dissection of life history, 
+we must use forwards-time, individual-based simulation.
+These are much slower due in part to carrying around neutral genotypes irrelevant to the process.
+Here we show how to efficiently produce and store the entire history of ancestry and recombination
+(the ARG) from an individual-based simulation,
+on which neutral mutations can be placed afterwards.
+This has the promise of making large-scale, whole-genome simulations with realistic geography and selection finally possible.
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+\section*{Introduction}
+
+\plr{two main points below: can put down neutral mutations afterwards, and could be useful to compute stats even before that}
+
+Since the 1980's, coalescent theory has enabled computer simulation of the results of population genetics models
+identical to that which would be produced by large, randomly mating populations over long periods of time
+without actually requiring simulation of so many generations or meioses.
+Coalescent theory thus had three transformative effects on population genetics:
+first, giving researchers better conceptual tools to describe \emph{gene trees} and thus bringing within-population trees into better focus;
+second, producing analytical methods to estimate parameters of interest from genetic data (e.g. $\theta = 4N_e \mu$);
+and finally, providing a computationally feasible method to produce computer simulations of population genetics processes.
+However, these powerful advances came with substantial caveats:
+the backwards-in-time processes that are described by coalescent theory
+are only \emph{Markovian}, and thus feasible to work with,
+thanks to the important assumptions of (a) random mating, and (b) neutrality.
+\plr{Brief statement why this is.  Also include stationarity?}
+Both assumptions can be side-stepped to a limited extent, and so coalescent methods are now commonly used to
+simulate the results of population dynamics of a collection of randomly mating populations exchanging migrants,
+having a small number of loci under selection.
+Mapping results of such models onto real species can be challenging,
+as these are often distributed across geographical space and may have large numbers of loci under various sorts of selection.
+Furthermore, the relationship between the life history of a species --
+fecundity and mortality schedules, allee effects, and demographic fluctuations --
+are all absorbed into a single compound parameter, the coalescence rate.
+These considerations, and increasing computational power, have led to a resurgence of interest in forwards-time, individual-based simulations.
+
+With modern computing power, pure demographic calculations are not a barrier,
+even though biological population sizes are often above $10^6$,
+and coalescent theory tells us that a population of size $N$ 
+must be run for a multiple of $N$ generations to produce stable genetic patterns.
+However, if our interest lies in the resulting genetic patterns of variation
+-- and often, the point of such simulations is to compare to real data --
+then such simulations must somehow produce at the end data for each individual on a genomic scale.
+As samples of most species genomes harbor tens or hundreds of millions of variant sites,
+naively carrying full genotypes for even modest numbers of individuals through a simluation becomes quickly prohibitive.
+
+However, it is thought that much of that variation is selectively neutral (or nearly so).
+By definition, the alleles carried by individuals in a population at neutral sites
+do not affect the population process.
+For this reason, if one records the entire genealogical history of a population over the course of a simulation,
+one can lay down neutral mutations on top of that history afterwards,
+without loss of generality.
+Precisely, we would need to know the genealogical tree relating all sampled individuals
+at each position along the genome.
+
+There is another compelling reason for recording the entire genealogical history.
+In many applications, simulations are run for the purpose of comparing summary statistics of the resulting genomes
+to those computed from real data,
+with the purpose of inferring demographic history or identifying regions under selection.
+However, for the same reason that neutral mutations can be laid down afterwards on the sequence of genealogical trees resulting from a simulation,
+any summary statistic of genetic variation can be expressed as a statistic of the distribution of genealogical trees along the genome,
+with additional noise introduced by mutations.
+For instance, mean pairwise sequence diversity, $\theta$,
+is most easily thought of as an estimator of $2 \mu t_{TMRCA}$, the mean time to most recent common ancestor
+multiplied by twice the mutation rate,
+with a relative error that is independent of the actual $t_{TMRCA}$.
+As additional measurement noise makes simulation-based inference methods such as ABC or trained classifiers more diffcult,
+it could be beneficial to compare the statistics observed in the data
+to their expected values conditioned on the genealogical history,
+as remaining mutational noise is not informative.
+\plr{Say better.  A quick way to demonstrate this point?}
+
+There is an obvious cost to recording all of history from a simulation,
+rather than just the current state.
+In this paper, we show how to use algorithmic tools and data structures developed for the coalescent simulator \textbf{msprime}
+to efficiently record, and later process, this history.
+
+\plr{Quick review of the ARG and discussion of whether the ARG means the data structure or the reverse-time markov process (the former).}
+
+%%%%%%%%%%%%%%%%%%%%%%
+\section*{Methods}
+
+Description of what we actually need to know in the end (the trees).
+
+Quick review of msprime methods: sparse trees, tree differences.
+
+Specification for tables of nodes, edgesets, sites, and mutations.
+
+Steps to record information in forwards time.
+
+Something about simplification (but not the actual algorithm)
+and estimates of how much memory usage is reduced by each time it is carried out.
+
+Note that you can begin the forwards-time simulation with the results of a previous (coalescent) one,
+which is helpful so you don't need to run for so long (cite Wilkins).
+
+Something about putting mutations down on the tree sequence.
+
+Quick overview of how to efficiently hook this up with other code.
+
+%%%%%%%%%%%%%%%%%%%%%%
+\section*{Results}
+
+Estimates of run-time complexity with $N$ individuals for $T$ generations, $S$ selected loci and $L$ neutral loci?
+
+Comparison of simulation with/without msprime, using simuPOP 
+or maybe just a simple haploid simulation with 1000 QTL and stabilizing selection on a trait (say).
+
+Maybe an estimate of how long \emph{just} the ARG recording and simplification takes,
+so that then we can say how fast the simulator would have to be to do $10^6$ whole chromosomes for $10^7$ generations
+in a day.
+
+%%%%%%%%%%%%%%%%%%%%%%
+\section*{Conclusion}
+
+This is a general-purpose strategy that can be applied to other methods.
+
+All sorts of good reasons to want to have whole-genome simulations.
+
+%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgements}
+
+Kevin 
+
+
+\end{document}
