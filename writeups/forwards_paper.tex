@@ -6,6 +6,8 @@
 
 \include{macros}
 
+\newcommand{\msprime}{\texttt{msprime}}
+
 \usepackage{color}
 \newcommand{\plr}[1]{{\em \color{blue} #1}}
 
@@ -96,7 +98,7 @@ as remaining mutational noise is not informative.
 
 There is an obvious cost to recording all of history from a simulation,
 rather than just the current state.
-In this paper, we show how to use algorithmic tools and data structures developed for the coalescent simulator \textbf{msprime}
+In this paper, we show how to use algorithmic tools and data structures developed for the coalescent simulator \msprime
 to efficiently record, and later process, this history.
 
 \plr{Quick review of the ARG and discussion of whether the ARG means the data structure or the reverse-time markov process (the former).}
@@ -104,28 +106,61 @@ to efficiently record, and later process, this history.
 %%%%%%%%%%%%%%%%%%%%%%
 \section*{Methods}
 
-Description of what we actually need to know in the end (the trees).
+\plr{Description of what we actually need to know in the end (the trees).}
 
-Quick review of msprime methods: sparse trees, tree differences.
+\plr{Quick review of \msprime methods: sparse trees, tree differences.}
 
-Specification for tables of nodes, edgesets, sites, and mutations.
+\plr{Specification for tables of nodes, edgesets, sites, and mutations.}
 
-Steps to record information in forwards time.
+\plr{Steps to record information in forwards time.}
+In the forwards simulation,
+we record the results of each meiosis --
+for each distinctly inherited segment of offspring chromosome,
+we record the parental chromosome,
+the left and right endpoints,
+and the identities of any new mutations that have occurred on it.
+This is recorded easily, without further processing,
+in the relaxed tree sequence format.
 
-Something about simplification (but not the actual algorithm)
-and estimates of how much memory usage is reduced by each time it is carried out.
+\plr{Something about simplification (but not the actual algorithm)
+and estimates of how much memory usage is reduced by each time it is carried out.}
+The resulting tables encode everything we need to know --
+in fact, they record all of history for everyone alive at any time through the simulation.
+This is much more than we need to reconstruct the genealogies and sequences
+of a smaller sample of indidivuals.
+Reducing this larger tree sequence to a smaller one relevant to a given set of ``sample'' nodes
+we call \emph{simplification}.
+Roughly, this works by tracing ancestry from the samples backwards through the recorded history,
+adding node and edgeset records to the output only when coalescent events are reached.
+This works exactly as in \msprime, allowing substantial re-use of algorithms;
+the main difference being that parental choice, mutations, and recombination locations 
+are determined by the input tree sequence
+rather than randomly generated.
 
-Note that you can begin the forwards-time simulation with the results of a previous (coalescent) one,
-which is helpful so you don't need to run for so long (cite Wilkins).
+\plr{Note that you can begin the forwards-time simulation with the results of a previous (coalescent) one,
+which is helpful so you don't need to run for so long (cite Wilkins).}
+In this scheme,
+at any point in the simulation genealogical history is recorded in a tree sequence.
+This has two additional advantages.
+First, simplification can be run periodically through the simulation,
+taking the set of samples to be the entire currently alive population.
+This is important as it keeps memory usage from growing linearly (and quickly) with time.
+Second, the simulation can be \emph{begun} with a tree sequence produced by some other method --
+for instance, by a coalescent simulation with \msprime.
+This allows for incorporation of deep-time history beyond the reach of individual-based simulations.
+Since geographic structure from times longer ago than the mixing time of migration across the range
+has limited effect on modern genealogies \citep{wilkins_separation}
+(other than possibly changing effective population size \citet{durretspatial}),
+this may not negatively affect realism.
 
-Something about putting mutations down on the tree sequence.
+\plr{Something about putting mutations down on the tree sequence.}
 
-Quick overview of how to efficiently hook this up with other code.
+\plr{Quick overview of how to efficiently hook this up with other code.}
 
 %%%%%%%%%%%%%%%%%%%%%%
 \section*{Results}
 
-Estimates of run-time complexity with $N$ individuals for $T$ generations, $S$ selected loci and $L$ neutral loci?
+\plr{Estimates of run-time complexity with $N$ individuals for $T$ generations, $S$ selected loci and $L$ neutral loci?}
 
 Comparison of simulation with/without msprime, using simuPOP 
 or maybe just a simple haploid simulation with 1000 QTL and stabilizing selection on a trait (say).
