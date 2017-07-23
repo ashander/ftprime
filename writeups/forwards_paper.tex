@@ -3,6 +3,9 @@
 \usepackage{amsmath, amssymb}
 \usepackage[hidelinks]{hyperref}
 \usepackage[utf8]{inputenc}
+\usepackage{natbib}
+\usepackage{graphicx}
+\bibliographystyle{plainnat}
 
 \include{macros}
 
@@ -14,10 +17,9 @@
 \begin{document}
 
 \title{Efficient forwards-time simulation with ancestral recombination graphs}
-\author[1]{Jerome Kelleher}
-\author[2]{Jaime Ashander}
-\author[3]{Peter L. Ralph}
-\affil[3]{University of Oregon, Eugene, Oregon}
+\author{Jerome Kelleher, 
+        Jaime Ashander, and
+        Peter L. Ralph}
 \maketitle
 
 
@@ -122,6 +124,31 @@ and the identities of any new mutations that have occurred on it.
 This is recorded easily, without further processing,
 in the relaxed tree sequence format.
 
+\begin{figure}
+    \begin{center}
+        \includegraphics{method_diagram}
+    \end{center}
+    \caption{
+        A simple example of the method.
+        \textbf{Top:} the ARG shown on the left relates ten haploid individuals to each other.
+        It is recorded, in forwards time, 
+        in 10 node records (one for each individual)
+        and 14 edgeset records (one for each distinctly inherited segment).
+        Blue numbers denote crossing over locations in each meiosis.
+        The individuals $B$, $C$, and $D$ inherit clonally from $A$
+        to ensure rootnedness of resulting tree.
+        \textbf{Center:} the five distinct trees relating all individuals to each other
+        found across the chromosome (blue numbers denote locations on the chromosome).
+        Labels after simplification are shown in red.
+        \textbf{Bottom:} tables recording the tree sequence after simplification 
+        with nodes $I$ and $J$ as samples.
+        The mapping from labels in the forwards time simulation to nodes in the tree sequence
+        is shown in red,
+        which allows additional records to be added as the simulation progresses.
+        \label{fig:method_diagram}
+    }
+\end{figure}
+
 \plr{Something about simplification (but not the actual algorithm)
 and estimates of how much memory usage is reduced by each time it is carried out.}
 The resulting tables encode everything we need to know --
@@ -160,7 +187,42 @@ this may not negatively affect realism.
 %%%%%%%%%%%%%%%%%%%%%%
 \section*{Results}
 
-\plr{Estimates of run-time complexity with $N$ individuals for $T$ generations, $S$ selected loci and $L$ neutral loci?}
+\plr{Estimates of run-time complexity}
+Suppose that we wish to run a forwards-time simulation of $N$ individuals for $T$ generations,
+in which there are $S$ selected loci and $L$ neutral loci.
+We will estimate run-time complexity and memory usage for both a ``naive'' strategy that carries along neutral loci
+and an ``ancestry-tracking'' strategy like that we consider here.
+To do this, we assume that each individual must carry along its entire genotype.
+More advanced schemes are used in some simulators,
+but these increase efficiency by utilizing redundancy introduced by shared ancestry, 
+which is effectively an intermediate scheme.
+We omit the cost of computing a fitness function.
+
+Both schemes must choose mates and recombination breakpoints,
+and pass on selected genotypes.
+The difference between the two comes from the tradeoff between
+(a) passing on neutral genotypes, and
+(b) recording and simplifying the tree sequence, and adding neutral genotypes afterwards.
+(We assume here that selected genotypes are stored in the same way for both.)
+Passing on neutral genotypes naively records $L$ items per individual each generation, discarding the previous generation.
+\plr{do this better with numbers from nodes, edgesets}
+Recording a tree sequence stores 2 parents and $\rho$ breakpoints on average each generation;
+after $T$ generations this grows to $N \times T \times (2 + \rho)$ stored items.
+However, after simplification a tree sequence for all $N$ individuals
+only takes of order $N + \rho \log N$ records.
+Simplification requires processing each of the initial records -- so, order of $N \times T \times \rho$ operations;
+
+
+\begin{table}
+\begin{center}
+    \begin{tabular}{l||r|r||r|r|}
+                    & \multicolumn{2}{|c|}{naive} & \multicolumn{2}{|c|}{ancestry-tracking} \\
+                    & operations  & memory & operations  & memory \\
+        mate choice & $N$       &   --  &   $N$     & -- \\
+        recombination & $N\rho$ &   --  &   $N\rho$ & -- \\
+    \end{tabular}
+\end{center}
+\end{table}
 
 Comparison of simulation with/without msprime, using simuPOP 
 or maybe just a simple haploid simulation with 1000 QTL and stabilizing selection on a trait (say).
@@ -181,5 +243,6 @@ All sorts of good reasons to want to have whole-genome simulations.
 
 Kevin 
 
+\bibliography{references}  
 
 \end{document}
