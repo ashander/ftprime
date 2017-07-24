@@ -38,7 +38,7 @@ class ARGrecorder(object):
     node IDs of the first generation.
     '''
 
-    def __init__(self, ts, first_generation=ts.samples(), time=0.0, max_indivs=1000):
+    def __init__(self, ts, first_generation=None, time=0.0, max_indivs=1000):
         """
         :param ts TreeSequence: The tree sequence defining relationships between
             the first genreation of individuals.
@@ -49,6 +49,8 @@ class ARGrecorder(object):
         :param int max_indivs: The largest number of individuals (past or present)
             that we will track at any given time.
         """
+        if first_generation is None:
+            first_generation = ts.samples()
         # maximum number of individuals that can be kept track of in the internal state
         self.n_max = max_indivs
         # this is output node ID of the next new node
@@ -71,8 +73,11 @@ class ARGrecorder(object):
         self.edgesets = msprime.EdgesetTable()
         self.sites = msprime.SiteTable()
         self.mutations = msprime.MutationTable()
-        self.tables = ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                     sites=self.sites, mutations=self.mutations)
+        ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
+                       sites=self.sites, mutations=self.mutations)
+        # list of site positions, maintained as site tables don't have
+        #   efficient checking for membership
+        self.site_positions = self.sites.positions
 
     def __str__(self):
         ret = "Input ID offset m_0:\n"
@@ -84,7 +89,7 @@ class ARGrecorder(object):
         ret += "Node IDs:\n"
         ret += self.node_ids.__str__()
         ret += "Tables:\n"
-        for x in self.tables:
+        for x in (self.nodes, self.edgesets, self.sites, self.mutations):
             ret += x.__str__()
         ret += "\n---------\n"
         return ret
@@ -98,19 +103,19 @@ class ARGrecorder(object):
         for j, x in zip(generation, samples):
             self.node_ids[self.input_min + j] = x
 
-    def add_individual(self, name, time, population=msprime.NULL_POPULATION):
+    def add_individual(self, input_id, time, population=msprime.NULL_POPULATION):
         '''
         Add a new individual, recording its birth time and assigning it a new
         output Node ID.
         '''
-        i = name - self.input_min
+        i = input_id - self.input_min
         if self.node_ids[i] == NULL_ID:
             self.nodes.add_row(flags=0, population=population, time=time)
             self.node_ids[i] = self.num_nodes
             self.num_nodes += 1
             self.max_time = max(self.max_time, time)
         else:
-            raise ValueError("Attempted to add " + str(name) +
+            raise ValueError("Attempted to add " + str(input_id) +
                              ", who already exits, as a new individual.")
 
     def add_record(self, left, right, parent, children):
@@ -135,11 +140,12 @@ class ARGrecorder(object):
         """
         Adds a new mutation to mutation table, and a new site if necessary as well.
         """
-        if position not in self.sites.position:
+        if position not in self.site_positions:
             site = self.sites.num_rows
             self.sites.add_row(position=position, ancestral_state=ancestral_state)
+            self.site_positions.append(position)
         else:
-            site = self.sites.index(position)
+            site = self.site_positions.index(position)
         self.mutations.add_row(site=site, node=node, derived_state=derived_state)
 
     def update_times(self):
@@ -171,8 +177,8 @@ class ARGrecorder(object):
         self.input_min = min(samples)
         # update index map
         self.reset_node_ids(samples, ts.samples()):
-        self.tables = ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                     sites=self.sites, mutations=self.mutations)
+        ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
+                       sites=self.sites, mutations=self.mutations)
 
     def dump_sample_table(self, out):
         '''
