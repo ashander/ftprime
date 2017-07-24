@@ -26,76 +26,91 @@ class ARGrecorder(object):
     and self.birth_times and self.populations stores the corresponding birth
     times (in forwards-time) and populations.  These need to contain information
     about every input individual who might be seen in a new edgeset (ie, who
-    might be a parent).  
+    might be a parent).
 
     Assumes that input individual IDs are *nondecreasing*.
+
+    Must be initialized with a tree sequence ``ts``, this will serve as
+    the history of this first generation of individuals.  The ``samples`` of
+    this tree sequence correspond to the individuals in the first generation.
+
+    If different than the sample IDs of ``ts``, ``first_generation`` has the
+    node IDs of the first generation.
     '''
 
-    def __init__(self, max_indivs=1000):
-        super(ARGrecorder, self).__init__()
+    def __init__(self, ts, first_generation=ts.samples(), time=0.0, max_indivs=1000):
+        """
+        :param ts TreeSequence: The tree sequence defining relationships between
+            the first genreation of individuals.
+        :param list first_generation: The input IDs of the first generation that
+            should be mapped onto the samples in the tree sequence ``ts``.
+        :param float time: The (forwards) time of the "present" at the start of
+            the simulation.
+        :param int max_indivs: The largest number of individuals (past or present)
+            that we will track at any given time.
+        """
         # maximum number of individuals that can be kept track of in the internal state
-        self.n = max_indivs
+        self.n_max = max_indivs
         # this is output node ID of the next new node
-        self.num_nodes = 0
-        self.max_time = 0.0
-        # last time simplify() was run
-        self.last_update_time = 0.0
-        self.ts = msprime.TreeSequence
-        # edges since the last simplify():
-        #  need to keep these separate only because they get appended in reverse order
-        self.new_edgesets = msprime.EdgesetTable()
+        self.num_nodes = ts.num_nodes # n
+        # this is the largest (forwards) time seen so far
+        self.max_time = time  # T
+        # last (forwards) time simplify() was run
+        self.last_simplify_time = time  # T_0
+        # number of nodes that have the time right
+        self.last_simplify_node = ts.num_nodes
+        assert len(ts.samples()) == len(first_generation)
         # minimum currently active input ID
-        self.input_min = 0
-        # list of corresponding output node IDs
-        self.node_ids = np.empty(self.n, dtype='int32')
-        self.node_ids.fill(NULL_ID)
-        # and populations
-        self.populations = np.empty(self.n, dtype='int32')
-        self.populations.fill(NULL_ID)
-        # list of corresponding (forwards-time) birth times
-        self.birth_times = np.empty(self.n, dtype=float)
-        self.birth_times.fill(np.nan)
+        self.input_min = 0  # m_0
+        # list of output node IDs indexed by input labels
+        self.node_ids = np.empty(self.n_max, dtype='int32') # L
+        self.reset_node_ids(first_generation, ts.samples())
+        # the actual tables that get updated
+        #  DON'T actually store ts, just the tables:
+        self.nodes = msprime.NodeTable()
+        self.edgesets = msprime.EdgesetTable()
+        self.sites = msprime.SiteTable()
+        self.mutations = msprime.MutationTable()
+        self.tables = ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
+                                     sites=self.sites, mutations=self.mutations)
 
     def __str__(self):
-        ret = "Input ID offset:\n"
-        ret += self.input_min.__str__()
+        ret = "Input ID offset m_0:\n"
+        ret += str(self.input_min)
+        ret += "Max time so far:\n"
+        ret += str(self.max_time)
+        ret += "Last simplify time:"
+        ret += str(self.last_simplify_time)
         ret += "Node IDs:\n"
         ret += self.node_ids.__str__()
-        ret += "Populations:\n"
-        ret += self.populations.__str__()
-        ret += "Birth times:\n"
-        ret += self.birth_times.__str__()
-        ret += "NodeTable:\n"
-        ret += self.node_table().__str__()
+        ret += "Tables:\n"
+        for x in self.tables:
+            ret += x.__str__()
         ret += "\n---------\n"
-        ret += self.edgeset_table().__str__()
         return ret
 
-    def ix(self, x):
+    def reset_node_ids(self, generation, samples):
         """
-        Translate input IDs into indices in the internal arrays.
+        Reset the internal mapping of input to node IDs except for each
+        individual in generation is mapped to the corresponding one in samples.
         """
-        return x + self.input_min
-
-    def ox(self, x):
-        """
-        Translate indices in the internal arrays to input IDs.
-        """
-        return x - self.input_min
+        self.node_ids.fill(NULL_ID)
+        for j, x in zip(generation, samples):
+            self.node_ids[self.input_min + j] = x
 
     def add_individual(self, name, time, population=msprime.NULL_POPULATION):
         '''
-        Add a new individual, recording its birth time and assigning it a new output Node ID.
+        Add a new individual, recording its birth time and assigning it a new
+        output Node ID.
         '''
-        i = self.ix(name)
+        i = name - self.input_min
         if self.node_ids[i] == NULL_ID:
+            self.nodes.add_row(flags=0, population=population, time=time)
             self.node_ids[i] = self.num_nodes
             self.num_nodes += 1
-            self.birth_times[i] = time
-            self.populations[i] = population
             self.max_time = max(self.max_time, time)
         else:
-            raise ValueError("Attempted to add " + str(name) + 
+            raise ValueError("Attempted to add " + str(name) +
                              ", who already exits, as a new individual.")
 
     def add_record(self, left, right, parent, children):
@@ -105,136 +120,57 @@ class ARGrecorder(object):
         [left,right).
         '''
         # unneeded but helpful for debugging
-        i = self.ix(parent)
-        if self.node_ids[i] == NULL_ID:
+        out_parent = self.node_ids[parent - self.input_min]
+        if out_parent == NULL_ID:
             raise ValueError("Parent " + str(parent) +
                              "'s birth time has not been recorded with " +
                              ".add_individual().")
-        # time = self.birth_times[parent]
-        out_parent = self.node_ids[self.ix(parent)]
-        out_children = tuple([self.node_ids[self.ix(u)] for u in children])
-        self.new_edgesets.add_row(parent=out_parent,
-                                  children=out_children,
-                                  left=left,
-                                  right=right)
+        out_children = tuple([self.node_ids[u - self.input_min] for u in children])
+        self.edgesets.add_row(parent=out_parent,
+                              children=out_children,
+                              left=left,
+                              right=right)
 
-    def update_nodes(self, nodes):
+    def add_mutation(self, position, node, derived_state):
         """
-        Updates the NodeTable to include information from `birth_times` and `populations`.
+        Adds a new mutation to mutation table, and a new site if necessary as well.
         """
-        # number of previous nodes
-        m = nodes.num_rows
-        new_times = np.empty(self.num_nodes, dtype=float)
-        new_populations = np.empty(self.num_nodes, dtype='int32')
-        # new flags will all be 0
-        new_flags = np.zeros(self.num_nodes, dtype='uint32')
-        new_times[:m] = nodes.time + self.max_time - self.max_update_time
-        new_times[m:] = np.nan
-        new_populations[:m] = nodes.populations
-        new_populations[m:] = msprime.NULL_POPULATION
-        new_flags[:m] = nodes.flags
-        # which ones need to be added
-        add_these = (self.node_ids != NULL_ID) & (self.node_ids >= m)
-        # indices in new array of these
-        ii = self.node_ids[add_these]
-        new_times[ii] = self.birth_times[add_these]
-        new_populations[ii] = self.populations[add_these]
-        nodes.set_columns(time=new_times,
-                          flags=new_flags,
-                          population=new_populations)
+        if position not in self.sites.position:
+            site = self.sites.num_rows
+            self.sites.add_row(position=position, ancestral_state=ancestral_state)
+        else:
+            site = self.sites.index(position)
+        self.mutations.add_row(site=site, node=node, derived_state=derived_state)
 
-    def update_edgesets(self, edgesets):
+    def update_times(self):
         """
-        Updates the EdgesetTable to include edges stored in new_edgesets: these
-        just need to be reversed and appended.
+        Update times in the NodeTable.
         """
-        m = self.new_edgesets.num_rows
-        n = edgesets.num_rows
-        mc = edgesets.children_length)
-        nc = sum(self.new_edgesets.children_length)
-        new_left = np.empty(m+n, dtype=float)
-        new_right = np.empty(m+n, dtype=float)
-        new_parent = np.empty(m+n, dtype='int32')
-        new_children = np.empty(mc+nc, dtype='int32')
-        new_children_length = np.empty(m+n, dtype='uint32')
-        new_left[:m] = edgesets.left
-        new_left[m+n:m:-1] = self.new_edgesets.left
-        new_right[:m] = edgesets.right
-        new_right[m+n:m:-1] = self.new_edgesets.right
-        new_parent[:m] = edgesets.parent
-        new_parent[m+n:m:-1] = self.new_edgesets.parent
-        new_children_length[:m] = edgesets.children_length
-        new_children_length[m+n:m:-1] = self.new_edgesets.children_length
-        new_children[:mc] = edgesets.children
-        # can't do this as above because of requirement that children are sorted
-        k = 0
-        for j in self.new_edgesets.children_length:
-            new_children[mc+nc-k:mc+nc-(k+j+1):-1] = self.new_edgesets.children[k:k+j]
-            k += j
-        edgesets.set_columns(left=new_left,
-                          right=new_right,
-                          parent=new_parent,
-                          children=new_children,
-                          children_length=new_children_length)
+        dt = self.max_time - self.last_simplify_time
+        self.nodes.time[:self.last_simplify_node] =
+            self.nodes.time[:self.last_simplify_node] + dt
+        self.nodes.time[self.last_simplify_node:] =
+            self.max_time - self.nodes.time[self.last_simplify_node:]
 
     def simplify(self, samples):
         """
         `samples` should be a list of all "currently living" input individual
         IDs: i.e., anyone who might be a parent or a sample in the future.
-        Updates the current internal state by
-            1. adding pending nodes and edges to the tree sequence
-            2. running .simplify() on the tables to remove information
-                irrelevant to anyone not in `samples` 
-            3. updating the current state
         """
-        # update the TreeSequence
-        nodes = msprime.NodeTable()
-        edgesets = msprime.EdgesetTable()
-        self.ts.dump_tables(nodes=nodes, edgesets=edgesets)
-        self.update_nodes(nodes)
-        self.update_edgesets(edgesets)
-        self.ts = msprime.load_tables(nodes=nodes, edgesets=edgesets)
-        self.ts.simplify(samples=self.node_ids[self.ix(samples)])
+        # update times
+        self.update_times()
+        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
+                                 sites=self.sites, mutations=self.mutations)
+        sample_nodes = [self.node_ids[x - self.input_min] for x in samples]
+        ts.simplify(samples=sample_nodes)
         # update the internal state
-        old_populations = self.populations[self.ix(samples)]
-        old_birth_times = self.birth_times[self.ix(samples)]
-        self.num_nodes = self.ts.num_nodes
-        self.last_update_time = self.max_time
-        self.new_edgesets.reset()
+        self.num_nodes = ts.num_nodes
+        self.last_simplify_time = self.max_time
         self.input_min = min(samples)
-        # new indices
-        ii = self.ix(samples) # note this differs from use above as input_min has changed
-        self.node_ids.fill(NULL_ID)
-        self.node_ids[ii] = self.ts.samples()
-        self.populations.fill(NULL_ID)
-        self.populations[ii] = old_populations
-        self.birth_times.fill(np.nan)
-        self.birth_times[ii] = old_birth_times
-        ## run some checks
-        self.ts.dump_tables(nodes=nodes)
-        assert all(self.populations[ii] == nodes.population[self.ts.samples()])
-        assert all(self.max_time - self.birth_times[ii] == nodes.time[self.ts.samples()])
-
-
-    def node_table(self):
-        '''
-        Returns a NodeTable instance, whose k-th row corresponds to node k.
-        Translates time to 'time ago' by subtracting time from max_time, which
-        by default is the largest time seen so far.
-        '''
-        nodes = msprime.NodeTable()
-        self.ts.dump_tables(nodes=nodes)
-        return(nodes)
-
-    def edgeset_table(self):
-        '''
-        Returns a NodeTable instance, whose k-th row corresponds to node k.
-        Translates time to 'time ago' by subtracting time from max_time, which
-        by default is the largest time seen so far.
-        '''
-        edgesets = msprime.EdgesetTable()
-        self.ts.dump_tables(edgesets=edgesets)
-        return(edgesets)
+        # update index map
+        self.reset_node_ids(samples, ts.samples()):
+        self.tables = ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
+                                     sites=self.sites, mutations=self.mutations)
 
     def dump_sample_table(self, out):
         '''
@@ -243,9 +179,9 @@ class ARGrecorder(object):
         out.write("id\tflags\tpopulation\ttime\n")
         for idx in self.ts.samples():
             node = ts.node(idx)
-            out.write("{}\t{}\t{}\t{}\n".format(idx, 
+            out.write("{}\t{}\t{}\t{}\n".format(idx,
                                                 node.flags,
-                                                node.population, 
+                                                node.population,
                                                 node.time))
 
     def mark_samples(self, samples):
@@ -263,4 +199,6 @@ class ARGrecorder(object):
         self.ts.load_tables(**tables)
 
     def tree_sequence(self):
-        return self.ts
+        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
+                                 sites=self.sites, mutations=self.mutations)
+        return ts
