@@ -55,10 +55,10 @@ class ARGrecorder(object):
         self.num_nodes = ts.num_nodes # n
         # this is the largest (forwards) time seen so far
         self.max_time = time  # T
-        # last (forwards) time simplify() was run
-        self.last_simplify_time = time  # T_0
+        # last (forwards) time we updated node times
+        self.last_update_time = time  # T_0
         # number of nodes that have the time right
-        self.last_simplify_node = ts.num_nodes
+        self.last_update_node = ts.num_nodes
         assert len(ts.samples()) == len(first_generation)
         # minimum currently active input ID
         self.input_min = 0  # m_0
@@ -79,8 +79,8 @@ class ARGrecorder(object):
         ret += str(self.input_min)
         ret += "Max time so far:\n"
         ret += str(self.max_time)
-        ret += "Last simplify time:"
-        ret += str(self.last_simplify_time)
+        ret += "Last update time:"
+        ret += str(self.last_update_time)
         ret += "Node IDs:\n"
         ret += self.node_ids.__str__()
         ret += "Tables:\n"
@@ -146,11 +146,13 @@ class ARGrecorder(object):
         """
         Update times in the NodeTable.
         """
-        dt = self.max_time - self.last_simplify_time
-        self.nodes.time[:self.last_simplify_node] =
-            self.nodes.time[:self.last_simplify_node] + dt
-        self.nodes.time[self.last_simplify_node:] =
-            self.max_time - self.nodes.time[self.last_simplify_node:]
+        dt = self.max_time - self.last_update_time
+        self.nodes.time[:self.last_update_node] =
+            self.nodes.time[:self.last_update_node] + dt
+        self.nodes.time[self.last_update_node:] =
+            self.max_time - self.nodes.time[self.last_update_node:]
+        self.last_update_time = self.max_time
+        self.last_update_node = self.nodes.num_rows
 
     def simplify(self, samples):
         """
@@ -165,7 +167,7 @@ class ARGrecorder(object):
         ts.simplify(samples=sample_nodes)
         # update the internal state
         self.num_nodes = ts.num_nodes
-        self.last_simplify_time = self.max_time
+        self.last_update_node = ts.num_nodes
         self.input_min = min(samples)
         # update index map
         self.reset_node_ids(samples, ts.samples()):
@@ -188,17 +190,22 @@ class ARGrecorder(object):
         """
         Mark these individuals as samples internally (but do not simplify).
         """
-        tables = self.ts.dump_tables()
-        nodes = tables.edges
-        new_flags = nodes.flags
+        new_flags = self.nodes.flags
         new_flags &= ~NODE_IS_SAMPLE
         new_flags[samples] |= NODE_IS_SAMPLE
-        nodes.fill_columns(time=nodes.time,
-                           population=nodes.population,
-                           flags=new_flags)
+        self.nodes.fill_columns(time=self.nodes.time,
+                                population=self.nodes.population,
+                                flags=new_flags)
         self.ts.load_tables(**tables)
 
-    def tree_sequence(self):
+    def tree_sequence(self, samples):
+        """
+        Return the tree sequence for a given set of input samples.
+        """
+        self.update_times()
+        # problem: this may not work if simplify hasn't just been run
         ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
                                  sites=self.sites, mutations=self.mutations)
+        sample_nodes = [self.node_ids[x - self.input_min] for x in samples]
+        ts.simplify(samples=sample_nodes)
         return ts
