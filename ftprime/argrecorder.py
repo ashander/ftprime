@@ -3,6 +3,10 @@ import numpy as np
 
 NULL_ID = -1
 
+def null_tree_sequence():
+    return msprime.load_tables(nodes=msprime.NodeTable(),
+                               edgesets=msprime.EdgesetTable())
+
 class ARGrecorder(object):
     '''
     To record the ARG, this keeps track of
@@ -73,11 +77,12 @@ class ARGrecorder(object):
         self.edgesets = msprime.EdgesetTable()
         self.sites = msprime.SiteTable()
         self.mutations = msprime.MutationTable()
+        self.migrations = msprime.MigrationTable()
         ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
                        sites=self.sites, mutations=self.mutations)
         # list of site positions, maintained as site tables don't have
         #   efficient checking for membership
-        self.site_positions = self.sites.position
+        self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
 
     def __str__(self):
         ret = "Input ID offset m_0:\n"
@@ -111,7 +116,7 @@ class ARGrecorder(object):
             assert j < self.input_min + self.n_max
             self.node_ids[j - self.input_min] = x
 
-    def add_individual(self, input_id, time, 
+    def add_individual(self, input_id, time,
                        flags=msprime.NODE_IS_SAMPLE,
                        population=msprime.NULL_POPULATION):
         '''
@@ -122,7 +127,7 @@ class ARGrecorder(object):
         i = input_id - self.input_min
         assert i < self.n_max
         if self.node_ids[i] == NULL_ID:
-            self.nodes.add_row(flags=flags, population=population, 
+            self.nodes.add_row(flags=flags, population=population,
                                time=time)
             self.node_ids[i] = self.num_nodes
             self.num_nodes += 1
@@ -149,16 +154,16 @@ class ARGrecorder(object):
                               left=left,
                               right=right)
 
-    def add_mutation(self, position, node, derived_state):
+    def add_mutation(self, position, node, derived_state, ancestral_state):
         """
         Adds a new mutation to mutation table, and a new site if necessary as well.
         """
         if position not in self.site_positions:
             site = self.sites.num_rows
             self.sites.add_row(position=position, ancestral_state=ancestral_state)
-            self.site_positions.append(position)
+            self.site_positions[position] = site
         else:
-            site = self.site_positions.index(position)
+            site = self.site_positions[position]
         self.mutations.add_row(site=site, node=node, derived_state=derived_state)
 
     def update_times(self):
@@ -169,7 +174,7 @@ class ARGrecorder(object):
         times = self.nodes.time
         times[:self.last_update_node] = times[:self.last_update_node] + dt
         times[self.last_update_node:] = self.max_time - times[self.last_update_node:]
-        self.nodes.set_columns(flags=self.nodes.flags, 
+        self.nodes.set_columns(flags=self.nodes.flags,
                                population=self.nodes.population,
                                time=times)
         self.last_update_time = self.max_time
@@ -239,6 +244,7 @@ class ARGrecorder(object):
         sample_times = [times[i] for i in sample_nodes]
         sample_populations = [populations[i] for i in sample_nodes]
         new_samples = [None for _ in samples]
+        self.sequence_length = max(self.edgesets.right)
         j = 0
         for k in range(len(samples)):
             # find an unused input id, HACKILY
@@ -278,10 +284,12 @@ class ARGrecorder(object):
         if samples is None:
             samples = self.sample_ids()
         self.update_times()
-        tables = msprime.TableTuple(nodes=self.nodes, edgesets=self.edgesets,
-                                    sites=self.sites, mutations=self.mutations)
-        msprime.sort_tables(**tables)
-        ts = msprime.load_tables(**tables)
+        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
+                            sites=self.sites, mutations=self.mutations,
+                            migrations=self.migrations)
+        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
+                                 sites=self.sites, mutations=self.mutations,
+                                 migrations=self.migrations)
         sample_nodes = self.get_sample_nodes(samples)
         ts.simplify(samples=sample_nodes)
         return ts

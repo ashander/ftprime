@@ -1,5 +1,6 @@
-from ftprime import ARGrecorder
+import ftprime
 import msprime
+import pytest
 
  
 # With `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
@@ -64,37 +65,50 @@ def test_case():
             { 'b':'a', 'c':'a', 'd':'a', 'e':'c', 'f':'e', 'g':'d', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
         ]
     end_time = 6.0
-    ids = dict( [ (y,3+x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
+    ids = dict( [ (y,x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
+    true_times = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 5]
     def f(lparent,rparent,breakpoint,child,btime):
-        arg.add_individual(ids[child],btime)
+        arg.add_individual(ids[child], btime)
         if breakpoint>0.0:
-            arg.add_record(0.0,breakpoint,ids[lparent],(ids[child],))
+            arg.add_record(0.0, breakpoint, ids[lparent], (ids[child],))
         if breakpoint<1.0:
-            arg.add_record(breakpoint,1.0,ids[rparent],(ids[child],))
+            arg.add_record(breakpoint, 1.0, ids[rparent], (ids[child],))
 
-    arg=ARGrecorder()
+    arg = ftprime.ARGrecorder(ts=ftprime.null_tree_sequence(), max_indivs=20)
     # 1. Begin with an individual `a` (and another anonymous one) at `t=0`.
-    arg.add_individual(ids['a'],0.0)
+    arg.add_individual(ids['a'], 0.0)
     # 2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
-    f('a','z',1.0,'b',1.0)
-    f('a','z',1.0,'c',1.0)
+    f('a', 'z', 1.0, 'b', 1.0)
+    f('a', 'z', 1.0, 'c', 1.0)
     # 3. `(b,a,0.9)->d` and `(a,c,0.1)->e` and then `a` dies at `t=2`
-    f('b','a',0.9,'d',2.0)
-    f('a','c',0.1,'e',2.0)
+    f('b', 'a', 0.9, 'd', 2.0)
+    f('a', 'c', 0.1, 'e', 2.0)
     # 4. `(d,e,0.7)->f` at `t=3`
-    f('d','e',0.7,'f',3.0)
+    f('d', 'e', 0.7, 'f', 3.0)
     # 5. `(f,d,0.8)->g` and `(e,f,0.2)->h` at `t=4`.
-    f('f','d',0.8,'g',4.0)
-    f('e','f',0.2,'h',4.0)
+    f('f', 'd', 0.8, 'g', 4.0)
+    f('e', 'f', 0.2, 'h', 4.0)
     # 6. `(b,g,0.6)->i` and `(g,h,0.5)->j` and `(c,h,0.4)->k` at `t=5`.
-    f('b','g',0.6,'i',5.0)
-    f('g','h',0.5,'j',5.0)
-    f('c','h',0.4,'k',5.0)
+    f('b', 'g', 0.6, 'i', 5.0)
+    f('g', 'h', 0.5, 'j', 5.0)
+    f('c', 'h', 0.4, 'k', 5.0)
     # 7. We sample `i`, `j` and `k`.
-    sample_ids = ('i','j','k')
+    sample_ids = ('i', 'j', 'k')
     samples = [ids[x] for x in sample_ids]
     arg.mark_samples(samples=samples)
-    t = =arg.tree_sequence()
+
+    arg_ids = {k:arg.node_ids[ids[k]-arg.input_min] for k in ids}
+    assert arg.num_nodes == len(ids)
+    assert arg.max_time == 5.0
+    assert arg.sequence_length == 1.0
+    for x in ids:
+        assert arg.nodes.time[arg_ids[x]] == true_times[ids[x]]
+        if x in sample_ids:
+            assert arg.nodes.flags[arg_ids[x]] == msprime.NODE_IS_SAMPLE
+        else:
+            assert arg.nodes.flags[arg_ids[x]] == 0
+
+    t = arg.tree_sequence()
     for x,y in zip(ts.trees(),true_trees):
         print("observed:",x)
         print("truth:", y)

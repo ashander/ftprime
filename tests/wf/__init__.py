@@ -2,16 +2,22 @@ import msprime
 from ftprime import ARGrecorder
 from itertools import count
 import random
+import numpy as np
 
 def random_breakpoint() :
     return min(1.0, max(0.0, 2*random.random()-0.5))
 
-def wf(N, ngens, nsamples, survival=0.0, debug=False) :
+def random_mutations(rate) :
+    nmuts = np.random.poisson(lam=rate)
+    return [random.random() for _ in range(nmuts)]
+
+def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False) :
     '''
     SIMPLE simulation of a bisexual, haploid Wright-Fisher population of size N
     for ngens generations, in which each individual survives with probability
     survival and only those who die are replaced.  The chromosome is 1.0
-    Morgans long.
+    Morgans long, and the mutation rate is in units of
+    mutations/Morgan/generation.
 
     Outputs an ARGrecorder object for the simulation.  In the final generation,
     a random set of individuals are chosen to be samples.
@@ -35,12 +41,13 @@ def wf(N, ngens, nsamples, survival=0.0, debug=False) :
 
         dead = [(random.random() > survival) for k in pop]
         # this is: offspring ID, lparent, rparent, breakpoint
-        new_inds = [(next(labels), random.choice(pop), random.choice(pop), random_breakpoint()) 
+        new_inds = [(next(labels), random.choice(pop), random.choice(pop), 
+                     random_breakpoint(), random_mutations(mutation_rate))
                     for k in range(sum(dead))]
         j=0
         if debug:
             print("Replacing", sum(dead), "individuals.")
-        for offspring, lparent, rparent, bp in new_inds :
+        for offspring, lparent, rparent, bp, muts in new_inds :
             if debug:
                 print("--->", offspring, lparent, rparent, bp)
             while not dead[j] :
@@ -51,7 +58,10 @@ def wf(N, ngens, nsamples, survival=0.0, debug=False) :
             if bp > 0.0 :
                 records.add_record(left=0.0, right=bp, parent=lparent, children=(offspring,))
             if bp < 1.0 :
-                records.add_record( left=bp, right=1.0, parent=rparent, children=(offspring,))
+                records.add_record(left=bp, right=1.0, parent=rparent, children=(offspring,))
+            for mut in muts:
+                records.add_mutation(position=mut, node=input_id, 
+                                     derived_state=1, ancestral_state=0)
 
     if debug:
         print("Done, now sampling.")
