@@ -187,9 +187,11 @@ class ARGrecorder(object):
         """
         self.update_times()
         msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                 sites=self.sites, mutations=self.mutations)
+                                 sites=self.sites, mutations=self.mutations,
+                                 migrations=self.migrations)
         ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                 sites=self.sites, mutations=self.mutations)
+                                 sites=self.sites, mutations=self.mutations,
+                                 migrations=self.migrations)
         sample_nodes = self.get_sample_nodes(samples)
         ts.simplify(samples=sample_nodes)
         # update the internal state
@@ -199,7 +201,8 @@ class ARGrecorder(object):
         # update index map
         self.reset_node_ids(samples, ts.samples())
         ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
-                       sites=self.sites, mutations=self.mutations)
+                       sites=self.sites, mutations=self.mutations,
+                       migrations=self.migrations)
         return ts
 
     def sample_ids(self):

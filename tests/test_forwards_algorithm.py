@@ -96,13 +96,14 @@ def test_case():
     sample_ids = ('i', 'j', 'k')
     samples = [ids[x] for x in sample_ids]
     arg.mark_samples(samples=samples)
+    arg.update_times()
 
     arg_ids = {k:arg.node_ids[ids[k]-arg.input_min] for k in ids}
     assert arg.num_nodes == len(ids)
     assert arg.max_time == 5.0
     assert arg.sequence_length == 1.0
     for x in ids:
-        assert arg.nodes.time[arg_ids[x]] == true_times[ids[x]]
+        assert arg.nodes.time[arg_ids[x]] == 5.0 - true_times[ids[x]]
         if x in sample_ids:
             assert arg.nodes.flags[arg_ids[x]] == msprime.NODE_IS_SAMPLE
         else:
