@@ -5,9 +5,9 @@ from wf import wf
 
 
 def check_tables(args):
-    nodes = args.node_table()
+    nodes = args.nodes
     assert(nodes.num_rows == args.num_nodes)
-    edgesets = args.edgeset_table()
+    edgesets = args.edgesets
     # check edgesets are in order and all parents are recorded
     node_times = nodes.time
     last_time = 0.0
@@ -18,23 +18,23 @@ def check_tables(args):
     for ch in edgesets.children:
         assert(ch < args.num_nodes)
 
-@pytest.mark.parametrize(('N', 'gen', 'samples'), [
+@pytest.mark.parametrize(('N', 'gen', 'nsamples'), [
     (2, 2, 2),
     (5, 5, 5),
     (10, 10, 5),
 ])
-def test_simulation_runs(N, gen, samples):
+def test_simulation_runs(N, gen, nsamples):
 
     random.seed(123)
-    records = wf(N=N, ngens=gen, nsamples=samples, survival=0.5)
+    records = wf(N=N, ngens=gen, nsamples=nsamples, survival=0.5, debug=True)
 
     check_tables(records)
 
     for x in records:
         print(x, records[x])
 
-    print(records.edgeset_table())
-    print(records.node_table())
+    print(records.edgesets())
+    print(records.nodes())
 
     ts = records.tree_sequence()
 
