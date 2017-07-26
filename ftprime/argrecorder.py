@@ -21,41 +21,31 @@ class ARGrecorder(object):
     always "up to date".  However, the NodeTable is *not* kept up to date,
     because its `time` fields are recorded in *time ago*; we also keep track of
         - a list of birth times of individual IDs
-    which are translated to time-ago at each simplification step, and appended to the Node Table.
+    which are translated to time-ago at each simplification step, and appended
+    to the Node Table.
 
     The internal state is stored using
-        - self.node_ids[k] : gives the output Node ID corresponding to the
-          input individual ID (k + self.input_min)
-    and self.birth_times and self.populations stores the corresponding birth
-    times (in forwards-time) and populations.  These need to contain information
-    about every input individual who might be seen in a new edgeset (ie, who
-    might be a parent).
+        - ``self.node_ids[k]`` : the output Node ID corresponding to the input
+          individual ID ``k``.
 
     Assumes that input individual IDs are *nondecreasing*.
 
     Must be initialized with a tree sequence ``ts``, this will serve as
     the history of this first generation of individuals.  The ``samples`` of
     this tree sequence correspond to the individuals in the first generation.
-
-    If different than the sample IDs of ``ts``, ``first_generation`` has the
-    node IDs of the first generation.
     '''
 
-    def __init__(self, ts, first_generation=None, time=0.0, max_indivs=1000):
+    def __init__(self, ts, node_ids, time=0.0):
         """
         :param ts TreeSequence: The tree sequence defining relationships between
             the first genreation of individuals.
-        :param list first_generation: The input IDs of the first generation that
-            should be mapped onto the samples in the tree sequence ``ts``.
+        :param list node_ids: A dict indexed by input IDs so that
+            ``node_ids[k]`` is the node ID of the node corresponding to sample
+            ``k`` in the initial ``ts``.  Must specify this for every individual
+            that may be a parent moving forward.
         :param float time: The (forwards) time of the "present" at the start of
             the simulation.
-        :param int max_indivs: The largest number of individuals (past or present)
-            that we will track at any given time.
         """
-        if first_generation is None:
-            first_generation = ts.samples()
-        # maximum number of individuals that can be kept track of in the internal state
-        self.n_max = max_indivs
         # this is output node ID of the next new node
         self.num_nodes = ts.num_nodes # n
         self.sequence_length = ts.sequence_length
@@ -65,12 +55,8 @@ class ARGrecorder(object):
         self.last_update_time = time  # T_0
         # number of nodes that have the time right
         self.last_update_node = ts.num_nodes
-        assert len(ts.samples()) == len(first_generation)
-        # minimum currently active input ID
-        self.input_min = 0  # m_0
-        # list of output node IDs indexed by input labels
-        self.node_ids = np.empty(self.n_max, dtype='int32') # L
-        self.reset_node_ids(first_generation, ts.samples())
+        # dict of output node IDs indexed by input labels
+        self.node_ids = node_ids
         # the actual tables that get updated
         #  DON'T actually store ts, just the tables:
         self.nodes = msprime.NodeTable()
@@ -85,9 +71,7 @@ class ARGrecorder(object):
         self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
 
     def __str__(self):
-        ret = "Input ID offset m_0:\n"
-        ret += str(self.input_min) + "\n"
-        ret += "Max time so far:\n"
+        ret = "Max time so far:\n"
         ret += str(self.max_time) + "\n"
         ret += "Last update time:\n"
         ret += str(self.last_update_time) + "\n"
@@ -103,18 +87,7 @@ class ARGrecorder(object):
         """
         Return the output node IDs corresponding to a list of input sample IDs.
         """
-        return [self.node_ids[j - self.input_min] for j in samples]
-
-
-    def reset_node_ids(self, generation, samples):
-        """
-        Reset the internal mapping of input to node IDs except for each
-        individual in generation is mapped to the corresponding one in samples.
-        """
-        self.node_ids.fill(NULL_ID)
-        for j, x in zip(generation, samples):
-            assert j < self.input_min + self.n_max
-            self.node_ids[j - self.input_min] = x
+        return [self.node_ids[j] for j in samples]
 
     def add_individual(self, input_id, time,
                        flags=msprime.NODE_IS_SAMPLE,
@@ -124,12 +97,10 @@ class ARGrecorder(object):
         it a new output Node ID.  New individuals are marked as samples by
         default because we (expect to) have their full history.
         '''
-        i = input_id - self.input_min
-        assert i < self.n_max
-        if self.node_ids[i] == NULL_ID:
+        if input_id not in self.node_ids:
             self.nodes.add_row(flags=flags, population=population,
                                time=time)
-            self.node_ids[i] = self.num_nodes
+            self.node_ids[input_id] = self.num_nodes
             self.num_nodes += 1
             self.max_time = max(self.max_time, time)
         else:
@@ -143,12 +114,12 @@ class ARGrecorder(object):
         [left,right).
         '''
         # unneeded but helpful for debugging
-        out_parent = self.node_ids[parent - self.input_min]
+        out_parent = self.node_ids[parent]
         if out_parent == NULL_ID:
             raise ValueError("Parent " + str(parent) +
                              "'s birth time has not been recorded with " +
                              ".add_individual().")
-        out_children = tuple([self.node_ids[u - self.input_min] for u in children])
+        out_children = tuple([self.node_ids[u] for u in children])
         self.edgesets.add_row(parent=out_parent,
                               children=out_children,
                               left=left,
@@ -187,8 +158,8 @@ class ARGrecorder(object):
         """
         self.update_times()
         msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                 sites=self.sites, mutations=self.mutations,
-                                 migrations=self.migrations)
+                            sites=self.sites, mutations=self.mutations,
+                            migrations=self.migrations)
         ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
                                  sites=self.sites, mutations=self.mutations,
                                  migrations=self.migrations)
@@ -197,9 +168,8 @@ class ARGrecorder(object):
         # update the internal state
         self.num_nodes = ts.num_nodes
         self.last_update_node = ts.num_nodes
-        self.input_min = min(samples)
         # update index map
-        self.reset_node_ids(samples, ts.samples())
+        self.node_ids = {k : v for k, v in zip(samples, ts.samples())}
         ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
                        sites=self.sites, mutations=self.mutations,
                        migrations=self.migrations)
@@ -250,11 +220,8 @@ class ARGrecorder(object):
         self.sequence_length = max(self.edgesets.right)
         j = 0
         for k in range(len(samples)):
-            # find an unused input id, HACKILY
-            while j < self.n_max and self.node_ids[j] != NULL_ID:
-                j += 1
-            if j == self.n_max:
-                raise ValueError("Not enough empty input IDs - simplify first?")
+            # find an unused input id
+            j = 1 + max(self.node_ids.keys())
             new_samples[k] = j
             self.add_individual(input_id=new_samples[k],
                                 time=sample_times[k] + dt,
@@ -282,7 +249,7 @@ class ARGrecorder(object):
     def tree_sequence(self, samples=None):
         """
         Return the simplified tree sequence for a given set of input samples,
-        without modifying the tables stored internally.
+        *without* modifying the tables stored internally.
         """
         if samples is None:
             samples = self.sample_ids()
@@ -294,5 +261,4 @@ class ARGrecorder(object):
                                  sites=self.sites, mutations=self.mutations,
                                  migrations=self.migrations)
         sample_nodes = self.get_sample_nodes(samples)
-        ts.simplify(samples=sample_nodes)
-        return ts
+        return ts.simplify(samples=sample_nodes)
