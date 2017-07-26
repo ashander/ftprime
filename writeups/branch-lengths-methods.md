@@ -156,6 +156,8 @@ $$\begin{aligned}
     &= 
         \frac{ ( x_1 n_2 - x_2 n_1 ) ( x_3 n_4 - x_4 n_3 ) }{ n_1 n_2 n_3 n_4 } \\
     &= 
+        \frac{ ( x_1 \bar x_2 - x_2 \bar x_1 ) ( x_3 \bar x_4 - x_4 \bar x_3 ) }{ n_1 n_2 n_3 n_4 } \\
+    &= 
         \frac{ x_1 \bar x_2 x_3 \bar x_4 + \bar x_1 x_2 \bar x_3 x_4  - x_1 \bar x_2 \bar x_3 x_4 - \bar x_1 x_2 x_3 \bar x_4  }{ n_1 n_2 n_3 n_4 } 
 \end{aligned}$$
 
