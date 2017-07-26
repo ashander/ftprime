@@ -2,8 +2,10 @@
 
 Let $A_1, ..., A_n$ be fixed sets of samples.
 For a node $z$ in a tree, let $t(z)$ be the length of the branch above $z$, 
-and let $X(z) = ( x_1(z), ... x_n(z) )$ be a list of integers, 
-with $x_k(z)$ the number of samples in $A_k$ that subtend $z$.  
+and let $X(z) = ( (x_1(z), \bar x_1(z)),  ... (x_n(z), \bar x_n(z)) )$ be a list of **pairs** of integers, 
+with $x_k(z)$ the number of samples in $A_k$ that subtend $z$,
+and $\bar x_k(z)$ the number of samples in $A_k$ that do *not* subtend $z$.
+(This is redundant given the sizes of $A_k$, but allows for easier generalization to mutations.)
 We will want to count the total length of all branches weighted by a function $f(X)$.
 Then for a given tree $T$ we define $L(T)$ to be this total length:
 $$
@@ -16,13 +18,15 @@ $$
 $$
 
 For instance: we get sequence length multiplied by average TMRCA between $a$ and $b$ with $A_1 = {a}$ and $A_2 = {b}$ and $f(x_1,x_2) = \text{xor}(x_1,x_2)$
-(mapping True to 1 and False to 0).
+(mapping True to 1 and False to 0 and discarding the complements $\bar x_1$ and $\bar x_2$).
 
-To compute this, we'll keep track of X(z) for each node of the current tree, and update these as we move along the tree sequence:
+To compute this, we'll keep track of $(x_1, \ldots, x_n)$ for each node of the current tree, 
+and update these as we move along the tree sequence
+(from these at the end we get $\bar x_k = |A_k| - x_k$):
 
  0) initialize $X$
  1) $S \mathrel{+}= u_i * L(T_i)$
- 2) move to the next tree and update $X.$
+ 2) move to the next tree and update $X$.
 
 As for updating $X$, note that $X$ is additive: 
 if node $z$ has children $y_1, ..., y_m$ then $X(z) = \sum_j X(Y_j)$.
@@ -92,17 +96,18 @@ To compute mean divergence between two groups, $A_1$ and $A_2$, of sizes $n_1$ a
 the weight we assign to a branch is equal to the number of paths from an element of $A_1$ to an element of $A_2$
 that pass through that branch
 divided by the total number of paths, $n_1 n_2$.
-If below a branch there are $x_1$ from $A_1$ and $x_2$ from $A_2$
-then the number of such paths are $x_1 (n_2-x_2) + (n_1-x_1) x_2$,
+If below a branch there are $x_1$ from $A_1$ and $x_2$ from $A_2$,
+and as always $\bar x_k = n_k - x_k$,
+then the number of such paths are $x_1 \bar x_2 + \bar x_1 x_2$,
 so that we should use
-$$f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2} .$$
+$$f((x_1, \bar x_1), (x_2, \bar x_2)) = \frac{x_1 \bar x_2 + \bar x_1 x_2}{n_1 n_2} .$$
 
 **For self comparisons** when $A_1 = A_2$,
 we want the mean pairwise TMRCA between two *distinct* samples from the set.
 Not accounting for this makes the statistic depend on sample size,
 as in smaller samples, self comparisons account for a larger fraction.
 $$\begin{aligned}
-    f(x_1) = \frac{2 x_1 (n_1-x_1)}{n_1 (n_1 - 1)} .
+    f((x_1,\bar x_1)) = \frac{2 x_1 \bar x_1}{n_1 (n_1 - 1)} .
 \end{aligned}$$
 
 ## Y statistic
@@ -111,15 +116,24 @@ Take a set of three distinct samples $a$, $b$, $c$.
 By $Y(a;b,c)$ we mean the mean length of any branches from which either ($a$), or (both of $b$ and $c$),
 but not $a$ and any of $b$ and $c$, inherit.
 With $A_1=\{a\}$ and $A_2 = \{b\}$ and $A_3 = \{c\}$, this therefore corresponds to the function
-$$f(x_1,x_2,x_3) = ( x_1=1 \;\text{and}\; x_2=x_3=0 ) \;\text{or}\; ( x_1=0 \;\text{and}\; x_2=x_3=1 )$$
+$$\begin{aligned}
+    f((x_1,\bar x_1), (x_2, \bar x_2), (x_3, \bar x_3))
+    &=
+    ( x_1=1 \;\text{and}\; x_2=x_3=0 ) \;\text{or}\; ( x_1=0 \;\text{and}\; x_2=x_3=1 )
+    &= 
+    x_1 \bar x_2 \bar x_3
+    + \bar x_1 x_2 x_3
+\end{aligned}$$
 
 Extending this to groups we would average over choices of $a$, $b$, and $c$
 from those groups, to obtain $Y(A;B,C)$.
-This at first seems simliar to $f_3()$, but the $f_3()$ statistic involves averaging over choices of *four distinct* individuals,
+This at first seems simliar to $f_3$, but the $f_3$ statistic involves averaging over choices of *four distinct* individuals,
 and this statistic uses only three.
 The weighting function for the $Y$ is then
 $$\begin{aligned}
-    f_Y(x_1,x_2,x_3) = \frac{ x_1 (n_2 - x_2) (n_3 - x_3) + (n_1 - x_1) x_2 x_3 }{ n_1 n_2 n_3 } .
+    f_Y((x_1,\bar x_1),(x_2,\bar x_2),(x_3,\bar x_3)) 
+    &= 
+        \frac{ x_1 \bar x_2 \bar x_3 + \bar x_1 x_2 x_3 }{ n_1 n_2 n_3 } 
 \end{aligned}$$
 
 
@@ -136,10 +150,13 @@ if these are independent then $(p_1-p_2)(p_3-p_4) = \E[(Z_1-Z_2)(Z_3-Z_4)]$.
 This makes it easy to rewrite the weighting function 
 (useful later in correcting for overlapping samples):
 $$\begin{aligned}
-    f_4(x_1,x_2,x_3,x_4)
-    &= \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_3}{n_3} - \frac{x_4}{n_4} \right) \\
-    &= \frac{ ( x_1 n_2 - x_2 n_1 ) ( x_3 n_4 - x_4 n_3 ) }{ n_1 n_2 n_3 n_4 } \\
-    &= \frac{ x_1 (n_2 - x_2) x_3 (n_4 - x_4) + (n_1 - x_1) x_2 (n_3 - x_3) x_4  - x_1 (n_2 - x_2) (n_3 - x_3) x_4 - (n_1 - x_1) x_2 x_3 (n_4 - x_4)  }{ n_1 n_2 n_3 n_4 } 
+    f_4((x_1,\bar x_1),(x_2,\bar x_2),(x_3,\bar x_3),(x_4,\bar x_4))
+    &= 
+        \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_3}{n_3} - \frac{x_4}{n_4} \right) \\
+    &= 
+        \frac{ ( x_1 n_2 - x_2 n_1 ) ( x_3 n_4 - x_4 n_3 ) }{ n_1 n_2 n_3 n_4 } \\
+    &= 
+        \frac{ x_1 \bar x_2 x_3 \bar x_4 + \bar x_1 x_2 \bar x_3 x_4  - x_1 \bar x_2 \bar x_3 x_4 - \bar x_1 x_2 x_3 \bar x_4  }{ n_1 n_2 n_3 n_4 } 
 \end{aligned}$$
 
 <!--
@@ -165,7 +182,7 @@ and $c$ and $d$ are from $A_2$ and $A_3$,
 minus the probability that $(a,d)$ are distinct from $(b,c)$.
 This uses the weighting function
 $$\begin{aligned}
-    f_3(x_1,x_2,x_3)
+    f_3((x_1,\bar x_1),(x_2,\bar x_2),(x_3,\bar x_3))
     &= \frac{ x_1 (x_1-1) (n_2 - x_2) (n_3 - x_3) 
             + (n_1 - x_1) (n_1 - x_1 - 1) x_2 x_3 
             - x_1 (n_1 - x_1) (n_2 - x_2) x_3
@@ -174,10 +191,10 @@ $$\begin{aligned}
     &= \frac{n_1}{n_1-1} \left( \frac{x_1}{n_1} - \frac{x_2}{n_2} \right)\left( \frac{x_1}{n_1} - \frac{x_3}{n_3} \right)
         - \frac{1}{n_1-1} \left\{ 
             \frac{x_1}{n_1} 
-            \left(1 - \frac{x_2}{n_2}\right) 
-            \left(1 - \frac{x_3}{n_3}\right) 
+            \frac{\bar x_2}{n_2} 
+            \frac{\bar x_3}{n_3} 
             + 
-            \left(1 - \frac{x_1}{n_1}\right) 
+            \frac{\bar x_1}{n_1}
             \frac{x_2}{n_2}
             \frac{x_3}{n_3}
         \right\} 
@@ -192,11 +209,15 @@ and $c$ and $d$ are *distinct* draws from $A_2$,
 minus the probability that $(a,d)$ are distinct from $(b,c)$.
 This uses the weighting function
 $$\begin{aligned}
-    f_2(x_1,x_2)
+    f_2((x_1,\bar x_1),(x_2,\bar x_2))
     &= \frac{ x_1 (x_1-1) (n_2 - x_2) (n_2 - x_2 - 1) 
             + (n_1 - x_1) (n_1 - x_1 - 1) x_2 (x_2 - 1) 
             - x_1 (n_1 - x_1) (n_2 - x_2) x_2
             - (n_1 - x_1) x_1 x_2 (n_2 - x_2)
+        }{ n_1 (n_1-1) n_2 (n_2-1) } 
+    &= \frac{ x_1 (x_1-1) \bar x_2 (\bar x_2 - 1)
+            + \bar x_1 (\bar x_1 - 1) x_2 (x_2 - 1) 
+            - 2 x_1 \bar x_1 \bar x_2 x_2
         }{ n_1 (n_1-1) n_2 (n_2-1) } 
 \end{aligned}$$
 
@@ -224,12 +245,12 @@ Therefore, the function we need to implement takes the value $z$, where
 If we let $A_1=\{x\}$, $A_2=\{y\}$, and $A_3=X$ (all the samples, including $x$ and $y$),
 then this is
 $$\begin{aligned}
-    f(x,y,z)
+    f((x,\bar x),(y,\bar y),(z, \bar z))
     =
-    -\frac{z}{n}\left(1-\frac{z}{n}\right) +
+    -\frac{z}{n}\frac{\bar z}{n} +
     \begin{cases}
-        (z/n) \qquad & \text{if}\; x=y=0 \\
-        (1-z/n) \qquad & \text{if}\; x=y=1  .
+        z/n \qquad & \text{if}\; x=y=0 \\
+        \bar z/n \qquad & \text{if}\; x=y=1  .
     \end{cases}
 \end{aligned}$$
 
@@ -248,6 +269,11 @@ $$\begin{aligned}
     f(x_1,x_2) = \frac{x_1 (n_2-x_2) + (n_1-x_1) x_2}{n_1 n_2 - n_{1 \cap 2}^2} ,
 \end{aligned}$$
 where $n_{1 \cap 2}$ is the number of samples in both $A_1$ and $A_2$.
+
+# Considerations with overlapping leaf sets
+
+Here is discussion of how to compute the statistics in a consistent way (as defined above)
+when leaf sets are not disjoint.  We don't use this.
 
 ## Y statistic with overlapping leaf sets
 
@@ -358,19 +384,19 @@ $\prod_i p_{I_i} \prod_j (1-q_{J_j}) + \prod_i (1-p_{I_i}) \prod_j q_{J_j}$.
 
 # Multiple mutations
 
-Observation: branches are equivalent to splits (i.e., bipartitions) are equivalent to biallelic sites.
+**Observation:** branches are equivalent to splits (i.e., bipartitions) are equivalent to biallelic sites.
 
 Currently, the statistic is defined by
 
 -  a list of sets of samples $A_1,...,A_n$, and
--  a function $f()$ that takes a list of integers and returns a number;
--  then each mutation (or unit of branchlength) counts towards the statistic weighted by $f()$ of the vector of numbers of individuals in each set of samples inheriting from that mutation (or branch), $N_1,...,N_n$.
+-  a function $f()$ that takes a list of tuples and returns a number;
+-  then each mutation (or unit of branchlength) counts towards the statistic weighted by $f()$ of the vector of numbers of individuals in each set of samples inheriting from that mutation (or branch), $x_1,...,x_n$.
 
-This definition applies perfectly fine to possibly recurrent mutations - the only issue is that we have to do a bit more work to determine what the $N$'s are for a particular mutation, since if it has occurred more than once then these aren't the same as the $N$'s for the branch it lies on.
+This definition applies perfectly fine to possibly recurrent mutations - the only issue is that we have to do a bit more work to determine what the $x$'s are for a particular mutation, since if it has occurred more than once then these aren't the same as the $x$'s for the branch it lies on.
 
-What about sites with more than one allele? There is not currently a consensus about how to compute single-site statistics like divergence using e.g. triallelic sites, and there's no obvious (simple) best answer, so this definition is as good as any. Concretely, let's take the definition above after replacing "each mutation" by "each allele". So, at sites with $k$ alleles, we'd compute the vector of $N$'s for each of the $k$ alleles, apply $f()$ to each of these, and sum them.
+What about sites with more than one allele? There is not currently a consensus about how to compute single-site statistics like divergence using e.g. triallelic sites, and there's no obvious (simple) best answer, so this definition is as good as any. Concretely, let's take the definition above after replacing "each mutation" by "each allele". So, at sites with $k$ alleles, we'd compute the vector of $x$'s for each of the $k$ alleles, apply $f()$ to each of these, and sum them.
 
-This is slightly different than before, because with biallelic sites if we know the $N$'s for a particular mutation, we also know them for the alternate allele, and we exploited this in defining particular $f()$s. We can't just sum over derived mutations, either: define divergence to be "density of differing sites"; let $A_1$ and $A_2$ both contain exactly one sample, and let $f(x,y) = xor(x,y)$. This counts derived alleles inherited by $A_1$ or $A_2$ but not both. Biallelic sites are counted correctly, but triallelic sites where $A_1$ and $A_2$ each inherit different derived alleles would get counted twice, incorrectly. The solution is to let $f(x,y) = xor(x,y)/2$, and sum over all alleles, so that
+This is slightly different than before, because with biallelic sites if we know the $x$'s for a particular mutation, we also know them for the alternate allele, and we exploited this in defining particular $f()$s. We can't just sum over derived mutations, either: define divergence to be "density of differing sites"; let $A_1$ and $A_2$ both contain exactly one sample, and let $f(x,y) = xor(x,y)$. This counts derived alleles inherited by $A_1$ or $A_2$ but not both. Biallelic sites are counted correctly, but triallelic sites where $A_1$ and $A_2$ each inherit different derived alleles would get counted twice, incorrectly. The solution is to let $f(x,y) = xor(x,y)/2$, and sum over all alleles, so that
 
 -  at a site with ancestral state G, sampled sequences G, C, we'd get $N(G) = (1,0)$ and $N(C) = (0,1)$ so that $f(N(G)) + f(N(C)) = 1$
 -  at a site with ancestral state G, sampled sequences T, C, we'd get $N(T) = (1,0)$ and $N(C) = (0,1)$ and $N(G) = (0,0)$, so that again $f(N(G)) + f(N(C)) + f(N(T))= 1$.
