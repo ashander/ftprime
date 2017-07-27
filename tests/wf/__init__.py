@@ -11,7 +11,7 @@ def random_mutations(rate) :
     nmuts = np.random.poisson(lam=rate)
     return [random.random() for _ in range(nmuts)]
 
-def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False) :
+def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False, seed=None) :
     '''
     SIMPLE simulation of a bisexual, haploid Wright-Fisher population of size N
     for ngens generations, in which each individual survives with probability
@@ -22,11 +22,14 @@ def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False) :
     Outputs an ARGrecorder object for the simulation.  In the final generation,
     a random set of individuals are chosen to be samples.
     '''
+    if seed is not None:
+        random.seed(seed)
     labels = count(0, 1)
     pop = [next(labels) for k in range(N)]
     # initial population
     init_ts = msprime.simulate(N, recombination_rate=1.0)
-    records = ARGrecorder(ts=init_ts, max_indivs=12*N)
+    init_samples = init_ts.samples()
+    records = ARGrecorder(ts=init_ts, node_ids={k:init_samples[k] for k in range(N)})
     simplify_interval = 10
 
     for t in range(1, 1+ngens) :
@@ -66,16 +69,15 @@ def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False) :
     if debug:
         print("Done, now sampling.")
         print(records)
+        print("pop:", pop)
 
     # restrict to a random subsample
     samples = random.sample(pop, nsamples)
-    phony_samples = records.phony_samples(samples)
-    records.simplify(phony_samples)
+    records.simplify(samples)
 
     if debug:
         print("Done.")
         print("samples:", samples)
-        print("phony samples:", phony_samples)
         print(records)
 
     return records

@@ -1,7 +1,11 @@
-import pytest
+import ftprime
+import msprime
 import random
+import unittest
 
-from wf import wf
+from tests import *
+
+from .wf import wf
 
 
 def check_tables(args):
@@ -18,29 +22,59 @@ def check_tables(args):
     for ch in edgesets.children:
         assert(ch < args.num_nodes)
 
-@pytest.mark.parametrize(('N', 'gen', 'nsamples'), [
-    (2, 2, 2),
-    (5, 5, 5),
-    (10, 10, 5),
-])
-def test_simulation_runs(N, gen, nsamples):
+class WfTestCase(FtprimeTestCase):
 
-    random.seed(123)
-    records = wf(N=N, ngens=gen, nsamples=nsamples, survival=0.5, debug=True)
+    def run_wf(self, N, ngens, nsamples, survival=0.0):
+        records = wf(N=N, ngens=ngens, nsamples=nsamples, survival=survival,
+                     debug=True, seed=self.random_seed)
+        return records
 
-    check_tables(records)
+    def test_get_nodes(self):
+        N = 2
+        ngens = 2
+        records = self.run_wf(N=N, ngens=ngens, nsamples=N)
+        # this should be the input IDs for final gen
+        final_gen = random.sample([N*ngens + x for x in range(N)], N)
+        records.check_ids(final_gen)
+        final_nodes = records.get_nodes(final_gen)
+        flags = records.nodes.flags
+        for k in range(N):
+            self.assertTrue(final_nodes[k] < records.nodes.num_rows)
+            self.assertEqual(records.node_ids[final_gen[k]], final_nodes[k])
+            self.assertEqual(flags[final_nodes[k]], msprime.NODE_IS_SAMPLE)
 
-    for x in records:
-        print(x, records[x])
 
-    print(records.edgesets())
-    print(records.nodes())
+    def test_sample_ids(self):
+        records = self.run_wf(N=2, ngens=2, nsamples=2)
+        sample_ids = records.sample_ids()
+        sample_nodes = [records.node_ids[k] for k in sample_ids]
+        flags = records.nodes.flags
+        print(records)
+        print("samples:", sample_ids)
+        print("sample nodes:", sample_nodes)
+        for k in range(len(flags)):
+            if k in sample_nodes:
+                self.assertEqual(flags[k], msprime.NODE_IS_SAMPLE)
+            # # currently, simplify doesn't reset sample flag
+            # else:
+            #     self.assertEqual(flags[k], 0)
 
-    ts = records.tree_sequence()
+    @unittest.skip
+    def test_nonoverlapping_generations(self):
 
-    for t in ts.trees():
-        print(t)
+        N = 3
+        ngens = 2
+        nsamples = 3
+        records = wf(N=N, ngens=ngens, nsamples=nsamples, survival=0.0, 
+                     debug=True, seed=self.random_seed)
 
-    print("Mean pairwise diversity:",ts.get_pairwise_diversity())
-    print("(should be zero)")
-    assert ts.get_pairwise_diversity() == 0.0
+        check_tables(records)
+
+        print(records)
+
+        samples = records.sample_ids()
+        print("samples:", samples)
+        ts = records.tree_sequence()
+
+        for t in ts.trees():
+            print(t)

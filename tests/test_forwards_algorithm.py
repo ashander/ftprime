@@ -1,88 +1,18 @@
 import ftprime
 import msprime
-import pytest
 import six
+import unittest
 
+from tests import *
 
-def check_trees(tsa, tsb, npos=20):
-    # check trees at a bunch of positions agree
-    assert len(tsa.samples()) == len(tsb.samples())
-    assert all([a == b for a, b in zip(tsa.samples(), tsb.samples())])
-    check_positions = [k/npos for k in range(npos)]
-    tsa_t = tsa.trees()
-    tsb_t = tsb.trees()
-    ta = next(tsa_t)
-    tb = next(tsb_t)
-    for pos in check_positions:
-        while pos > ta.interval[1]:
-            ta = next(tsa_t)
-        while pos > tb.interval[1]:
-            tb = next(tsb_t)
-        check_tree(ta, tb, tsa.samples())
-    return True
-
-def check_tree(ta, tb, samples):
-    for u in samples:
-        for v in samples:
-            assert ta.mrca(u,v) == tb.mrca(u,v)
-    return True
-
-
-# With `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
-# 
-# 1. Begin with an individual `a` (and another anonymous one) at `t=0`.
-# 2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
-# 3. `(b,a,0.9)->d` and `(a,c,0.1)->e` and then `a` dies at `t=2`
-# 4. `(d,e,0.7)->f` at `t=3`
-# 5. `(f,d,0.8)->g` and `(e,f,0.2)->h` at `t=4`.
-# 6. `(b,g,0.6)->i` and `(g,h,0.5)->j` and `(c,h,0.4)->k` at `t=5`.
-# 7. We sample `i`, `j` and `k`.
-# 
- 
-# Here are the trees:
-# ```
-# t                  |              |              |             |             |             |             |             |             |            
-#                                                                                                                                                   
-# 0       --a--      |     --a--    |     --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--   
-#        /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
-# 1     b   |   c    |   b   |   c  |   b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b   |   c 
-#       |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
-# 2     | d   e |    |   | d   e |  |   | d   e |  |  | d   e |  |  | d   e    |  | d   e    |    d   e    |    d   e    |    d   e    |    d   e   
-#       | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
-# 3     | | f | |    |   |   f | |  |   |   f | |  |  |   f   |  |  |   f      |  |   f      |      f      |      f      |    | f      |    | f     
-#       | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
-# 4     | g   h |    |   | g   h |  |   | g   h |  |  | g   h |  |  | g   h    |  | g   h    |    g   h    |    g   h    |    g   h    |    g   h   
-#       |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
-# 5     i   j   k    |   i   j   k  |   i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k 
-#                                                                                                                                                   
-#                    |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
-# ```
- 
-# and a labeling of the lineages
-# ```
-# t                  |              |              |             |             |             |             |             |             |            
-#                                                                                                                                                   
-# 0       --a--      |     --a--    |     --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--   
-#        /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
-# 1     b   |   c    |   b   |   c  |   b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b   |   c 
-#       |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
-# 2     | d   e |    |   | d   e |  |   | d   e |  |  | d   e |  |  | d   e    |  | d   e    |    d   e    |    d   e    |    d   e    |    d   e   
-#       | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
-# 3     | | f | |    |   |   f | |  |   |   f | |  |  |   f   |  |  |   f      |  |   f      |      f      |      f      |    | f      |    | f     
-#       | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
-# 4     | g   h |    |   | g   h |  |   | g   h |  |  | g   h |  |  | g   h    |  | g   h    |    g   h    |    g   h    |    g   h    |    g   h   
-#       |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
-# 5     i   j   k    |   i   j   k  |   i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k 
-#                                                                                                                                                   
-#                    |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
-# ```
-
-def test_case():
-    # build initial tree sequence with just a, b, c
+class BasicTestCase(FtprimeTestCase):
+    """
+    Test basic operations.
+    """
     nodes = six.StringIO("""\
     id      is_sample   population      time
     0       0           -1              1.00000000000000
-    1       1           -1              0.00000000000000
+    1       1           -1              0.20000000000000
     2       1           -1              0.00000000000000
     """)
     edgesets = six.StringIO("""\
@@ -90,6 +20,113 @@ def test_case():
     0       0.00000000      1.00000000      0       1,2
     """)
     init_ts = msprime.load_text(nodes=nodes, edgesets=edgesets)
+    init_map = {0:1, 1:2}
+
+    def test_init(self):
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        for input_id in self.init_map:
+            node_id = self.init_map[input_id]
+            self.assertEqual(records.nodes.time[node_id], 
+                             self.init_ts.node(node_id).time)
+            self.assertEqual(records.node_ids[input_id], node_id)
+            self.assertEqual(records.edgesets.num_rows, self.init_ts.num_edgesets)
+
+    def test_add_individual(self):
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        records.add_individual(5, 2.0, population=2)
+        self.assertEqual(records.nodes.num_rows, records.num_nodes)
+        self.assertEqual(records.nodes.num_rows, 4)
+        self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
+        self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
+        self.assertRaises(ValueError, records.add_individual, 1, 1.5)
+
+    def test_add_record(self):
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        records.add_individual(4, 2.0, population=2)
+        records.add_individual(5, 2.0, population=2)
+        records.add_record(0.0, 0.5, 0, (4,5))
+        records.add_record(0.5, 1.0, 0, (4,))
+        print(records)
+        self.assertEqual(records.edgesets.num_rows, 3)
+        self.assertEqual(records.edgesets.parent[1], records.node_ids[0])
+        self.assertEqual(records.edgesets.children[2], records.node_ids[4])
+        self.assertEqual(records.edgesets.children[3], records.node_ids[5])
+        self.assertEqual(records.edgesets.children[4], records.node_ids[4])
+        self.assertRaises(ValueError, records.add_record, 0.0, 0.5, 8, (0,1))
+
+    def test_update_times(self):
+        records_a = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        records_a.update_times()
+        records_b = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        for r in (records_a, records_b):
+            r.add_individual(4, 2.0, population=2)
+            r.add_individual(5, 2.0, population=2)
+            r.add_record(0.0, 0.5, 0, (4,5))
+            r.add_record(0.5, 1.0, 0, (4,))
+        records_a.update_times()
+        records_b.update_times()
+        self.assertEqual(records_a.nodes.time, records_b.nodes.time)
+
+class ExplicitTestCase(FtprimeTestCase):
+    """
+    An explicit test case.
+
+    With `(i,j,x)->k` denoting that individual `k` inherits from `i` on `[0,x)` and from `j` on `[x,1)`:
+
+    1. Begin with an individual `a` (and another anonymous one) at `t=0`.
+    2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
+    3. `(b,a,0.9)->d` and `(a,c,0.1)->e` and then `a` dies at `t=2`
+    4. `(d,e,0.7)->f` at `t=3`
+    5. `(f,d,0.8)->g` and `(e,f,0.2)->h` at `t=4`.
+    6. `(b,g,0.6)->i` and `(g,h,0.5)->j` and `(c,h,0.4)->k` at `t=5`.
+    7. We sample `i`, `j` and `k`.
+
+
+    Here are the trees:
+    ```
+    t                  |              |              |             |             |             |             |             |             |            
+                                                                                                                                                      
+    0       --a--      |     --a--    |     --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--   
+           /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
+    1     b   |   c    |   b   |   c  |   b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b   |   c 
+          |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
+    2     | d   e |    |   | d   e |  |   | d   e |  |  | d   e |  |  | d   e    |  | d   e    |    d   e    |    d   e    |    d   e    |    d   e   
+          | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
+    3     | | f | |    |   |   f | |  |   |   f | |  |  |   f   |  |  |   f      |  |   f      |      f      |      f      |    | f      |    | f     
+          | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
+    4     | g   h |    |   | g   h |  |   | g   h |  |  | g   h |  |  | g   h    |  | g   h    |    g   h    |    g   h    |    g   h    |    g   h   
+          |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
+    5     i   j   k    |   i   j   k  |   i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k 
+                                                                                                                                                      
+                       |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
+    ```
+
+    and a labeling of the lineages
+    ```
+    t                  |              |              |             |             |             |             |             |             |            
+                                                                                                                                                      
+    0       --a--      |     --a--    |     --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--    |    --a--   
+           /  |  \     |    /  |  \   |    /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /     \   |   /  |  \  
+    1     b   |   c    |   b   |   c  |   b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b       c  |  b   |   c 
+          |\ / \ /|    |   |\   \  |  |   |\     /|  |  |\     /|  |  |\     /   |  |\     /   |   \     /   |   \     /   |   \     /   |     /   /  
+    2     | d   e |    |   | d   e |  |   | d   e |  |  | d   e |  |  | d   e    |  | d   e    |    d   e    |    d   e    |    d   e    |    d   e   
+          | |\ /| |    |   |  \  | |  |   |  \  | |  |  |  \    |  |  |  \       |  |  \       |     \       |       /     |    |  /     |    |  /    
+    3     | | f | |    |   |   f | |  |   |   f | |  |  |   f   |  |  |   f      |  |   f      |      f      |      f      |    | f      |    | f     
+          | |/ \| |    |   |  /  | |  |   |  /  | |  |  |  / \  |  |  |  / \     |  |  / \     |     / \     |     / \     |    |  \     |    |  \    
+    4     | g   h |    |   | g   h |  |   | g   h |  |  | g   h |  |  | g   h    |  | g   h    |    g   h    |    g   h    |    g   h    |    g   h   
+          |/ \ / \|    |   |  \    |  |   |  \    |  |  |  \    |  |  |  \   \   |  |    / \   |   /   / \   |   /   / \   |   /   / \   |   /   / \  
+    5     i   j   k    |   i   j   k  |   i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k  |  i   j   k 
+                                                                                                                                                      
+                       |   0.0 - 0.1  |   0.1 - 0.2  |  0.2 - 0.4  |  0.4 - 0.5  |  0.5 - 0.6  |  0.6 - 0.7  |  0.7 - 0.8  |  0.8 - 0.9  |  0.9 - 1.0 
+    ```
+    """
+
+    def f(self, arg, lparent, rparent, breakpoint, child, btime):
+        arg.add_individual(self.ids[child], btime)
+        if breakpoint>0.0:
+            arg.add_record(0.0, breakpoint, self.ids[lparent], (self.ids[child],))
+        if breakpoint<1.0:
+            arg.add_record(breakpoint, 1.0, self.ids[rparent], (self.ids[child],))
 
     # the correct tree sequence, unsimplified
     nodes = six.StringIO("""\
@@ -129,74 +166,127 @@ def test_case():
     0       0.90000000      1.00000000      0       1,2,3
     """)
     true_ts = msprime.load_text(nodes=nodes, edgesets=edgesets)
-
-    big_trees = [
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'a', 'f':'d', 'g':'f', 'h':'e', 'i':'b', 'j':'g', 'k':'c' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'d', 'g':'f', 'h':'e', 'i':'b', 'j':'g', 'k':'c' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'d', 'g':'f', 'h':'f', 'i':'b', 'j':'g', 'k':'c' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'d', 'g':'f', 'h':'f', 'i':'b', 'j':'g', 'k':'h' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'d', 'g':'f', 'h':'f', 'i':'b', 'j':'h', 'k':'h' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'d', 'g':'f', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'e', 'g':'f', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
-            { 'b':'a', 'c':'a', 'd':'b', 'e':'c', 'f':'e', 'g':'d', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
-            { 'b':'a', 'c':'a', 'd':'a', 'e':'c', 'f':'e', 'g':'d', 'h':'f', 'i':'g', 'j':'h', 'k':'h' },
-        ]
-    end_time = 6.0
-    ids = dict( [ (y,x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
-    true_times = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 5]
-    def f(lparent,rparent,breakpoint,child,btime):
-        arg.add_individual(ids[child], btime)
-        if breakpoint>0.0:
-            arg.add_record(0.0, breakpoint, ids[lparent], (ids[child],))
-        if breakpoint<1.0:
-            arg.add_record(breakpoint, 1.0, ids[rparent], (ids[child],))
-
-    first_gen = {ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
-    arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
-    # 1. Begin with an individual `a` (and another anonymous one) at `t=0`.
-    # taken care of in init_ts
-    # arg.add_individual(ids['a'], 0.0)
-    # # 2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
-    # f('a', 'z', 1.0, 'b', 1.0)
-    # f('a', 'z', 1.0, 'c', 1.0)
-    # 3. `(b,a,0.9)->d` and `(a,c,0.1)->e` and then `a` dies at `t=2`
-    f('b', 'a', 0.9, 'd', 2.0)
-    f('a', 'c', 0.1, 'e', 2.0)
-    # 4. `(d,e,0.7)->f` at `t=3`
-    f('d', 'e', 0.7, 'f', 3.0)
-    # 5. `(f,d,0.8)->g` and `(e,f,0.2)->h` at `t=4`.
-    f('f', 'd', 0.8, 'g', 4.0)
-    f('e', 'f', 0.2, 'h', 4.0)
-    # 6. `(b,g,0.6)->i` and `(g,h,0.5)->j` and `(c,h,0.4)->k` at `t=5`.
-    f('b', 'g', 0.6, 'i', 5.0)
-    f('g', 'h', 0.5, 'j', 5.0)
-    f('c', 'h', 0.4, 'k', 5.0)
-    # 7. We sample `i`, `j` and `k`.
-    sample_ids = ('i', 'j', 'k')
-    samples = [ids[x] for x in sample_ids]
-    arg.mark_samples(samples=samples)
-    arg.update_times()
-
-    arg_ids = {k:arg.node_ids[ids[k]] for k in ids}
-    assert arg.num_nodes == len(ids)
-    assert arg.max_time == 5.0
-    assert arg.sequence_length == 1.0
-    for x in ids:
-        assert arg.nodes.time[arg_ids[x]] == 5.0 - true_times[ids[x]]
-        if x in sample_ids:
-            assert arg.nodes.flags[arg_ids[x]] == msprime.NODE_IS_SAMPLE
-        else:
-            assert arg.nodes.flags[arg_ids[x]] == 0
-
-    tss = arg.tree_sequence(samples)
     true_tss = true_ts.simplify()
 
-    assert tss.num_nodes == true_tss.num_nodes
+    ids = dict( [ (y,x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
+    true_times = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 5]
+    sample_ids = ('i', 'j', 'k')
+    sample_input_ids = [8, 9, 10]
 
-    for x in tss.dump_tables():
-        print(x)
+    def test_build_ts(self):
+        # build initial tree sequence with just a, b, c
+        nodes = six.StringIO("""\
+        id      is_sample   population      time
+        0       0           -1              1.00000000000000
+        1       1           -1              0.00000000000000
+        2       1           -1              0.00000000000000
+        """)
+        edgesets = six.StringIO("""\
+        id      left            right           parent  children
+        0       0.00000000      1.00000000      0       1,2
+        """)
+        init_ts = msprime.load_text(nodes=nodes, edgesets=edgesets)
 
-    for x in true_tss.dump_tables():
-        print(x)
+        first_gen = {self.ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
+        arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
+        # 1. Begin with an individual `a` (and another anonymous one) at `t=0`.
+        # taken care of in init_ts
+        # arg.add_individual(self.ids['a'], 0.0)
+        # # 2. `(a,?,1.0)->b` and `(a,?,1.0)->c` at `t=1`
+        # self.f(arg, 'a', 'z', 1.0, 'b', 1.0)
+        # self.f(arg, 'a', 'z', 1.0, 'c', 1.0)
+        # 3. `(b,a,0.9)->d` and `(a,c,0.1)->e` and then `a` dies at `t=2`
+        self.f(arg, 'b', 'a', 0.9, 'd', 2.0)
+        self.f(arg, 'a', 'c', 0.1, 'e', 2.0)
+        # 4. `(d,e,0.7)->f` at `t=3`
+        self.f(arg, 'd', 'e', 0.7, 'f', 3.0)
+        # 5. `(f,d,0.8)->g` and `(e,f,0.2)->h` at `t=4`.
+        self.f(arg, 'f', 'd', 0.8, 'g', 4.0)
+        self.f(arg, 'e', 'f', 0.2, 'h', 4.0)
+        # 6. `(b,g,0.6)->i` and `(g,h,0.5)->j` and `(c,h,0.4)->k` at `t=5`.
+        self.f(arg, 'b', 'g', 0.6, 'i', 5.0)
+        self.f(arg, 'g', 'h', 0.5, 'j', 5.0)
+        self.f(arg, 'c', 'h', 0.4, 'k', 5.0)
+        # 7. We sample `i`, `j` and `k`.
+        arg.mark_samples(samples=self.sample_input_ids)
+        arg.update_times()
 
-    check_trees(tss, true_tss)
+        arg_ids = {k:arg.node_ids[self.ids[k]] for k in self.ids}
+        self.assertEqual(arg.num_nodes, len(self.ids))
+        self.assertEqual(arg.max_time, 5.0)
+        self.assertEqual(arg.sequence_length, 1.0)
+        for x in self.ids:
+            self.assertEqual(arg.nodes.time[arg_ids[x]], 5.0 - self.true_times[self.ids[x]])
+            if x in self.sample_ids:
+                self.assertEqual(arg.nodes.flags[arg_ids[x]], msprime.NODE_IS_SAMPLE)
+            else:
+                self.assertEqual(arg.nodes.flags[arg_ids[x]], 0)
+
+        tss = arg.tree_sequence(self.sample_input_ids)
+
+        self.check_trees(tss, self.true_tss)
+
+    def test_node_times_stable(self):
+        # build initial tree sequence with just a, b, c
+        nodes = six.StringIO("""\
+        id      is_sample   population      time
+        0       0           -1              1.00000000000000
+        1       1           -1              0.00000000000000
+        2       1           -1              0.00000000000000
+        """)
+        edgesets = six.StringIO("""\
+        id      left            right           parent  children
+        0       0.00000000      1.00000000      0       1,2
+        """)
+        init_ts = msprime.load_text(nodes=nodes, edgesets=edgesets)
+        first_gen = {self.ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
+        arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
+        self.f(arg, 'b', 'a', 0.9, 'd', 2.0)
+        self.f(arg, 'a', 'c', 0.1, 'e', 2.0)
+        self.f(arg, 'd', 'e', 0.7, 'f', 3.0)
+        self.f(arg, 'f', 'd', 0.8, 'g', 4.0)
+        self.f(arg, 'e', 'f', 0.2, 'h', 4.0)
+        self.f(arg, 'b', 'g', 0.6, 'i', 5.0)
+        self.f(arg, 'g', 'h', 0.5, 'j', 5.0)
+        self.f(arg, 'c', 'h', 0.4, 'k', 5.0)
+        arg.update_times()
+        node_times = {u:arg.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
+        print(arg)
+        arg.simplify(self.sample_input_ids)
+        print(arg)
+        new_node_times = {u:arg.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
+        for u in self.sample_input_ids:
+            self.assertEqual(node_times[u], new_node_times[u])
+
+    @unittest.skip
+    def test_intermediate_simplify(self):
+        # build initial tree sequence with just a, b, c
+        nodes = six.StringIO("""\
+        id      is_sample   population      time
+        0       0           -1              1.00000000000000
+        1       1           -1              0.00000000000000
+        2       1           -1              0.00000000000000
+        """)
+        edgesets = six.StringIO("""\
+        id      left            right           parent  children
+        0       0.00000000      1.00000000      0       1,2
+        """)
+        init_ts = msprime.load_text(nodes=nodes, edgesets=edgesets)
+
+        first_gen = {self.ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
+        arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
+        self.f(arg, 'b', 'a', 0.9, 'd', 2.0)
+        self.f(arg, 'a', 'c', 0.1, 'e', 2.0)
+        self.f(arg, 'd', 'e', 0.7, 'f', 3.0)
+        self.f(arg, 'f', 'd', 0.8, 'g', 4.0)
+        # simplify
+        print(arg)
+        arg.simplify(samples=[self.ids[u] for u in ['b', 'c', 'e', 'f', 'g']])
+        print(arg)
+        self.f(arg, 'e', 'f', 0.2, 'h', 4.0)
+        self.f(arg, 'b', 'g', 0.6, 'i', 5.0)
+        self.f(arg, 'g', 'h', 0.5, 'j', 5.0)
+        self.f(arg, 'c', 'h', 0.4, 'k', 5.0)
+        print(arg)
+        tss = arg.tree_sequence(self.sample_input_ids)
+        self.check_trees(tss, self.true_tss)

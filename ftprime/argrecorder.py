@@ -56,7 +56,7 @@ class ARGrecorder(object):
         # number of nodes that have the time right
         self.last_update_node = ts.num_nodes
         # dict of output node IDs indexed by input labels
-        self.node_ids = node_ids
+        self.node_ids = dict(node_ids)
         # the actual tables that get updated
         #  DON'T actually store ts, just the tables:
         self.nodes = msprime.NodeTable()
@@ -71,23 +71,39 @@ class ARGrecorder(object):
         self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
 
     def __str__(self):
-        ret = "Max time so far:\n"
+        ret = "\n---------\n"
+        ret += "Max time so far:\n"
         ret += str(self.max_time) + "\n"
         ret += "Last update time:\n"
         ret += str(self.last_update_time) + "\n"
         ret += "Node IDs:\n"
-        ret += self.node_ids.__str__() + "\n"
-        ret += "Tables:\n"
-        for x in (self.nodes, self.edgesets, self.sites, self.mutations):
-            ret += x.__str__() + "\n"
+        ret += str(self.node_ids) + "\n"
+        ret += "Nodes:\n"
+        ret += str(self.nodes) + "\n"
+        ret += "Edgesets:\n"
+        ret += str(self.edgesets) + "\n"
+        ret += "Sites:\n"
+        ret += str(self.sites) + "\n"
+        ret += "Mutations:\n"
+        ret += str(self.mutations) + "\n"
+        ret += "Migrations:\n"
+        ret += str(self.migrations) + "\n"
         ret += "\n---------\n"
         return ret
 
-    def get_sample_nodes(self, samples):
+    def check_ids(self, input_ids):
         """
-        Return the output node IDs corresponding to a list of input sample IDs.
+        Check that all ``input_ids`` are valid.
         """
-        return [self.node_ids[j] for j in samples]
+        for u in input_ids:
+            if u not in self.node_ids:
+                raise ValueError("Input ID " + str(u) + " not recorded.")
+
+    def get_nodes(self, input_ids):
+        """
+        Return the output node IDs corresponding to a list of input IDs.
+        """
+        return [self.node_ids[j] for j in input_ids]
 
     def add_individual(self, input_id, time,
                        flags=msprime.NODE_IS_SAMPLE,
@@ -113,12 +129,11 @@ class ARGrecorder(object):
         tuple of IDs) inherit from parent (a single ID) on the interval
         [left,right).
         '''
-        # unneeded but helpful for debugging
-        out_parent = self.node_ids[parent]
-        if out_parent == NULL_ID:
+        if parent not in self.node_ids:
             raise ValueError("Parent " + str(parent) +
                              "'s birth time has not been recorded with " +
                              ".add_individual().")
+        out_parent = self.node_ids[parent]
         out_children = tuple([self.node_ids[u] for u in children])
         self.edgesets.add_row(parent=out_parent,
                               children=out_children,
@@ -153,9 +168,13 @@ class ARGrecorder(object):
 
     def simplify(self, samples):
         """
-        `samples` should be a list of all "currently living" input individual
-        IDs: i.e., anyone who might be a parent or a sample in the future.
+        Simplifies the underlying tables and returns the resulting tree
+        sequence.  To get the tree sequence for a set of samples use
+        :meth:``ARGrecorder.tree_sequence`` instead.  `samples` should be a
+        list of all "currently living" input individual IDs: i.e., anyone who
+        might be a parent or a sample in the future.
         """
+        self.check_ids(samples)
         self.update_times()
         msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
                             sites=self.sites, mutations=self.mutations,
@@ -163,8 +182,8 @@ class ARGrecorder(object):
         ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
                                  sites=self.sites, mutations=self.mutations,
                                  migrations=self.migrations)
-        sample_nodes = self.get_sample_nodes(samples)
-        ts.simplify(samples=sample_nodes)
+        sample_nodes = self.get_nodes(samples)
+        ts = ts.simplify(samples=sample_nodes)
         # update the internal state
         self.num_nodes = ts.num_nodes
         self.last_update_node = ts.num_nodes
@@ -175,6 +194,27 @@ class ARGrecorder(object):
                        migrations=self.migrations)
         return ts
 
+    def tree_sequence(self, samples=None):
+        """
+        Return the simplified tree sequence for a given set of input samples,
+        *without* simplifying the tables stored internally. (This *does* sort
+        them, however.) To simplify the tables stored internally as well, use
+        :meth:``ARGrecorder.simplify``.
+        """
+        if samples is None:
+            samples = self.sample_ids()
+        else:
+            self.check_ids(samples)
+        self.update_times()
+        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
+                            sites=self.sites, mutations=self.mutations,
+                            migrations=self.migrations)
+        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
+                                 sites=self.sites, mutations=self.mutations,
+                                 migrations=self.migrations)
+        sample_nodes = self.get_nodes(samples)
+        return ts.simplify(samples=sample_nodes)
+
     def sample_ids(self):
         """
         Return a list of the input IDs corresponding to the samples in the
@@ -182,9 +222,10 @@ class ARGrecorder(object):
         """
         flags = self.nodes.flags
         out = []
-        for j in range(self.nodes.num_rows):
+        for input_id in self.node_ids:
+            j = self.node_ids[input_id]
             if flags[j] & msprime.NODE_IS_SAMPLE:
-                out.append(j)
+                out.append(input_id)
         return out
 
     def dump_sample_table(self, out):
@@ -211,9 +252,10 @@ class ARGrecorder(object):
         on not sampling internal nodes.  These will be given arbitrary input
         IDs, that will probably break if the simulation is run further.
         '''
+        self.check_ids(samples)
         times = self.nodes.time
         populations = self.nodes.population
-        sample_nodes = self.get_sample_nodes(samples)
+        sample_nodes = self.get_nodes(samples)
         sample_times = [times[i] for i in sample_nodes]
         sample_populations = [populations[i] for i in sample_nodes]
         new_samples = [None for _ in samples]
@@ -238,27 +280,11 @@ class ARGrecorder(object):
         """
         Mark these individuals as samples internally (but do not simplify).
         """
-        sample_nodes = self.get_sample_nodes(samples)
+        self.check_ids(samples)
+        sample_nodes = self.get_nodes(samples)
         sample_flag = np.array(msprime.NODE_IS_SAMPLE, dtype='uint32')
         new_flags = self.nodes.flags & ~sample_flag
         new_flags[sample_nodes] |= sample_flag
         self.nodes.set_columns(time=self.nodes.time,
                                population=self.nodes.population,
                                flags=new_flags)
-
-    def tree_sequence(self, samples=None):
-        """
-        Return the simplified tree sequence for a given set of input samples,
-        *without* modifying the tables stored internally.
-        """
-        if samples is None:
-            samples = self.sample_ids()
-        self.update_times()
-        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
-                            sites=self.sites, mutations=self.mutations,
-                            migrations=self.migrations)
-        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                 sites=self.sites, mutations=self.mutations,
-                                 migrations=self.migrations)
-        sample_nodes = self.get_sample_nodes(samples)
-        return ts.simplify(samples=sample_nodes)
