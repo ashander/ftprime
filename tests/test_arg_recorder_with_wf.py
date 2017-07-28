@@ -8,20 +8,6 @@ from tests import *
 from .wf import wf
 
 
-def check_tables(args):
-    nodes = args.nodes
-    assert(nodes.num_rows == args.num_nodes)
-    edgesets = args.edgesets
-    # check edgesets are in order and all parents are recorded
-    node_times = nodes.time
-    last_time = 0.0
-    for p in edgesets.parent:
-        assert(node_times[p] >= last_time)
-        last_time = node_times[p]
-        assert(p < args.num_nodes)
-    for ch in edgesets.children:
-        assert(ch < args.num_nodes)
-
 class WfTestCase(FtprimeTestCase):
 
     def run_wf(self, N, ngens, nsamples, survival=0.0):
@@ -29,9 +15,29 @@ class WfTestCase(FtprimeTestCase):
                      debug=True, seed=self.random_seed)
         return records
 
+    def check_tables(self, records):
+        nodes = records.nodes
+        self.assertEqual(nodes.num_rows, records.num_nodes)
+        edgesets = records.edgesets
+        # check edgesets are in order and all parents are recorded
+        node_times = nodes.time
+        last_time = 0.0
+        for p in edgesets.parent:
+            self.assertTrue(node_times[p] >= last_time)
+            last_time = node_times[p]
+            self.assertTrue(p < records.num_nodes)
+        for ch in edgesets.children:
+            self.assertTrue(ch < records.num_nodes)
+
+    def test_runs(self):
+        N = 10
+        ngens = 20
+        records = self.run_wf(N=N, ngens=ngens, nsamples=N)
+        self.check_tables(records)
+
     def test_get_nodes(self):
-        N = 2
-        ngens = 2
+        N = 10
+        ngens = 20
         records = self.run_wf(N=N, ngens=ngens, nsamples=N)
         # this should be the input IDs for final gen
         final_gen = random.sample([N*ngens + x for x in range(N)], N)
@@ -45,7 +51,7 @@ class WfTestCase(FtprimeTestCase):
 
 
     def test_sample_ids(self):
-        records = self.run_wf(N=2, ngens=2, nsamples=2)
+        records = self.run_wf(N=11, ngens=20, nsamples=5)
         sample_ids = records.sample_ids()
         sample_nodes = [records.node_ids[k] for k in sample_ids]
         flags = records.nodes.flags
@@ -60,13 +66,8 @@ class WfTestCase(FtprimeTestCase):
             #     self.assertEqual(flags[k], 0)
 
     @unittest.skip
-    def test_nonoverlapping_generations(self):
-
-        N = 3
-        ngens = 2
-        nsamples = 3
-        records = wf(N=N, ngens=ngens, nsamples=nsamples, survival=0.0, 
-                     debug=True, seed=self.random_seed)
+    def test_overlapping_generations(self):
+        records = self.run_wf(N=11, ngens=20, nsamples=5, survival=0.5)
 
         check_tables(records)
 

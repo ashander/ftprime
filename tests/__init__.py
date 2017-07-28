@@ -35,3 +35,7 @@ class FtprimeTestCase(unittest.TestCase):
                 self.assertEqual(ta.mrca(u,v), tb.mrca(u,v))
         return True
 
+    def assertArrayEqual(self, a, b):
+        self.assertEqual(len(a), len(b))
+        for k in range(len(a)):
+            self.assertEqual(a[k], b[k])

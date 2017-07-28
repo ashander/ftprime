@@ -56,6 +56,7 @@ class BasicTestCase(FtprimeTestCase):
 
     def test_update_times(self):
         records_a = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        # check doing update_times along the way doesn't change things
         records_a.update_times()
         records_b = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         for r in (records_a, records_b):
@@ -65,7 +66,12 @@ class BasicTestCase(FtprimeTestCase):
             r.add_record(0.5, 1.0, 0, (4,))
         records_a.update_times()
         records_b.update_times()
-        self.assertEqual(records_a.nodes.time, records_b.nodes.time)
+        self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
+        # check update_times is idempotent
+        records_b.update_times()
+        self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
+        # and check is right answer
+        self.assertArrayEqual(records_a.nodes.time, [3, 2.2, 2, 0, 0])
 
 class ExplicitTestCase(FtprimeTestCase):
     """
