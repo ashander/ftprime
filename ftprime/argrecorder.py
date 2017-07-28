@@ -37,9 +37,9 @@ class ARGrecorder(object):
 
     def __init__(self, ts, node_ids, time=0.0):
         """
-        :param ts TreeSequence: The tree sequence defining relationships between
-            the first genreation of individuals.
-        :param list node_ids: A dict indexed by input IDs so that
+        :param TreeSequence ts: A tree sequence describing the history of the population
+            before the simulation starts.
+        :param dict node_ids: A dict indexed by input IDs so that
             ``node_ids[k]`` is the node ID of the node corresponding to sample
             ``k`` in the initial ``ts``.  Must specify this for every individual
             that may be a parent moving forward.

@@ -26,15 +26,10 @@ class RecombCollector:
     '''
     Collect and parse recombination events as output by simuPOP's Recombinator,
     which outputs like:
-    offspringID parentID startingPloidy rec1 rec2 ....
-    ... coming in *pairs*
 
-    This needs:
-    namples - number of *diploid* samples
-    first_gen - list of individuals IDs in the initial population
-    ancestor_age - number of generations before beginning of simulation that common ancestor lived
-    length - length of chromosome
-    locus_position - list of positions of the loci simuPOP refers to along the chromosome
+    offspringID parentID startingPloidy rec1 rec2 ....
+
+    ... coming in *pairs*.
 
     This keeps track of *time* - so when used, the time must be updated -
     in simuPOP, by adding rc.increment_time() to the PreOps.  It should be in PreOps
@@ -43,44 +38,43 @@ class RecombCollector:
         - calling increment_time() increases the time by 1
         - the first generation is recorded at time 1.0
         - ...
+
     '''
 
-    def __init__(self, first_gen, ancestor_age, length,
-                 locus_position):
-        self.ancestor_age = ancestor_age
-        self.length = length
+    def __init__(self, ts, node_ids, locus_position):
+        """
+        :param TreeSequence ts: A tree sequence describing the history of each
+            chromosome in the population before the simulation starts.
+        :param dict node_ids: A dict indexed by (individual ID, ploidy)
+            ``node_ids[(k,0)]`` is the node ID of the node corresponding to the
+            maternally inherited chromosome of sample ``k`` in the initial ``ts``,
+            and ``node_ids[(k,1)]`` is the node ID for the paternal chromosome.
+            Must specify this for every individual that may be a parent moving forward.
+        :param list locus_position: A list of coordinates on the genome of the loci
+            that simuPOP is keeping track of.  There must be a locus at the beginning
+            and also at the end of the chromosome.
+        """
+        self.ts = ts
+        self.sequence_length = ts.sequence_length
         self.locus_position = locus_position
         self.last_child = -1
         self.time = 0.0
 
-        if locus_position[0] != 0.0 or locus_position[-1] != length:
-            raise ValueError("locus_position (and lociPos) must include a locus at each end of the chromosome.")
+        if locus_position[0] != 0.0 or locus_position[-1] != self.sequence_length:
+            raise ValueError("locus_position (and lociPos) must include a locus\
+                              at each end of the chromosome.")
 
-        self.args = ARGrecorder()
-
-        self.universal_ancestor = 0
+        haploid_node_ids = {self.i2c(x[0], x[1]):node_ids[(x[0], x[1])] 
+                            for x in node_ids}
+        self.args = ARGrecorder(ts, node_ids=haploid_node_ids)
         # will record IDs of diploid samples here when they are chosen
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder
         self.diploid_samples = None
-        self.args.add_individual(name=self.universal_ancestor,
-                                 time=(-1)*self.ancestor_age)
-        # add initial generation
-        first_haps = [self.i2c(k, p) for k in first_gen for p in [0, 1]]
-        first_haps.sort()
-        self.args.add_record(
-                left=0.0,
-                right=self.length,
-                parent=self.universal_ancestor,
-                children=tuple(first_haps))
-        for k in first_haps:
-            # print("Adding:",k, p, self.time)
-            self.args.add_individual(k, self.time)
 
     def i2c(self, k, p):
         # individual ID to chromsome ID
-        # 1+ for the universal ancestor at slot 0
-        out = 1 + ind_to_chrom(k, mapa_labels[p])
+        out = ind_to_chrom(k, mapa_labels[p])
         return out
 
     def increment_time(self):
@@ -129,10 +123,10 @@ class RecombCollector:
                             children=(child_chrom,))
                     start = breakpoint
                     ploid = ((ploid + 1) % 2)
-            # print("--- ",start, self.length," |")
+            # print("--- ",start, self.sequence_length," |")
             self.args.add_record(
                     left=start,
-                    right=self.length,
+                    right=self.sequence_length,
                     parent=self.i2c(parent, ploid),
                     children=(child_chrom,))
 

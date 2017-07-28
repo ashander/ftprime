@@ -4,8 +4,8 @@ import math
 from collections import Counter
 import random
 
-from ftprime import RecombCollector
-# from http://simupop.sourceforge.net/manual_svn/build/userGuide_ch3_sec4.html
+import ftprime
+import msprime
 
 
 # increases reproducibility by
@@ -29,9 +29,9 @@ def check_record_order(args):
 
 
 def check_tables(args):
-    nodes = args.node_table()
+    nodes = args.nodes
     assert(nodes.num_rows == args.num_nodes)
-    edgesets = args.edgeset_table()
+    edgesets = args.edgesets
     # check edgesets are in order and all parents are recorded
     node_times = nodes.time
     last_time = 0.0
@@ -82,8 +82,13 @@ def make_pop(request):
         # tag the first generation so we can pass it to rc
         id_tagger.apply(pop)
 
-        rc = RecombCollector(first_gen=pop.indInfo("ind_id"), ancestor_age=10, 
-                             length=length, locus_position=locus_position)
+        first_gen = pop.indInfo("ind_id")
+        init_ts = msprime.simulate(2*len(first_gen))
+        haploid_labels = [(k,p) for k in first_gen 
+                                for p in (0,1)]
+        node_ids = {x:j for x, j in zip(haploid_labels, init_ts.samples())}
+        rc = ftprime.RecombCollector(ts=init_ts, node_ids=node_ids,
+                                     locus_position=locus_position)
         recombinator = sim.Recombinator(intensity=recomb_rate,
                                         output=rc.collect_recombs,
                                         infoFields="ind_id")
@@ -134,15 +139,15 @@ def test_simupop(make_pop, generations, popsize):
     pop,rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                    recomb_rate, generations, length)
     locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
-    rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"), locations)
+    rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"))
 
     check_record_order(rc.args)
     check_tables(rc.args)
 
     for x in rc.args:
         print(rc.args[x])
-    print(rc.args.node_table())
-    print(rc.args.edgeset_table())
+    print(rc.args.nodes)
+    print(rc.args.edgeset)
 
     ts = rc.args.tree_sequence()
 
@@ -173,9 +178,6 @@ def test_recombination(make_pop, generations, popsize, locus_position):
     nloci = len(locus_position)
     recomb_rate = 1.0
 
-    rc = RecombCollector(first_gen=range(popsize), ancestor_age=10, length=length, 
-                         locus_position=locus_position)
-
     init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
 
     id_tagger = sim.IdTagger(begin=0)
@@ -183,13 +185,13 @@ def test_recombination(make_pop, generations, popsize, locus_position):
     pop,rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                    recomb_rate, generations, length)
     locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
-    rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"), locations)
+    rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"))
 
-    print(rc.args.node_table())
-    print(rc.args.edgeset_table())
+    print(rc.args.nodes)
+    print(rc.args.edgesets)
 
     # check for uniformity of recombination breakpoints
-    edges = rc.args.edgeset_table()
+    edges = rc.args.edgesets
 
     breakpoints = [x for x in edges.left if (x > 0.0) and (x < 1.0)]
     breakpoints += [x for x in edges.right if (x > 0.0) and (x < 1.0)]
