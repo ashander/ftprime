@@ -146,18 +146,15 @@ which we call ``input labels'',
 to distinguish them from the ``node IDs'' given to these same individuals in the (output) tree sequence.
 The algorithm maintains at all times a set of tables $(\nodes, \edgesets, \sites, \mutations)$
 that record a relaxed tree sequence,
-and a mapping $\phi$ from input labels to output node IDs, so that if $x$ is an input label,
-then $\phi(x)$ is the corresponding output node ID.
-(Since the number of individuals alive at any point in time may be large,
-this is done by storing $m_0$, the minimum index of any currently alive individual,
-and a list $L$ such that $\phi(x) = L[x-m_0]$.)
+and an associative array $L$ that maps input labels to output node IDs, so that if $x$ is an input label,
+then $L[x]$ is the corresponding output node ID.
 We also always maintain $n$ to be the number of rows currently in the node table,
 (so that with zero-indexed IDs, the next to be added will have node ID $n$),
 $T_0$ to be the time of last simplification,
 and $n_0$ the number of rows in the node table at that time. 
 
 Initially, we begin with $n$ and $n_0$ equal to the number of rows in the initial node table,
-$m_0 = 0$, and $L[j] = i_j$ for each $0 \le j < N$ if the initial input generation is labeled
+and $L[j] = i_j$ for each $0 \le j < N$ if the initial input generation is labeled
 $i_0$, \ldots, $i_{N-1}$.
 
 At a reproduction event where haploid parents $x$ and $y$ produce offspring $u$ 
@@ -168,8 +165,8 @@ at time $t$ in population $p$,
         \text{flags}=0,
         \text{population}=p, 
         \text{time}=t)$ row to the node table,
-    \item set $L[u-m_0] = n$,
-    \item and increment $n++$.
+    \item set $L[u] = n$,
+    \item and increment $n\mathrel{+}=1$.
 \end{enumerate}
 Then, for each interval $[\ell,r)$ that $u$ inherits from parent $z$
 (where $z$ is either $x$ or $y$),
@@ -195,7 +192,7 @@ then for each $1 \le j \le k$,
         \text{derived\_state}=q_j)$ to the mutation table.
 \end{enumerate}
 
-To simplify the tree sequence at time $T$,
+To \textbf{simplify} the tree sequence at time $T$,
 \begin{enumerate}
     \item add $T-T_0$ to each time in the first $n_0$ rows of the node table,
         and replace each remaining time $t$ with $T-t$.
@@ -205,11 +202,16 @@ $i_0, \ldots, i_{N-1}$ to the simplificaiton algorithm,
 which produces a tree sequence that has node ID $j$ corresponding to input ID $i_j$
 for $0 \le j < N$, and
 \begin{enumerate}[resume]
-    \item empty $L$, and set $m_0 = \min(i_0, \ldots, i_{N-1})$,
+    \item empty $L$,
     \item let $L[j] = i_j$ for $0 \le j < N$,
     \item set $n$ to be the number of nodes in the new tree sequence and set $n_0 = n$, and finally
     \item set $T_0 = T$.
 \end{enumerate}
+
+Simplification keeps the tables to a managable size.
+Since the map $L$ is updated to maintain the association between individuals in the simulation
+and nodes in the tree sequence, simplification can be run regularly, 
+as the simulation progresses.
 
 
 \begin{figure}
