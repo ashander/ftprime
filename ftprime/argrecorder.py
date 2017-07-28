@@ -69,6 +69,8 @@ class ARGrecorder(object):
         # list of site positions, maintained as site tables don't have
         #   efficient checking for membership
         self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
+        # for bookkeeping
+        self.num_simplifies = 0
 
     def __str__(self):
         ret = "\n---------\n"
@@ -192,6 +194,7 @@ class ARGrecorder(object):
         ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
                        sites=self.sites, mutations=self.mutations,
                        migrations=self.migrations)
+        self.num_simplifies += 1
         return ts
 
     def tree_sequence(self, samples=None):

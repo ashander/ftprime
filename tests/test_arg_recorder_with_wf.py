@@ -10,9 +10,10 @@ from .wf import wf
 
 class WfTestCase(FtprimeTestCase):
 
-    def run_wf(self, N, ngens, nsamples, survival=0.0):
+    def run_wf(self, N, ngens, nsamples, survival=0.0, simplify_interval=10):
         records = wf(N=N, ngens=ngens, nsamples=nsamples, survival=survival,
-                     debug=True, seed=self.random_seed)
+                     debug=False, simplify_interval=simplify_interval,
+                     seed=self.random_seed)
         return records
 
     def check_tables(self, records):
@@ -34,6 +35,23 @@ class WfTestCase(FtprimeTestCase):
         ngens = 20
         records = self.run_wf(N=N, ngens=ngens, nsamples=N)
         self.check_tables(records)
+
+    def test_simplify_interval(self):
+        # since all randomness is in wf, should get *exactly the same trees*
+        # running with different simplify_intervals.
+        N = 5
+        ngens = 20
+        records_a = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=20)
+        records_b = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=2)
+        records_c = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=100)
+        self.assertEqual(records_a.num_simplifies, 1+1)
+        self.assertEqual(records_b.num_simplifies, 10+1)
+        self.assertEqual(records_c.num_simplifies, 0+1)
+        sample_ids = [N*ngens + x for x in range(N)]
+        self.check_trees(records_a.tree_sequence(sample_ids),
+                         records_b.tree_sequence(sample_ids))
+        self.check_trees(records_a.tree_sequence(sample_ids),
+                         records_c.tree_sequence(sample_ids))
 
     def test_get_nodes(self):
         N = 10

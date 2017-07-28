@@ -11,7 +11,8 @@ def random_mutations(rate) :
     nmuts = np.random.poisson(lam=rate)
     return [random.random() for _ in range(nmuts)]
 
-def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False, seed=None) :
+def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10,
+       debug=False, seed=None) :
     '''
     SIMPLE simulation of a bisexual, haploid Wright-Fisher population of size N
     for ngens generations, in which each individual survives with probability
@@ -30,7 +31,6 @@ def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False, seed=No
     init_ts = msprime.simulate(N, recombination_rate=1.0)
     init_samples = init_ts.samples()
     records = ARGrecorder(ts=init_ts, node_ids={k:init_samples[k] for k in range(N)})
-    simplify_interval = 10
 
     for t in range(1, 1+ngens) :
         if debug:
@@ -39,7 +39,6 @@ def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, debug=False, seed=No
             print(records)
 
         if (t % simplify_interval) == 0:
-            print("Simplifying.")
             records.simplify(pop)
 
         dead = [(random.random() > survival) for k in pop]
