@@ -34,6 +34,7 @@ class BasicTestCase(FtprimeTestCase):
     def test_add_individual(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         records.add_individual(5, 2.0, population=2)
+        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+1)
         self.assertEqual(records.nodes.num_rows, records.num_nodes)
         self.assertEqual(records.nodes.num_rows, 4)
         self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
@@ -44,14 +45,18 @@ class BasicTestCase(FtprimeTestCase):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         records.add_individual(4, 2.0, population=2)
         records.add_individual(5, 2.0, population=2)
+        # adding edgesets should not change number of nodes
+        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         records.add_record(0.0, 0.5, 0, (4,5))
         records.add_record(0.5, 1.0, 0, (4,))
+        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         print(records)
         self.assertEqual(records.edgesets.num_rows, 3)
         self.assertEqual(records.edgesets.parent[1], records.node_ids[0])
         self.assertEqual(records.edgesets.children[2], records.node_ids[4])
         self.assertEqual(records.edgesets.children[3], records.node_ids[5])
         self.assertEqual(records.edgesets.children[4], records.node_ids[4])
+        # try adding record with parent who doesn't exist
         self.assertRaises(ValueError, records.add_record, 0.0, 0.5, 8, (0,1))
 
     def test_update_times(self):
@@ -72,6 +77,20 @@ class BasicTestCase(FtprimeTestCase):
         self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
         # and check is right answer
         self.assertArrayEqual(records_a.nodes.time, [3, 2.2, 2, 0, 0])
+
+    def test_simplify(self):
+        # test that we get the same tree sequence by doing tree_sequence 
+        # and simplify -> tree_sequence
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        records.add_individual(4, 2.0, population=2)
+        records.add_individual(5, 2.0, population=2)
+        records.add_record(0.0, 0.5, 0, (4,5))
+        records.add_record(0.5, 1.0, 0, (4,))
+        tsa = records.tree_sequence([4, 5])
+        records.simplify([4, 5])
+        tsb = records.tree_sequence([4, 5])
+        self.check_trees(tsa, tsb)
+
 
 class ExplicitTestCase(FtprimeTestCase):
     """

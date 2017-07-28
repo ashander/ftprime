@@ -8,6 +8,7 @@ class FtprimeTestCase(unittest.TestCase):
 
     def check_trees(self, tsa, tsb, npos=20):
         # check trees at a bunch of positions agree
+        self.assertEqual(tsa.sequence_length, tsb.sequence_length)
         for x in tsa.dump_tables():
             print(x)
         for x in tsb.dump_tables():
@@ -16,7 +17,7 @@ class FtprimeTestCase(unittest.TestCase):
         self.assertEqual(len(tsa.samples()), len(tsb.samples()))
         for a, b in zip(tsa.samples(), tsb.samples()):
             self.assertEqual(a, b)
-        check_positions = [k/npos for k in range(npos)]
+        check_positions = [tsa.sequence_length*k/npos for k in range(npos)]
         tsa_t = tsa.trees()
         tsb_t = tsb.trees()
         ta = next(tsa_t)
@@ -34,3 +35,8 @@ class FtprimeTestCase(unittest.TestCase):
             for v in samples:
                 self.assertEqual(ta.mrca(u,v), tb.mrca(u,v))
         return True
+
+    def assertArrayEqual(self, x, y):
+        self.assertEqual(len(x), len(y))
+        for k in range(len(x)):
+            self.assertEqual(x[k], y[k])

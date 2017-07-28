@@ -54,7 +54,6 @@ class RecombCollector:
             that simuPOP is keeping track of.  There must be a locus at the beginning
             and also at the end of the chromosome.
         """
-        self.ts = ts
         self.sequence_length = ts.sequence_length
         self.locus_position = locus_position
         self.last_child = -1
@@ -74,7 +73,7 @@ class RecombCollector:
 
     def i2c(self, k, p):
         # individual ID to chromsome ID
-        out = ind_to_chrom(k, mapa_labels[p])
+        out = ind_to_chrom(int(k), mapa_labels[p])
         return out
 
     def increment_time(self):
@@ -130,13 +129,41 @@ class RecombCollector:
                     parent=self.i2c(parent, ploid),
                     children=(child_chrom,))
 
+    def simplify(self, samples):
+        """
+        Simplify the underlying tree sequence, retaining only information relevant
+        to the diploid individuals listed in `samples`.
+
+        :param list samples: A list of diploid input individual IDs.
+        """
+        haploid_ids = [self.i2c(i,p) for i in samples for p in (0,1)]
+        self.args.simplify(haploid_ids)
+
+    def add_locations(self, input_ids, locations):
+        """
+        Assign the `population` field of each individual in `input_ids` to the corresponding
+        entry in `locations`.
+
+        :param list input_ids: A list of input diploid individual IDs.
+        :param list locations: A list of population IDs.
+        """
+        populations = self.args.nodes.population
+        for i, loc in zip([int(j) for j in input_ids], locations):
+            for p in (0,1):
+                h = self.i2c(i, p)
+                node_id = self.args.node_ids[h]
+                populations[node_id] = int(loc)
+        self.args.nodes.set_columns(flags=self.args.nodes.flags,
+                                    time=self.args.nodes.time,
+                                    population=populations)
+
     def add_diploid_samples(self, nsamples, sample_ids):
         """
         Choose randomly a set of individuals, label these as samples,
         and simplify the tree sequence.  This is irreversible.
         """
         sample_indices = random.sample(range(len(sample_ids)), nsamples)
-        self.diploid_samples = [sample_ids[k] for k in sample_indices]
+        self.diploid_samples = [int(sample_ids[k]) for k in sample_indices]
         self.simplify_to_samples()
 
     def simplify_to_samples(self):
