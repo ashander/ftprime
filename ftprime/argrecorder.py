@@ -178,6 +178,7 @@ class ARGrecorder(object):
         """
         self.check_ids(samples)
         self.update_times()
+        self.mark_samples(samples)
         msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
                             sites=self.sites, mutations=self.mutations,
                             migrations=self.migrations)
@@ -201,8 +202,8 @@ class ARGrecorder(object):
         """
         Return the simplified tree sequence for a given set of input samples,
         *without* simplifying the tables stored internally. (This *does* sort
-        them, however.) To simplify the tables stored internally as well, use
-        :meth:``ARGrecorder.simplify``.
+        them and label samples, however.) To simplify the tables stored
+        internally as well, use :meth:``ARGrecorder.simplify``.
         """
         if samples is None:
             samples = self.sample_ids()
@@ -212,6 +213,7 @@ class ARGrecorder(object):
         msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
                             sites=self.sites, mutations=self.mutations,
                             migrations=self.migrations)
+        self.mark_samples(samples)
         ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
                                  sites=self.sites, mutations=self.mutations,
                                  migrations=self.migrations)

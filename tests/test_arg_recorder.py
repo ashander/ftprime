@@ -86,6 +86,7 @@ class BasicTestCase(FtprimeTestCase):
         records.add_individual(5, 2.0, population=2)
         records.add_record(0.0, 0.5, 0, (4,5))
         records.add_record(0.5, 1.0, 0, (4,))
+        print(records)
         tsa = records.tree_sequence([4, 5])
         records.simplify([4, 5])
         tsb = records.tree_sequence([4, 5])

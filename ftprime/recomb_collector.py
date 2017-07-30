@@ -1,26 +1,6 @@
 from .argrecorder import ARGrecorder
 import random
 
-# first is 'maternal', second is 'paternal'
-mapa_labels = ( 2, 1 )  # NOQA
-
-
-def ind_to_chrom(ind, mapa):
-    '''
-    Returns the unique *chromosome ID* corresponding to
-    the chromosome of individual 'ind' inherited from
-    parent 'mapa' (either 2=maternal or 1=paternal).  (Chromosome IDs are ints.)
-    This takes
-       0, paternal -> 0
-       0, maternal -> 1
-       1, paternal -> 2
-       1, maternal -> 3
-       2, paternal -> 4
-       2, maternal -> 5
-    ...
-    '''
-    return int(2 * ind + mapa - 1)
-
 
 class RecombCollector:
     '''
@@ -72,14 +52,42 @@ class RecombCollector:
         self.diploid_samples = None
 
     def i2c(self, k, p):
+        """
+        Get the "chromosome ID", used in the underlying ARGrecorder.
+
+        :param int k: The individual ID.
+        :param int p: The chromosome index (0 or 1).
+
+        :return int: The "input ID" used by the underlying ARGrecorder
+        corresponding to this chromsome.
+        """
         # individual ID to chromsome ID
-        out = ind_to_chrom(int(k), mapa_labels[p])
-        return out
+        if not (p == 0 or p == 1):
+            raise ValueError("Chromosome ID must be 0 (paternal) or 1 (maternal).")
+        return int(2 * k + p)
+
+    def i2n(self, k, p):
+        """
+        Get the output node ID used in the underlying tree sequence tables.
+
+        :param int k: The individual ID.
+        :param int p: The chromosome index (0 or 1).
+
+        :return int: The node ID for this chromosome in the output tables.
+        """
+        return self.args.node_ids[self.i2c(k,p)]
 
     def increment_time(self):
         self.time += 1.0
 
     def collect_recombs(self, lines):
+        """
+        Collects recombinations arriving in text form like:
+            offspringID parentID startingPloidy rec1 rec2 ....
+        in *pairs* for (paternal, maternal) chromosomes, as output by
+        ``simuPOP.Recombinator()``. A parental chromosome inherited without a
+        crossover would be recorded with no recombinations.
+        """
         for line in lines.strip().split('\n'):
             # print("A: "+line)
             # child, parent, ploid,*rec = [int(x) for x in line.split()]
@@ -156,21 +164,3 @@ class RecombCollector:
         self.args.nodes.set_columns(flags=self.args.nodes.flags,
                                     time=self.args.nodes.time,
                                     population=populations)
-
-    def add_diploid_samples(self, nsamples, sample_ids):
-        """
-        Choose randomly a set of individuals, label these as samples,
-        and simplify the tree sequence.  This is irreversible.
-        """
-        sample_indices = random.sample(range(len(sample_ids)), nsamples)
-        self.diploid_samples = [int(sample_ids[k]) for k in sample_indices]
-        self.simplify_to_samples()
-
-    def simplify_to_samples(self):
-        """
-        Label samples and simplify the tree sequence.  This is irreversible.
-        """
-        chrom_samples = [ind_to_chrom(x, a)
-                         for x in self.diploid_samples
-                         for a in mapa_labels]
-        self.args.simplify(samples=chrom_samples)
