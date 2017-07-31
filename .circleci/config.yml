@@ -36,12 +36,6 @@ jobs:
             source activate ftprime
             pip install -e .
       - run:
-          name: Run unit tests && report coverage
-          command: |
-            source activate ftprime
-            pytest --junitxml=/tmp/test-reports/pytest.xml --cov-report html:/tmp/test-reports --cov=ftprime tests/unit
-            bash <(curl -s https://codecov.io/bash) -c -F unit;
-      - run:
           name: Run all tests && report coverage
           command: |
             source activate ftprime
