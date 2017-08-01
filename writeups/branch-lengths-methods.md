@@ -110,7 +110,7 @@ $$\begin{aligned}
     f((x_1,\bar x_1)) = \frac{2 x_1 \bar x_1}{n_1 (n_1 - 1)} .
 \end{aligned}$$
 
-## Y statistic
+## Y statistics
 
 Take a set of three distinct samples $a$, $b$, $c$.
 By $Y(a;b,c)$ we mean the mean length of any branches from which either ($a$), or (both of $b$ and $c$),
@@ -126,14 +126,28 @@ $$\begin{aligned}
 \end{aligned}$$
 
 Extending this to groups we would average over choices of $a$, $b$, and $c$
-from those groups, to obtain $Y(A;B,C)$.
+from those groups, to obtain $Y_3(A;B,C)$.
 This at first seems simliar to $f_3$, but the $f_3$ statistic involves averaging over choices of *four distinct* individuals,
 and this statistic uses only three.
-The weighting function for the $Y$ is then
+The weighting function for the $Y_3$ is then
 $$\begin{aligned}
-    f_Y((x_1,\bar x_1),(x_2,\bar x_2),(x_3,\bar x_3)) 
+    f_{Y3}((x_1,\bar x_1),(x_2,\bar x_2),(x_3,\bar x_3)) 
     &= 
         \frac{ x_1 \bar x_2 \bar x_3 + \bar x_1 x_2 x_3 }{ n_1 n_2 n_3 } 
+\end{aligned}$$
+
+We can also extend this: $Y_2(A;B) = Y_3(A;B,B)$ and $Y_1(A) = Y_3(A;A,A)$ but corrected for sample sizes as above,
+we have that
+$$\begin{aligned}
+    f_{Y2}((x_1,\bar x_1),(x_2,\bar x_2))
+    &= 
+        \frac{ x_1 \bar x_2 (\bar x_2 - 1) + \bar x_1 x_2 (x_2-1) }{ n_1 n_2 (n_2-1) } 
+\end{aligned}$$
+and
+$$\begin{aligned}
+    f_{Y1}((x_1,\bar x_1),(x_2,\bar x_2),(x_3,\bar x_3)) 
+    &= 
+        \frac{ x_1 \bar x_1 (\bar x_1-1) + \bar x_1 x_1 (x_1-1) }{ n_1 (n_1-1) (n_1-1) } .
 \end{aligned}$$
 
 
