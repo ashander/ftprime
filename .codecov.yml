@@ -2,10 +2,7 @@ coverage:
   status:
     project:
       default:
-        target: 95%
-      unit:
-        flags: unit
-        target: 50%
+        target: 80%
       argrecorder:
         flags: argrecorder
         target: 95%
@@ -13,7 +10,7 @@ coverage:
         flags: recombcollector
         target: 95%
     patch:
-      unit:
+      default:
         target: 90%
 
 flags:
