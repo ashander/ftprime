@@ -2,7 +2,12 @@ import msprime
 from ftprime import ARGrecorder
 from itertools import count
 import random
-import numpy as np
+
+from .breakpoints import (
+    random_breakpoint,
+    random_mutations,
+)
+
 
 """
 Same as wf but using __call__() interface..

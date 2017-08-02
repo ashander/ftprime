@@ -2,7 +2,12 @@ import msprime
 from ftprime import ARGrecorder
 from itertools import count
 import random
-import numpy as np
+
+from .breakpoints import (
+    random_breakpoint,
+    random_mutations,
+)
+
 
 def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10,
        debug=False, seed=None) :
