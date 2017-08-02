@@ -93,6 +93,21 @@ class ARGrecorder(object):
         ret += "\n---------\n"
         return ret
 
+    def __call__(self, parent, time, population, child, left, right):
+        """
+        Does both ``add_individual()`` and ``add_record steps()``.
+
+        :param int parent: Input ID of the parent.
+        :param float time: The time of birth of the child.
+        :param int population: The population ID where the child is born.
+        :param int child: Input ID of the child.
+        :param float left: Left end of the segment that child inherits from parent.
+        :param float right: Right end of the segment that child inherits from parent.
+        """
+        if child not in self.node_ids:
+            self.add_individual(input_id=child, time=time, population=population)
+        self.add_record(left=left, right=right, parent=parent, children=(child,))
+
     def check_ids(self, input_ids):
         """
         Check that all ``input_ids`` are valid.
