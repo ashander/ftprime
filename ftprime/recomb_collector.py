@@ -164,3 +164,9 @@ class RecombCollector:
         self.args.nodes.set_columns(flags=self.args.nodes.flags,
                                     time=self.args.nodes.time,
                                     population=populations)
+
+    def dump_sample_table(self, out):
+        """
+        TODO record here somehow which chromosomes here are in the same individual
+        """
+        self.args.dump_sample_table(out)

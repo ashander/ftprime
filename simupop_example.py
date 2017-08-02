@@ -81,11 +81,13 @@ rc.simplify(pop.indInfo("ind_id"))
 locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
 rc.add_locations(pop.indInfo("ind_id"), locations)
 
-# 9. Choose which individuals are sampled.
-rc.add_diploid_samples(nsamples, pop.indInfo("ind_id"))
+# 9. Choose which individuals are sampled, and write out their information.
+diploid_samples = random.sample(pop.indInfo("ind_id"), nsamples)
+rc.simplify(diploid_samples)
 
 # 10. Output the tree sequence from the recorded information.
 ts = rc.args.tree_sequence()
+ts.dump_samples_text(open("simulated_samples.tsv","w"))
 
 # 11. Write out the tree sequence in a file.
 ts.dump("simulated.ts")
