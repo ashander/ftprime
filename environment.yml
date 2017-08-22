@@ -29,7 +29,7 @@ dependencies:
   - imagesize==0.7.1
   - jinja2==2.9.5
   - markupsafe==1.0
-  - "--editable=git+https://github.com/petrelharp/msprime.git@43ff4df2f84c66df5e0f09554953cf244d47a3a7#egg=msprime"
+  - "--editable=git+https://github.com/jeromekelleher/msprime.git@master#egg=msprime"
   - numpy==1.12.0
   - py==1.4.33
   - pygments==2.2.0
