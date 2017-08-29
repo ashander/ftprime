@@ -18,7 +18,6 @@ class WfTestCase(FtprimeTestCase):
 
     def check_tables(self, records):
         nodes = records.nodes
-        self.assertEqual(nodes.num_rows, records.num_nodes)
         edgesets = records.edgesets
         # check edgesets are in order and all parents are recorded
         node_times = nodes.time
@@ -26,9 +25,9 @@ class WfTestCase(FtprimeTestCase):
         for p in edgesets.parent:
             self.assertTrue(node_times[p] >= last_time)
             last_time = node_times[p]
-            self.assertTrue(p < records.num_nodes)
+            self.assertTrue(p < records.nodes.num_rows)
         for ch in edgesets.children:
-            self.assertTrue(ch < records.num_nodes)
+            self.assertTrue(ch < records.nodes.num_rows)
 
     def test_runs(self):
         N = 10

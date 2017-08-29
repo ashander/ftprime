@@ -35,7 +35,6 @@ class BasicTestCase(FtprimeTestCase):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         records.add_individual(5, 2.0, population=2)
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+1)
-        self.assertEqual(records.nodes.num_rows, records.num_nodes)
         self.assertEqual(records.nodes.num_rows, 4)
         self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
         self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
@@ -238,7 +237,7 @@ class ExplicitTestCase(FtprimeTestCase):
         arg.update_times()
 
         arg_ids = {k:arg.node_ids[self.ids[k]] for k in self.ids}
-        self.assertEqual(arg.num_nodes, len(self.ids))
+        self.assertEqual(arg.nodes.num_rows, len(self.ids))
         self.assertEqual(arg.max_time, 5.0)
         self.assertEqual(arg.sequence_length, 1.0)
         for x in self.ids:

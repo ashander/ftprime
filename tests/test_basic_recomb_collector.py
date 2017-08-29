@@ -107,7 +107,7 @@ class RecombCollectorTest(FtprimeTestCase):
     def test_init(self):
         rc, node_ids = self.simple_ex()
         self.assertEqual(rc.sequence_length, 3.0)
-        self.assertEqual(rc.args.num_nodes, 3)
+        self.assertEqual(rc.args.nodes.num_rows, 3)
         self.assertEqual(rc.time, 0.0)
         self.check_node_ids(rc, node_ids)
 

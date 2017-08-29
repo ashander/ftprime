@@ -19,7 +19,7 @@ def reset_id_tagger():
 
 def check_tables(args):
     nodes = args.nodes
-    assert(nodes.num_rows == args.num_nodes)
+    assert(nodes.num_rows == args.nodes.num_rows)
     edgesets = args.edgesets
     # check edgesets are in order and all parents are recorded
     node_times = nodes.time
@@ -27,9 +27,9 @@ def check_tables(args):
     for p in edgesets.parent:
         assert(node_times[p] >= last_time)
         last_time = node_times[p]
-        assert(p < args.num_nodes)
+        assert(p < args.nodes.num_rows)
     for ch in edgesets.children:
-        assert(ch < args.num_nodes)
+        assert(ch < args.nodes.num_rows)
 
 
 @pytest.fixture(scope="function", params=[

@@ -33,12 +33,38 @@ class ARGrecorder(object):
     Must be initialized with a tree sequence ``ts``, this will serve as
     the history of this first generation of individuals.  The ``samples`` of
     this tree sequence correspond to the individuals in the first generation.
+
+    To use an ARGrecorder instance to record the ARG coming from an
+    forwards-time simulator:
+
+    0. Initialize with a tree sequence describing history before the simulation
+        begins, and the mapping from input IDs (in the forwards-time simulator) to
+        output IDs (node IDs in the tree sequence).
+
+    1. Each time a new individual (chromosome) is born, record:
+    
+        a. their birth time with ``add_individual``,
+
+        b. how their chromosome was inherited from her parents with ``add_record``,
+
+        c. and any new mutations with ``add_mutation``. 
+
+    2. Periodically, run ``simplify(samples)`` to remove unnecessary
+        information from the recorded tables.  ``samples`` should be a list of
+        input IDs of all individuals whose history may be needed in the future:
+        the current generation, and any ancestral samples.
+
+    Note: at any time, individuals for whom we have complete information are
+    marked as samples in the Node Table; however, this is not consulted when
+    calling ``simplify``.
+
     '''
 
     def __init__(self, ts, node_ids, time=0.0):
         """
-        :param TreeSequence ts: A tree sequence describing the history of the population
-            before the simulation starts.
+        :param TreeSequence ts: A tree sequence describing the history of the
+            population before the simulation starts.  If this is `None`, initialize
+            with no history (empty tables).
         :param dict node_ids: A dict indexed by input IDs so that
             ``node_ids[k]`` is the node ID of the node corresponding to sample
             ``k`` in the initial ``ts``.  Must specify this for every individual
@@ -47,7 +73,6 @@ class ARGrecorder(object):
             the simulation.
         """
         # this is output node ID of the next new node
-        self.num_nodes = ts.num_nodes # n
         self.sequence_length = ts.sequence_length
         # this is the largest (forwards) time seen so far
         self.max_time = time  # T
@@ -89,8 +114,8 @@ class ARGrecorder(object):
         ret += "Mutations:\n"
         ret += str(self.mutations) + "\n"
         ret += "Migrations:\n"
-        ret += str(self.migrations) + "\n"
-        ret += "\n---------\n"
+        # ret += str(self.migrations) + "\n"
+        # ret += "\n---------\n"
         return ret
 
     def __call__(self, parent, time, population, child, left, right):
@@ -129,14 +154,21 @@ class ARGrecorder(object):
         Add a new individual, recording its (forwards) birth time and assigning
         it a new output Node ID.  New individuals are marked as samples by
         default because we (expect to) have their full history.
+
+        :param int input_id: The input ID of the new individual.
+        :param float time: The time of birth of the individual.
+        :param flags int: Any msprime flags to record (probably not needed).
+        :param population int: The population ID of birth of the indivdiual
+            (may be omitted).  
         '''
         if input_id not in self.node_ids:
+            self.node_ids[input_id] = self.nodes.num_rows
             self.nodes.add_row(flags=flags, population=population,
                                time=time)
-            self.node_ids[input_id] = self.num_nodes
-            self.num_nodes += 1
             self.max_time = max(self.max_time, time)
         else:
+            # nothing bad happens if we try to add an individual more than once,
+            # but this is helpful for debugging
             raise ValueError("Attempted to add " + str(input_id) +
                              ", who already exits, as a new individual.")
 
@@ -145,6 +177,11 @@ class ARGrecorder(object):
         Add records corresponding to a reproduction event in which children (a
         tuple of IDs) inherit from parent (a single ID) on the interval
         [left,right).
+
+        :param float left: The left endpoint of the chromosomal segment inherited.
+        :param float right: The right endpoint of the chromosomal segment inherited.
+        :param int parent: The input ID of the parent.
+        :param list children: An iterable of input IDs of the children.
         '''
         if parent not in self.node_ids:
             raise ValueError("Parent " + str(parent) +
@@ -160,6 +197,13 @@ class ARGrecorder(object):
     def add_mutation(self, position, node, derived_state, ancestral_state):
         """
         Adds a new mutation to mutation table, and a new site if necessary as well.
+
+        :param float position: The chromosomal position of the mutation.
+        :param int node: The input ID of the individual on whose chromosome the
+            mutation occurred.  
+        :param string derived_state: The allele resulting from the mutation.
+        :param string ancestral_state: The original allele that the mutation
+            replaces (only used if this is the first mutation at this position).
         """
         if position not in self.site_positions:
             site = self.sites.num_rows
@@ -167,11 +211,17 @@ class ARGrecorder(object):
             self.site_positions[position] = site
         else:
             site = self.site_positions[position]
-        self.mutations.add_row(site=site, node=node, derived_state=derived_state)
+        self.mutations.add_row(site=site, node=self.node_ids[node], 
+                               derived_state=derived_state)
 
     def update_times(self):
         """
-        Update times in the NodeTable.
+        Update the times in the NodeTable.  This is necessary because input
+        times, as recorded in the NodeTable, are in forwards time, but the
+        NodeTable must be in reverse time (time since the end of the
+        simulation).  Therefore, this needs to (a) add an increment to any
+        already-updated times in the NodeTable, and (b) reverse any times added
+        since the last update.
         """
         dt = self.max_time - self.last_update_time
         times = self.nodes.time
@@ -185,33 +235,36 @@ class ARGrecorder(object):
 
     def simplify(self, samples):
         """
-        Simplifies the underlying tables and returns the resulting tree
-        sequence.  To get the tree sequence for a set of samples use
-        :meth:``ARGrecorder.tree_sequence`` instead.  `samples` should be a
-        list of all "currently living" input individual IDs: i.e., anyone who
-        might be a parent or a sample in the future.
+        Simplifies the underlying tables.  `samples` should be a list of all
+        "currently living" input individual IDs: i.e., anyone who might be a
+        parent or a sample in the future.
+
+        Note: to get the tree sequence for a set of samples use
+        :meth:``ARGrecorder.tree_sequence``.
+
+        This resets the underlying map from input IDs to output IDs. The
+        individals in ``samples`` will be assigned output IDs
+        ``0,...,len(samples)-1``.
+
+        :param list samples: A list of the input IDs whose entire history
+            should be kept; information not relevant to the history of these
+            samples will be discarded.
         """
         self.check_ids(samples)
         self.update_times()
-        self.mark_samples(samples)
-        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
-                            sites=self.sites, mutations=self.mutations,
-                            migrations=self.migrations)
-        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                 sites=self.sites, mutations=self.mutations,
-                                 migrations=self.migrations)
         sample_nodes = self.get_nodes(samples)
-        ts = ts.simplify(samples=sample_nodes)
+        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
+                            sites=self.sites, mutations=self.mutations)
+        #                   migrations=self.migrations)
+        msprime.simplify_tables(samples=sample_nodes, nodes=self.nodes, 
+                                edgesets=self.edgesets, sites=self.sites, 
+                                mutations=self.mutations)
+        #                       migrations=self.migrations)
         # update the internal state
-        self.num_nodes = ts.num_nodes
-        self.last_update_node = ts.num_nodes
-        # update index map
-        self.node_ids = {k : v for k, v in zip(samples, ts.samples())}
-        ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
-                       sites=self.sites, mutations=self.mutations,
-                       migrations=self.migrations)
+        self.last_update_node = self.nodes.num_rows
+        # update index map: sample[k] now maps to k
+        self.node_ids = {k : v for v, k in enumerate(samples)}
         self.num_simplifies += 1
-        return ts
 
     def tree_sequence(self, samples=None):
         """
@@ -219,6 +272,13 @@ class ARGrecorder(object):
         *without* simplifying the tables stored internally. (This *does* sort
         them and label samples, however.) To simplify the tables stored
         internally as well, use :meth:``ARGrecorder.simplify``.
+
+        :param list samples: A list of the input IDs whose history is recorded
+            in the resulting tree sequence.  If this is missing, all available
+            individuals will be used.
+        :return TreeSequence: The simplified tree sequence recording the
+            history of ``samples``; in this tree sequence, ``sample[k]``
+            corresponds to Node ID ``k``.
         """
         if samples is None:
             samples = self.sample_ids()
@@ -226,12 +286,12 @@ class ARGrecorder(object):
             self.check_ids(samples)
         self.update_times()
         msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
-                            sites=self.sites, mutations=self.mutations,
-                            migrations=self.migrations)
+                            sites=self.sites, mutations=self.mutations)
+        #                   migrations=self.migrations)
         self.mark_samples(samples)
         ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
-                                 sites=self.sites, mutations=self.mutations,
-                                 migrations=self.migrations)
+                                 sites=self.sites, mutations=self.mutations)
+        #                        migrations=self.migrations)
         sample_nodes = self.get_nodes(samples)
         return ts.simplify(samples=sample_nodes)
 
@@ -239,6 +299,8 @@ class ARGrecorder(object):
         """
         Return a list of the input IDs corresponding to the samples in the
         internal tables.
+
+        :return list: A list of input IDs.
         """
         flags = self.nodes.flags
         out = []
@@ -271,6 +333,8 @@ class ARGrecorder(object):
         samples are parents to other ones, to avoid ``msprime``'s restriction
         on not sampling internal nodes.  These will be given arbitrary input
         IDs, that will probably break if the simulation is run further.
+
+        DEPRECATED: this is unneeded with ancestral simplify; to be removed.
         '''
         self.check_ids(samples)
         times = self.nodes.time
@@ -299,6 +363,11 @@ class ARGrecorder(object):
     def mark_samples(self, samples):
         """
         Mark these individuals as samples internally (but do not simplify).
+
+        :param list samples: A list of input IDs that should be marked as with
+            the msprime flag for samples in the underlying NodeTable.  This
+            does not affect what happens at the next ``simplify``, and is
+            provided mainly for convenience.  
         """
         self.check_ids(samples)
         sample_nodes = self.get_nodes(samples)
