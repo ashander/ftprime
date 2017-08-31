@@ -63,8 +63,7 @@ class ARGrecorder(object):
     def __init__(self, ts, node_ids, time=0.0):
         """
         :param TreeSequence ts: A tree sequence describing the history of the
-            population before the simulation starts.  If this is `None`, initialize
-            with no history (empty tables).
+            population before the simulation starts.
         :param dict node_ids: A dict indexed by input IDs so that
             ``node_ids[k]`` is the node ID of the node corresponding to sample
             ``k`` in the initial ``ts``.  Must specify this for every individual
