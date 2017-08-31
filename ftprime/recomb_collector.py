@@ -45,7 +45,7 @@ class RecombCollector:
 
         haploid_node_ids = {self.i2c(x[0], x[1]):node_ids[(x[0], x[1])] 
                             for x in node_ids}
-        self.args = ARGrecorder(ts, node_ids=haploid_node_ids)
+        self.args = ARGrecorder(node_ids=haploid_node_ids, ts=ts)
         # will record IDs of diploid samples here when they are chosen
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder

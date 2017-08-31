@@ -28,11 +28,8 @@ class ARGrecorder(object):
         - ``self.node_ids[k]`` : the output Node ID corresponding to the input
           individual ID ``k``.
 
-    Assumes that input individual IDs are *nondecreasing*.
-
-    Must be initialized with a tree sequence ``ts``, this will serve as
-    the history of this first generation of individuals.  The ``samples`` of
-    this tree sequence correspond to the individuals in the first generation.
+    Must be initialized with a set of tables which will serve as the history of
+    this first generation of individuals.
 
     To use an ARGrecorder instance to record the ARG coming from an
     forwards-time simulator:
@@ -60,36 +57,61 @@ class ARGrecorder(object):
 
     '''
 
-    def __init__(self, ts, node_ids, time=0.0):
+    def __init__(self, node_ids=None, nodes=None, edgesets=None, sites=None, 
+                 mutations=None, migrations=None, ts=None, time=0.0):
         """
-        :param TreeSequence ts: A tree sequence describing the history of the
-            population before the simulation starts.
+        The tables passed in define history before the simulation begins.  If
+        these are missing, then the input IDs specified in ``node_ids`` must be
+        ``0...n-1``.
+
         :param dict node_ids: A dict indexed by input IDs so that
             ``node_ids[k]`` is the node ID of the node corresponding to sample
             ``k`` in the initial ``ts``.  Must specify this for every individual
             that may be a parent moving forward.
+        :param NodeTable nodes: A table describing prehistory of the simulation.
+        :param EdgesetTable edgesets: A table describing prehistory of the simulation.
+        :param SiteTable sites: A table describing prehistory of the simulation.
+        :param MutationTable mutations: A table describing prehistory of the simulation.
+        :param MigrationTable migrations: A table describing prehistory of the simulation.
+        :param TreeSequence ts: An alternative method to specifying past history.
         :param float time: The (forwards) time of the "present" at the start of
             the simulation.
         """
-        # this is output node ID of the next new node
-        self.sequence_length = ts.sequence_length
         # this is the largest (forwards) time seen so far
         self.max_time = time  # T
+        # dict of output node IDs indexed by input labels
+        if node_ids is None:
+            self.node_ids = {}
+        else:
+            self.node_ids = dict(node_ids)
+        # the actual tables that get updated
+        #  DON'T actually store ts, just the tables:
+        if nodes is None:
+            nodes = msprime.NodeTable()
+            if ts is None:
+                for j, k in enumerate(sorted(self.node_ids.keys())):
+                    assert j == self.node_ids[k]
+                    nodes.add_row(population=msprime.NULL_POPULATION, time=time)
+        if edgesets is None:
+            edgesets = msprime.EdgesetTable()
+        if sites is None:
+            sites = msprime.SiteTable()
+        if mutations is None:
+            mutations = msprime.MutationTable()
+        if migrations is None:
+            migrations = msprime.MigrationTable()
+        if ts is not None:
+            ts.dump_tables(nodes=nodes, edgesets=edgesets, sites=sites,
+                           mutations=mutations, migrations=migrations)
+        self.nodes = nodes
+        self.edgesets = edgesets
+        self.sites = sites
+        self.mutations = mutations
+        self.migrations = migrations
         # last (forwards) time we updated node times
         self.last_update_time = time  # T_0
         # number of nodes that have the time right
-        self.last_update_node = ts.num_nodes
-        # dict of output node IDs indexed by input labels
-        self.node_ids = dict(node_ids)
-        # the actual tables that get updated
-        #  DON'T actually store ts, just the tables:
-        self.nodes = msprime.NodeTable()
-        self.edgesets = msprime.EdgesetTable()
-        self.sites = msprime.SiteTable()
-        self.mutations = msprime.MutationTable()
-        self.migrations = msprime.MigrationTable()
-        ts.dump_tables(nodes=self.nodes, edgesets=self.edgesets,
-                       sites=self.sites, mutations=self.mutations)
+        self.last_update_node = self.nodes.num_rows
         # list of site positions, maintained as site tables don't have
         #   efficient checking for membership
         self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
@@ -342,7 +364,7 @@ class ARGrecorder(object):
         sample_times = [times[i] for i in sample_nodes]
         sample_populations = [populations[i] for i in sample_nodes]
         new_samples = [None for _ in samples]
-        self.sequence_length = max(self.edgesets.right)
+        sequence_length = max(self.edgesets.right)
         j = 0
         for k in range(len(samples)):
             # find an unused input id
@@ -353,7 +375,7 @@ class ARGrecorder(object):
                                 flags=msprime.NODE_IS_SAMPLE,
                                 population=sample_populations[k])
             self.add_record(left=0.0,
-                            right=self.sequence_length,
+                            right=sequence_length,
                             parent=samples[k],
                             children=(new_samples[k],))
         self.mark_samples(new_samples)
