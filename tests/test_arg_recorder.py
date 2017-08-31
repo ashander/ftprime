@@ -239,7 +239,6 @@ class ExplicitTestCase(FtprimeTestCase):
         arg_ids = {k:arg.node_ids[self.ids[k]] for k in self.ids}
         self.assertEqual(arg.nodes.num_rows, len(self.ids))
         self.assertEqual(arg.max_time, 5.0)
-        self.assertEqual(arg.sequence_length, 1.0)
         for x in self.ids:
             self.assertEqual(arg.nodes.time[arg_ids[x]], 5.0 - self.true_times[self.ids[x]])
             if x in self.sample_ids:
