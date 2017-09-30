@@ -38,22 +38,22 @@ def check_tables(args):
             id_tagger,
             recombinator
         ]),
-    # # Overlapping generations mating system -- popsize grows by 2x
-    # lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
-    #     ops=[
-    #         id_tagger,
-    #         recombinator
-    #     ]),
-    #     sim.CloneMating()],
-    #     subPopSize=popsize * 2),
-    # # Overlapping generations mating system -- popsize grows by 5x
-    # lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
-    #     ops=[
-    #         id_tagger,
-    #         recombinator
-    #     ]),
-    #     sim.CloneMating()],
-    #     subPopSize=popsize * 5),
+    # Overlapping generations mating system -- popsize grows by 2x
+    lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
+        ops=[
+            id_tagger,
+            recombinator
+        ]),
+        sim.CloneMating()],
+        subPopSize=popsize * 2),
+    # Overlapping generations mating system -- popsize grows by 5x
+    lambda recombinator, popsize, id_tagger: sim.HeteroMating([sim.RandomMating(
+        ops=[
+            id_tagger,
+            recombinator
+        ]),
+        sim.CloneMating()],
+        subPopSize=popsize * 5),
     ])
 def make_pop(request):
     # request.param stores a lambda function to make mating scheme
@@ -126,9 +126,10 @@ def test_simupop(make_pop, generations, popsize):
 
     id_tagger = sim.IdTagger(begin=0)
     id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
-    pop,rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
+    pop, rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                    recomb_rate, generations, length)
     locations = [pop.subPopIndPair(x)[0] for x in range(pop.popSize())]
+    rc.add_locations(pop.indInfo("ind_id"), locations)
     diploid_samples = random.sample(pop.indInfo("ind_id"), nsamples)
     rc.simplify(diploid_samples)
 
