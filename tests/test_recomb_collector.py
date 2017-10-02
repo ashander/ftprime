@@ -110,6 +110,8 @@ def make_pop(request):
     (10, 5),
     (10, 10),
     (10, 20),
+    (150, 50),
+    (250, 100),
 ])
 def test_simupop(make_pop, generations, popsize):
     print("Popsize: ", popsize)
