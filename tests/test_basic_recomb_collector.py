@@ -1,11 +1,11 @@
 import ftprime
 import msprime
 import six
-import unittest
 import random
 import math
 
-from tests import *
+from tests import FtprimeTestCase
+
 
 class RecombCollectorTest(FtprimeTestCase):
 
@@ -17,11 +17,12 @@ class RecombCollectorTest(FtprimeTestCase):
         1       1           1               0.00000000000000
         2       1           2               0.00000000000000
         """)
-        edgesets = six.StringIO("""\
-        id      left            right           parent  children
-        0       0.00000000      3.00000000      0       1,2
+        edges = six.StringIO("""\
+        id      left            right           parent  child
+        0       0.00000000      3.00000000      0       1
+        1       0.00000000      3.00000000      0       2
         """)
-        init_ts = msprime.load_text(nodes=nodes, edgesets=edgesets)
+        init_ts = msprime.load_text(nodes=nodes, edges=edges)
         # diploid 0 maps initially to haploids 1 and 2 in init_ts:
         node_ids = {(0,0):1, (0,1):2}
         locus_position = [0.0, 1.0, 2.0, 3.0]
@@ -149,10 +150,10 @@ class RecombCollectorTest(FtprimeTestCase):
         self.assertArrayEqual(nodes.time,
                 [3.0, 2.0, 2.0]
                  + [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
-        # check edgesets
-        edgesets = rc.args.edgesets
-        print(edgesets)
-        self.assertEqual(edgesets.num_rows, 1+21)
+        # check edges
+        edges = rc.args.edges
+        print(edges)
+        self.assertEqual(edges.num_rows, 2 + 21)
         dip_parents = [[(0,1)],
                        [(0,0)],
                        [(0,1), (0,0)],
@@ -163,7 +164,7 @@ class RecombCollectorTest(FtprimeTestCase):
                        [(1,1), (1,0)],
                        [(1,1), (1,0)],
                        [(2,0), (2,1), (2,0), (2,1)]]
-        true_parents = [0] + [rc.i2n(*y) for x in dip_parents for y in x]
+        true_parents = [0, 0] + [rc.i2n(*y) for x in dip_parents for y in x]
         dip_children = [[(1,0)],
                         [(1,1)],
                         [(2,0), (2,0)],
@@ -175,11 +176,11 @@ class RecombCollectorTest(FtprimeTestCase):
                         [(5,0), (5,0)],
                         [(5,1), (5,1), (5,1), (5,1)]]
         true_children = [1, 2] + [rc.i2n(*y) for x in dip_children for y in x]
-        self.assertArrayEqual(edgesets.parent, true_parents)
-        self.assertArrayEqual(edgesets.children, true_children)
-        obs_lefts = [math.floor(z) for z in edgesets.left]
-        obs_rights = [math.ceil(z) for z in edgesets.right]
-        true_lefts = [0] + ([0] +
+        self.assertArrayEqual(edges.parent, true_parents)
+        self.assertArrayEqual(edges.child, true_children)
+        obs_lefts = [math.floor(z) for z in edges.left]
+        obs_rights = [math.ceil(z) for z in edges.right]
+        true_lefts = [0, 0] + ([0] +
                             [0] +
                             [0, 0] +
                             [0, 1] +
@@ -189,7 +190,7 @@ class RecombCollectorTest(FtprimeTestCase):
                             [0, 0] +
                             [0, 0] +
                             [0, 0, 1, 2])
-        true_rights = [3] + ([3] +
+        true_rights = [3, 3] + ([3] +
                              [3] +
                              [1, 3] +
                              [2, 3] +
@@ -237,8 +238,8 @@ class RecombCollectorTest(FtprimeTestCase):
         rc, node_ids = self.simple_ex()
         rc.simplify([0])
         self.assertArrayEqual(rc.args.nodes.time, [0,0,1])
-        self.assertArrayEqual(rc.args.edgesets.parent, [2])
-        self.assertArrayEqual(rc.args.edgesets.children, [0,1])
+        self.assertArrayEqual(rc.args.edges.parent, [2, 2])
+        self.assertArrayEqual(rc.args.edges.child, [0,1])
 
     def test_simplify(self):
         rc = self.bigger_ex()
@@ -251,12 +252,12 @@ class RecombCollectorTest(FtprimeTestCase):
             else:
                 return (math.floor(x) + math.ceil(x))/2.0
         # round breakpoints so we know what's supposed to happen
-        round_left = [f(x) for x in rc.args.edgesets.left]
-        round_right = [f(x) for x in rc.args.edgesets.right]
-        rc.args.edgesets.set_columns(left=round_left, right=round_right,
-                                     parent=rc.args.edgesets.parent,
-                                     children=rc.args.edgesets.children,
-                                     children_length=rc.args.edgesets.children_length)
+        round_left = [f(x) for x in rc.args.edges.left]
+        round_right = [f(x) for x in rc.args.edges.right]
+        rc.args.edges.set_columns(left=round_left, right=round_right,
+                                     parent=rc.args.edges.parent,
+                                     child=rc.args.edges.child)
+
         print(rc.args)
         rc.simplify([4,5])
         print(rc.args)
@@ -266,19 +267,18 @@ class RecombCollectorTest(FtprimeTestCase):
         true_times = [3.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
         true_times.reverse()
         self.assertArrayEqual(nodes.time, true_times)
-        # check edgesets
-        edgesets = rc.args.edgesets
-        self.assertEqual(edgesets.num_rows, 10)
-        true_parents = [4, 5, 6, 6, 7, 8, 9, 9, 9, 9]
-        self.assertArrayEqual(true_parents, edgesets.parent)
+        # check edges
+        edges = rc.args.edges
+        self.assertEqual(edges.num_rows, 19)
+        true_parents = [4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9, 9]
+        self.assertArrayEqual(true_parents, edges.parent)
         true_children = [1, 2,
                          1, 2,
-                         0, 3, 0, 3,
+                         0, 0, 3, 3,
                          0, 3,
                          3, 4,
-                         5, 6, 4, 7, 4, 6, 0, 8]
+                         0, 4,
+                         5, 6, 6, 7, 8]
         print(true_children)
-        print(list(edgesets.children))
-        self.assertArrayEqual(true_children, edgesets.children)
-
-
+        print(list(edges.child))
+        self.assertArrayEqual(true_children, edges.child)
