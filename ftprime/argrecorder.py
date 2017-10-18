@@ -5,19 +5,19 @@ NULL_ID = -1
 
 def null_tree_sequence():
     return msprime.load_tables(nodes=msprime.NodeTable(),
-                               edgesets=msprime.EdgesetTable())
+                               edges=msprime.EdgeTable())
 
 class ARGrecorder(object):
     '''
     To record the ARG, this keeps track of
-        - a NodeTable and an EdgesetTable
+        - a NodeTable and an EdgeTable
         - information about what has happened since the last simplification
         - a mapping from (input) individual IDs to (output) node IDs
     The reason for maintaining this mapping, rather than having (input)
     individual IDs always equal to the (output) node IDs is to allow periodic
     simplification, which decouples the two.
 
-    Between simplification steps, the EdgesetTable is appended to, so it is
+    Between simplification steps, the EdgeTable is appended to, so it is
     always "up to date".  However, the NodeTable is *not* kept up to date,
     because its `time` fields are recorded in *time ago*; we also keep track of
         - a list of birth times of individual IDs
@@ -57,7 +57,7 @@ class ARGrecorder(object):
 
     '''
 
-    def __init__(self, node_ids=None, nodes=None, edgesets=None, sites=None, 
+    def __init__(self, node_ids=None, nodes=None, edges=None, sites=None, 
                  mutations=None, migrations=None, ts=None, time=0.0):
         """
         The tables passed in define history before the simulation begins.  If
@@ -69,7 +69,7 @@ class ARGrecorder(object):
             ``k`` in the initial ``ts``.  Must specify this for every individual
             that may be a parent moving forward.
         :param NodeTable nodes: A table describing prehistory of the simulation.
-        :param EdgesetTable edgesets: A table describing prehistory of the simulation.
+        :param EdgeTable edges: A table describing prehistory of the simulation.
         :param SiteTable sites: A table describing prehistory of the simulation.
         :param MutationTable mutations: A table describing prehistory of the simulation.
         :param MigrationTable migrations: A table describing prehistory of the simulation.
@@ -92,8 +92,8 @@ class ARGrecorder(object):
                 for j, k in enumerate(sorted(self.node_ids.keys())):
                     assert j == self.node_ids[k]
                     nodes.add_row(population=msprime.NULL_POPULATION, time=time)
-        if edgesets is None:
-            edgesets = msprime.EdgesetTable()
+        if edges is None:
+            edges = msprime.EdgeTable()
         if sites is None:
             sites = msprime.SiteTable()
         if mutations is None:
@@ -101,10 +101,10 @@ class ARGrecorder(object):
         if migrations is None:
             migrations = msprime.MigrationTable()
         if ts is not None:
-            ts.dump_tables(nodes=nodes, edgesets=edgesets, sites=sites,
+            ts.dump_tables(nodes=nodes, edges=edges, sites=sites,
                            mutations=mutations, migrations=migrations)
         self.nodes = nodes
-        self.edgesets = edgesets
+        self.edges = edges
         self.sites = sites
         self.mutations = mutations
         self.migrations = migrations
@@ -128,8 +128,8 @@ class ARGrecorder(object):
         ret += str(self.node_ids) + "\n"
         ret += "Nodes:\n"
         ret += str(self.nodes) + "\n"
-        ret += "Edgesets:\n"
-        ret += str(self.edgesets) + "\n"
+        ret += "Edges:\n"
+        ret += str(self.edges) + "\n"
         ret += "Sites:\n"
         ret += str(self.sites) + "\n"
         ret += "Mutations:\n"
@@ -210,10 +210,11 @@ class ARGrecorder(object):
                              ".add_individual().")
         out_parent = self.node_ids[parent]
         out_children = tuple([self.node_ids[u] for u in children])
-        self.edgesets.add_row(parent=out_parent,
-                              children=out_children,
-                              left=left,
-                              right=right)
+        for child in out_children:
+            self.edges.add_row(parent=out_parent,
+                               child=child,
+                               left=left,
+                               right=right)
 
     def add_mutation(self, position, node, derived_state, ancestral_state):
         """
@@ -274,11 +275,11 @@ class ARGrecorder(object):
         self.check_ids(samples)
         self.update_times()
         sample_nodes = self.get_nodes(samples)
-        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
+        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
                             sites=self.sites, mutations=self.mutations)
         #                   migrations=self.migrations)
         msprime.simplify_tables(samples=sample_nodes, nodes=self.nodes, 
-                                edgesets=self.edgesets, sites=self.sites, 
+                                edges=self.edges, sites=self.sites, 
                                 mutations=self.mutations)
         #                       migrations=self.migrations)
         # update the internal state
@@ -306,11 +307,11 @@ class ARGrecorder(object):
         else:
             self.check_ids(samples)
         self.update_times()
-        msprime.sort_tables(nodes=self.nodes, edgesets=self.edgesets,
+        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
                             sites=self.sites, mutations=self.mutations)
         #                   migrations=self.migrations)
         self.mark_samples(samples)
-        ts = msprime.load_tables(nodes=self.nodes, edgesets=self.edgesets,
+        ts = msprime.load_tables(nodes=self.nodes, edges=self.edges,
                                  sites=self.sites, mutations=self.mutations)
         #                        migrations=self.migrations)
         sample_nodes = self.get_nodes(samples)
@@ -364,7 +365,7 @@ class ARGrecorder(object):
         sample_times = [times[i] for i in sample_nodes]
         sample_populations = [populations[i] for i in sample_nodes]
         new_samples = [None for _ in samples]
-        sequence_length = max(self.edgesets.right)
+        sequence_length = max(self.edges.right)
         j = 0
         for k in range(len(samples)):
             # find an unused input id

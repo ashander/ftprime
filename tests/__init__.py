@@ -9,10 +9,8 @@ class FtprimeTestCase(unittest.TestCase):
     def check_trees(self, tsa, tsb, npos=20):
         # check trees at a bunch of positions agree
         self.assertEqual(tsa.sequence_length, tsb.sequence_length)
-        for x in tsa.dump_tables():
-            print(x)
-        for x in tsb.dump_tables():
-            print(x)
+        print(tsa.dump_tables())
+        print(tsb.dump_tables())
         self.assertEqual(tsa.num_nodes, tsb.num_nodes)
         self.assertEqual(len(tsa.samples()), len(tsb.samples()))
         for a, b in zip(tsa.samples(), tsb.samples()):
