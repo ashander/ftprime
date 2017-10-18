@@ -124,7 +124,7 @@ logfile.flush()
 
 # nodefile = open("nodes.txt","w")
 # edgefile = open("edges.txt","w")
-# ts.dump_text(nodes=nodefile, edgesets=edgefile)
+# ts.dump_text(nodes=nodefile, edges=edgefile)
 # nodefile.flush()
 # edgefile.flush()
 
@@ -146,20 +146,20 @@ logfile.flush()
 
 rng = msprime.RandomGenerator(mut_seed)
 nodes = msprime.NodeTable()
-edgesets = msprime.EdgesetTable()
+edges = msprime.EdgeTable()
 sites = msprime.SiteTable()
 mutations = msprime.MutationTable()
-minimal_ts.dump_tables(nodes=nodes, edgesets=edgesets)
+minimal_ts.dump_tables(nodes=nodes, edges=edges)
 mutgen = msprime.MutationGenerator(rng, args.mut_rate)
-mutgen.generate(nodes, edgesets, sites, mutations)
+mutgen.generate(nodes, edges, sites, mutations)
 
 # print(nodes, file=logfile)
-# print(edgesets, file=logfile)
+# print(edges, file=logfile)
 # print(sites, file=logfile)
 # print(mutations, file=logfile)
 
 mutated_ts = msprime.load_tables(
-    nodes=nodes, edgesets=edgesets, sites=sites, mutations=mutations)
+    nodes=nodes, edges=edges, sites=sites, mutations=mutations)
 
 del minimal_ts
 
