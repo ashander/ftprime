@@ -1,5 +1,7 @@
 from .argrecorder import ARGrecorder
 import random
+import time as timer
+from .benchmarker import Timings
 
 
 class RecombCollector:
@@ -21,7 +23,7 @@ class RecombCollector:
 
     '''
 
-    def __init__(self, ts, node_ids, locus_position):
+    def __init__(self, ts, node_ids, locus_position, benchmark=False):
         """
         :param TreeSequence ts: A tree sequence describing the history of each
             chromosome in the population before the simulation starts.
@@ -33,6 +35,8 @@ class RecombCollector:
         :param list locus_position: A list of coordinates on the genome of the loci
             that simuPOP is keeping track of.  There must be a locus at the beginning
             and also at the end of the chromosome.
+            :param bool benchmark: Whether to store benchmark information in the
+            ARGrecorder.
         """
         self.sequence_length = ts.sequence_length
         self.locus_position = locus_position
@@ -45,7 +49,12 @@ class RecombCollector:
 
         haploid_node_ids = {self.i2c(x[0], x[1]):node_ids[(x[0], x[1])] 
                             for x in node_ids}
-        self.args = ARGrecorder(node_ids=haploid_node_ids, ts=ts)
+        if not benchmark:
+            self.args = ARGrecorder(node_ids=haploid_node_ids, ts=ts)
+        else:
+            self.args = ARGrecorder(node_ids=haploid_node_ids, ts=ts,
+                                    timings=Timings())
+
         # will record IDs of diploid samples here when they are chosen
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder
@@ -88,6 +97,9 @@ class RecombCollector:
         ``simuPOP.Recombinator()``. A parental chromosome inherited without a
         crossover would be recorded with no recombinations.
         """
+        if self.args.timings is not None:
+            start = timer.process_time()
+            
         for line in lines.strip().split('\n'):
             # print("A: "+line)
             # child, parent, ploid,*rec = [int(x) for x in line.split()]
@@ -136,6 +148,10 @@ class RecombCollector:
                     right=self.sequence_length,
                     parent=self.i2c(parent, ploid),
                     children=(child_chrom,))
+
+        if self.args.timings is not None:
+            self.args.timings.time_appending += timer.process_time() - start
+
 
     def simplify(self, samples):
         """

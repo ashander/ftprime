@@ -1,4 +1,5 @@
 import msprime
+import time as timer  # otherwise name clash
 import numpy as np
 
 NULL_ID = -1
@@ -59,7 +60,7 @@ class ARGrecorder(object):
 
     def __init__(self, node_ids=None, nodes=None, edges=None, sites=None, 
                  mutations=None, migrations=None, ts=None, time=0.0,
-                 sequence_length=None):
+                 sequence_length=None, timings=None):
         """
         The tables passed in define history before the simulation begins.  If
         these are missing, then the input IDs specified in ``node_ids`` must be
@@ -79,7 +80,15 @@ class ARGrecorder(object):
             the simulation.
         :param float sequence_length: The total length of the sequence (derived
             from input if not provided).
+        :param ftprime.benchmarker.Timings timings:  An object to record timing
+        information.
         """
+        if timings is not None:
+            self.timings = timings
+            start = timer.process_time()
+        else:
+            self.timings = None
+
         # this is the largest (forwards) time seen so far
         self.max_time = time  # T
         # dict of output node IDs indexed by input labels
@@ -130,6 +139,8 @@ class ARGrecorder(object):
         self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
         # for bookkeeping
         self.num_simplifies = 0
+        if self.timings is not None:
+            self.timings.time_prepping += timer.process_time() - start
 
     def __str__(self):
         ret = "\n---------\n"
@@ -288,14 +299,21 @@ class ARGrecorder(object):
         self.check_ids(samples)
         self.update_times()
         sample_nodes = self.get_nodes(samples)
+        if self.timings is not None:
+            start = timer.process_time()
         msprime.sort_tables(nodes=self.nodes, edges=self.edges,
                             sites=self.sites, mutations=self.mutations)
         #                   migrations=self.migrations)
+        if self.timings is not None:
+            start2 = timer.process_time()
+            self.timings.time_sorting += start2 - start
         msprime.simplify_tables(samples=sample_nodes, nodes=self.nodes, 
                                 edges=self.edges, sites=self.sites, 
                                 mutations=self.mutations, 
                                 sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
+        if self.timings is not None:
+            self.timings.time_simplifying += timer.process_time() - start2
         # update the internal state
         self.last_update_node = self.nodes.num_rows
         # update index map: sample[k] now maps to k
@@ -321,10 +339,14 @@ class ARGrecorder(object):
         else:
             self.check_ids(samples)
         self.update_times()
+        if self.timings is not None:
+            start = timer.process_time()
         msprime.sort_tables(nodes=self.nodes, edges=self.edges,
                             sites=self.sites, mutations=self.mutations)
         #                   migrations=self.migrations)
         self.mark_samples(samples)
+        if self.timings is not None:
+            self.timings.time_sorting += start2 - timer.process_time()
         ts = msprime.load_tables(nodes=self.nodes, edges=self.edges,
                                  sites=self.sites, mutations=self.mutations,
                                  sequence_length=self.sequence_length)
