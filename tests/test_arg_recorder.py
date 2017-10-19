@@ -78,7 +78,6 @@ class BasicTestCase(FtprimeTestCase):
         # and check is right answer
         self.assertArrayEqual(records_a.nodes.time, [3, 2.2, 2, 0, 0])
 
-    @unittest.skip("currently failing due to incosistent `sequence_length`")
     def test_simplify(self):
         # test that we get the same tree sequence by doing tree_sequence
         # and simplify -> tree_sequence
@@ -89,9 +88,30 @@ class BasicTestCase(FtprimeTestCase):
         records.add_record(0.5, 1.0, 0, (4,))
         print(records)
         tsa = records.tree_sequence([4, 5])
+        print("---------------- sequence a -----------")
+        print(tsa.dump_tables())
+        records.simplify([4, 5])
+        tsb = records.tree_sequence([4, 5])
+        print("---------------- sequence b -----------")
+        print(tsb.dump_tables())
+        self.check_trees(tsa, tsb)
+
+    def test_simplify2(self):
+        # test that we get the same tree sequence by doing tree_sequence
+        # and simplify -> tree_sequence
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map,
+                                      sequence_length=1.0)
+        records.add_individual(4, 2.0, population=2)
+        records.add_individual(5, 2.0, population=2)
+        records.add_record(0.0, 0.5, 0, (4, 5))
+        records.add_record(0.5, 1.0, 0, (4,))
+        print(records)
+        tsa = records.tree_sequence([4, 5])
         records.simplify([4, 5])
         tsb = records.tree_sequence([4, 5])
         self.check_trees(tsa, tsb)
+
+
 
 
 class ExplicitTestCase(FtprimeTestCase):

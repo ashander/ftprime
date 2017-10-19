@@ -58,7 +58,8 @@ class ARGrecorder(object):
     '''
 
     def __init__(self, node_ids=None, nodes=None, edges=None, sites=None, 
-                 mutations=None, migrations=None, ts=None, time=0.0):
+                 mutations=None, migrations=None, ts=None, time=0.0,
+                 sequence_length=None):
         """
         The tables passed in define history before the simulation begins.  If
         these are missing, then the input IDs specified in ``node_ids`` must be
@@ -76,6 +77,8 @@ class ARGrecorder(object):
         :param TreeSequence ts: An alternative method to specifying past history.
         :param float time: The (forwards) time of the "present" at the start of
             the simulation.
+        :param float sequence_length: The total length of the sequence (derived
+            from input if not provided).
         """
         # this is the largest (forwards) time seen so far
         self.max_time = time  # T
@@ -108,6 +111,16 @@ class ARGrecorder(object):
         self.sites = sites
         self.mutations = mutations
         self.migrations = migrations
+        if (sequence_length is not None) and (ts is None):
+            self.sequence_length = sequence_length
+        elif ts is not None:
+            self.sequence_length = ts.sequence_length
+        else:
+            if edges.num_rows > 0:
+                self.sequence_length = max(edges.right)
+            else:
+                raise ValueError("If prior history is not specified, sequence",
+                                 "length must be provided.")
         # last (forwards) time we updated node times
         self.last_update_time = time  # T_0
         # number of nodes that have the time right
@@ -280,7 +293,8 @@ class ARGrecorder(object):
         #                   migrations=self.migrations)
         msprime.simplify_tables(samples=sample_nodes, nodes=self.nodes, 
                                 edges=self.edges, sites=self.sites, 
-                                mutations=self.mutations)
+                                mutations=self.mutations, 
+                                sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
         # update the internal state
         self.last_update_node = self.nodes.num_rows
@@ -312,7 +326,8 @@ class ARGrecorder(object):
         #                   migrations=self.migrations)
         self.mark_samples(samples)
         ts = msprime.load_tables(nodes=self.nodes, edges=self.edges,
-                                 sites=self.sites, mutations=self.mutations)
+                                 sites=self.sites, mutations=self.mutations,
+                                 sequence_length=self.sequence_length)
         #                        migrations=self.migrations)
         sample_nodes = self.get_nodes(samples)
         return ts.simplify(samples=sample_nodes)
@@ -365,7 +380,6 @@ class ARGrecorder(object):
         sample_times = [times[i] for i in sample_nodes]
         sample_populations = [populations[i] for i in sample_nodes]
         new_samples = [None for _ in samples]
-        sequence_length = max(self.edges.right)
         j = 0
         for k in range(len(samples)):
             # find an unused input id
@@ -376,7 +390,7 @@ class ARGrecorder(object):
                                 flags=msprime.NODE_IS_SAMPLE,
                                 population=sample_populations[k])
             self.add_record(left=0.0,
-                            right=sequence_length,
+                            right=self.sequence_length,
                             parent=samples[k],
                             children=(new_samples[k],))
         self.mark_samples(new_samples)
