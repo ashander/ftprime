@@ -141,6 +141,7 @@ class ARGrecorder(object):
         self.num_simplifies = 0
         if self.timings is not None:
             self.timings.time_prepping += timer.process_time() - start
+        self._sorted_edge_idx = 0 # no guarantee to be sorte initially
 
     def __str__(self):
         ret = "\n---------\n"
@@ -302,7 +303,8 @@ class ARGrecorder(object):
         if self.timings is not None:
             start = timer.process_time()
         msprime.sort_tables(nodes=self.nodes, edges=self.edges,
-                            sites=self.sites, mutations=self.mutations)
+                            sites=self.sites, mutations=self.mutations,
+                            edge_start=self._sorted_edge_idx)
         #                   migrations=self.migrations)
         if self.timings is not None:
             start2 = timer.process_time()
@@ -312,6 +314,7 @@ class ARGrecorder(object):
                                 mutations=self.mutations, 
                                 sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
+        self._sorted_edge_idx = len(self.edges)
         if self.timings is not None:
             self.timings.time_simplifying += timer.process_time() - start2
         # update the internal state
@@ -342,7 +345,8 @@ class ARGrecorder(object):
         if self.timings is not None:
             start = timer.process_time()
         msprime.sort_tables(nodes=self.nodes, edges=self.edges,
-                            sites=self.sites, mutations=self.mutations)
+                            sites=self.sites, mutations=self.mutations,
+                            edge_start=self._sorted_edge_idx)
         #                   migrations=self.migrations)
         self.mark_samples(samples)
         if self.timings is not None:
