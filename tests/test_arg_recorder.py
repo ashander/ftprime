@@ -100,7 +100,7 @@ class BasicTestCase(FtprimeTestCase):
         # test that we get the same tree sequence by doing tree_sequence
         # and simplify -> tree_sequence
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map,
-                                      sequence_length=1.0)
+                                      sequence_length=0.5)
         records.add_individual(4, 2.0, population=2)
         records.add_individual(5, 2.0, population=2)
         records.add_record(0.0, 0.5, 0, (4, 5))
