@@ -98,7 +98,7 @@ class RecombCollector:
         crossover would be recorded with no recombinations.
         """
         if self.args.timings is not None:
-            start = timer.process_time()
+            before = timer.process_time()
             
         for line in lines.strip().split('\n'):
             # print("A: "+line)
@@ -150,7 +150,7 @@ class RecombCollector:
                     children=(child_chrom,))
 
         if self.args.timings is not None:
-            self.args.timings.time_appending += timer.process_time() - start
+            self.args.timings.time_appending += timer.process_time() - before
 
 
     def simplify(self, samples):

@@ -346,7 +346,7 @@ class ARGrecorder(object):
         #                   migrations=self.migrations)
         self.mark_samples(samples)
         if self.timings is not None:
-            self.timings.time_sorting += start2 - timer.process_time()
+            self.timings.time_sorting += start - timer.process_time()
         ts = msprime.load_tables(nodes=self.nodes, edges=self.edges,
                                  sites=self.sites, mutations=self.mutations,
                                  sequence_length=self.sequence_length)
