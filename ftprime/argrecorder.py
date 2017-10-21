@@ -120,7 +120,11 @@ class ARGrecorder(object):
         self.sites = sites
         self.mutations = mutations
         self.migrations = migrations
-        if (sequence_length is not None) and (ts is None):
+        if sequence_length is not None:
+            if ts is not None:
+                if sequence_length != ts.sequence_length:
+                    raise ValueError("Provided sequence_length does not match",
+                                     "that of tree sequence ts.")
             self.sequence_length = sequence_length
         elif ts is not None:
             self.sequence_length = ts.sequence_length

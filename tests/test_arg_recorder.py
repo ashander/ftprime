@@ -97,20 +97,9 @@ class BasicTestCase(FtprimeTestCase):
         self.check_trees(tsa, tsb)
 
     def test_simplify2(self):
-        # test that we get the same tree sequence by doing tree_sequence
-        # and simplify -> tree_sequence
-        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map,
-                                      sequence_length=1.0)
-        records.add_individual(4, 2.0, population=2)
-        records.add_individual(5, 2.0, population=2)
-        records.add_record(0.0, 0.5, 0, (4, 5))
-        records.add_record(0.5, 1.0, 0, (4,))
-        print(records)
-        tsa = records.tree_sequence([4, 5])
-        records.simplify([4, 5])
-        tsb = records.tree_sequence([4, 5])
-        self.check_trees(tsa, tsb)
-
+        # test that nonsensical sequence_length gets caught
+        self.assertRaises(ValueError, ftprime.ARGrecorder, ts=self.init_ts, 
+                          node_ids=self.init_map, sequence_length=0.5)
 
 
 
