@@ -11,14 +11,4 @@ The selection coefficient is drawn from a gamma distribution (parameters can be 
 
 # Setup
 
-```sh
-conda config --add channels conda-forge
-conda update -q conda
-conda info -a
-if [[ ! -d "/opt/conda/envs/ftprime" ]] ; then
-	conda create -q -n ftprime python=3.5
-fi
-conda env update -q -n ftprime -f ../environment.yml
-source activate ftprime
-pip install --editable=git+https://github.com/ashander/ftprime.git@master#egg=ftprime
-```
+Follow the steps in [the main README](../README.md#development) to set up a conda environment for `ftprime`.
