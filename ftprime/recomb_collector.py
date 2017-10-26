@@ -153,6 +153,16 @@ class RecombCollector:
             self.args.timings.time_appending += timer.process_time() - before
 
 
+    def tree_sequence(self, samples):
+            """
+            Returns a tree sequence, that retains only information relevant
+            to the diploid individuals listed in `samples`.
+
+            :param list samples: A list of diploid input individual IDs.
+            """
+            haploid_ids = [self.i2c(i,p) for i in samples for p in (0,1)]
+            return self.args.tree_sequence(haploid_ids)
+
     def simplify(self, samples):
         """
         Simplify the underlying tree sequence, retaining only information relevant
