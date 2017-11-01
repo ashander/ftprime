@@ -135,14 +135,22 @@ pop = sim.Population(
 id_tagger = sim.IdTagger()
 id_tagger.apply(pop)
 first_gen = pop.indInfo("ind_id")
-init_ts = msprime.simulate(2*len(first_gen),
-                           length=max(locus_position))
+length = max(locus_position)
+
+# Since we want to have a finite site model, we force the recombination map
+# to have exactly `length` loci with a fixed recombination rate between them.
+rcmb_map = msprime.RecombinationMap.uniform_map(length, args.recomb_rate, length)
+init_ts = msprime.simulate(2*len(first_gen), recombination_map=rcmb_map)
+print('\n Init ts')
+print(init_ts.dump_tables())
 haploid_labels = [(k,p) for k in first_gen
                         for p in (0,1)]
 node_ids = {x:j for x, j in zip(haploid_labels, init_ts.samples())}
 rc = RecombCollector(ts=init_ts, node_ids=node_ids,
                      locus_position=locus_position)
-
+print('\n In recomb collector')
+print(rc.args.tree_sequence().dump_tables())
+sys.exit(0)
 # initially, population is monogenic
 init_geno=[sim.InitGenotype(freq=1.0)]
 
