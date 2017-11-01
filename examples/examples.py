@@ -45,6 +45,7 @@ parser.add_argument("-s","--selloci_file", dest="selloci_file", type=str,
         help="name of file to output selected locus information", default="sel_loci.txt")
 parser.add_argument("--treefile","-t", type=str, dest="treefile",
         help="name of output file for trees (default: not output)",default=None)
+parser.add_argument("--seed", "-d", dest="seed", type=int, help="random seed")
 
 args = parser.parse_args()
 
@@ -56,6 +57,8 @@ if args.generations is None:
 import simuOpt
 simuOpt.setOptions(alleleType='mutant')
 import simuPOP as sim
+sim.setRNG(seed=args.seed)
+random.seed(args.seed)
 
 def fileopt(fname,opts):
     '''Return the file referred to by fname, open with options opts;
@@ -141,16 +144,11 @@ length = max(locus_position)
 # to have exactly `length` loci with a fixed recombination rate between them.
 rcmb_map = msprime.RecombinationMap.uniform_map(length, args.recomb_rate, length)
 init_ts = msprime.simulate(2*len(first_gen), recombination_map=rcmb_map)
-print('\n Init ts')
-print(init_ts.dump_tables())
 haploid_labels = [(k,p) for k in first_gen
                         for p in (0,1)]
 node_ids = {x:j for x, j in zip(haploid_labels, init_ts.samples())}
 rc = RecombCollector(ts=init_ts, node_ids=node_ids,
                      locus_position=locus_position)
-print('\n In recomb collector')
-print(rc.args.tree_sequence().dump_tables())
-sys.exit(0)
 # initially, population is monogenic
 init_geno=[sim.InitGenotype(freq=1.0)]
 
