@@ -126,7 +126,7 @@ def test_simupop(make_pop, generations, popsize):
     id_tagger.reset(startID=1)  # must reset - creating a new one doesn't
     init_ts = msprime.simulate(2 * popsize,
                                Ne=popsize,
-                               recombination_rate=recomb_rate,
+                               recombination_rate=recomb_rate / 2.0,
                                length=max(locus_position))
     pop, rc = make_pop(popsize, nloci, locus_position, id_tagger, init_geno,
                    recomb_rate, generations, length, init_ts)
