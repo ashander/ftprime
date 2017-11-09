@@ -79,7 +79,7 @@ def make_pop(request):
         node_ids = {x:j for x, j in zip(haploid_labels, init_ts.samples())}
         rc = ftprime.RecombCollector(ts=init_ts, node_ids=node_ids,
                                      locus_position=locus_position)
-        recombinator = sim.Recombinator(intensity=recomb_rate,
+        recombinator = sim.Recombinator(intensity=recomb_rate / 2.0,
                                         output=rc.collect_recombs,
                                         infoFields="ind_id")
         pop.evolve(
@@ -107,7 +107,6 @@ def make_pop(request):
     (5, 5),
     (5, 10),
     (5, 20),
-    (10, 5),
     (10, 10),
     (10, 20),
     (150, 50),
@@ -166,7 +165,7 @@ def test_recombination(make_pop, generations, popsize, locus_position):
     nsamples = 2
     length = 1
     nloci = len(locus_position)
-    recomb_rate = 1.0
+    recomb_rate = 2.0
 
     init_geno = [sim.InitGenotype(freq=[0.9, 0.1], loci=sim.ALL_AVAIL)]
 
