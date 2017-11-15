@@ -4,9 +4,14 @@ import numpy as np
 
 NULL_ID = -1
 
-def null_tree_sequence():
-    return msprime.load_tables(nodes=msprime.NodeTable(),
-                               edges=msprime.EdgeTable())
+node_dt = np.dtype([('id', np.uint32),
+                    ('time', np.float),
+                    ('population', np.int32)])
+
+edge_dt = np.dtype([('left', np.float),
+                    ('right', np.float),
+                    ('parent', np.int32),
+                    ('child', np.int32)])
 
 class ARGrecorder(object):
     '''
@@ -57,6 +62,8 @@ class ARGrecorder(object):
     calling ``simplify``.
 
     '''
+    _nodes = None
+    _edges = None
 
     def __init__(self, node_ids=None, nodes=None, edges=None, sites=None, 
                  mutations=None, migrations=None, ts=None, time=0.0,
@@ -195,6 +202,19 @@ class ARGrecorder(object):
         Return the output node IDs corresponding to a list of input IDs.
         """
         return [self.node_ids[j] for j in input_ids]
+
+    def add_individuals(self, input_ids, times, flags=None, population=None):
+        '''
+        Add new individuals, resulting in records as in `.add_individual`, but
+        more efficiently.
+
+        :param iterable of int input_ids: The input ID of the new individual.
+        :param iterable of float times: The time of birth of the individual.
+        :param iterable of int flags: Any msprime flags to record.
+        :param iterable of int population: The population ID of birth of the
+            indivdiual.  
+        '''
+
 
     def add_individual(self, input_id, time,
                        flags=msprime.NODE_IS_SAMPLE,
@@ -439,3 +459,43 @@ class ARGrecorder(object):
         self.nodes.set_columns(time=self.nodes.time,
                                population=self.nodes.population,
                                flags=new_flags)
+
+    @property
+    def nodes(self):
+        return self.__nodes
+
+    @nodes.setter
+    def nodes(self, value):
+        self.__nodes = value
+
+    @property
+    def edges(self):
+        return self.__edges
+
+    @edges.setter
+    def edges(self, value):
+        self.__edges = value
+
+    @property
+    def sites(self):
+        return self.__sites
+
+    @sites.setter
+    def sites(self, value):
+        self.__sites = value
+
+    @property
+    def mutations(self):
+        return self.__mutations
+
+    @mutations.setter
+    def mutations(self, value):
+        self.__mutations = value
+
+    @property
+    def migrations(self):
+        return self.__migrations
+
+    @migrations.setter
+    def migrations(self, value):
+        self.__migrations = value
