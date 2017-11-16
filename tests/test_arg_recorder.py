@@ -39,7 +39,8 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.nodes.num_rows, 4)
         self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
         self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
-        self.assertRaises(ValueError, records.add_individual, 1, 1.5)
+        self.assertRaises(ValueError,
+                          records.add_individuals_dbg, (1, ), (1.5, ))
 
     def test_add_record(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
