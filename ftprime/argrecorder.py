@@ -185,8 +185,7 @@ class ARGrecorder(object):
         alln = zip(childrens, times, populations)
         new_nodes, new_times, new_pops = zip(*((child, time, pop)
                                                for child_set, time, pop in alln
-                                               for child in child_set
-                                               if child not in self.node_ids))
+                                               for child in child_set))
         self.add_individuals(input_ids=new_nodes, times=new_times,
                              populations=new_pops)
         self.add_records(lefts=lefts, rights=rights, parents=parents,
