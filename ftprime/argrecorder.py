@@ -273,7 +273,7 @@ class ARGrecorder(object):
         :param iterable of float right: The right endpoint of the chromosomal
             segment inherited.
         :param iterable of int parent: The input ID of the parent.
-        :param iterable of list children: An iterable of input IDs of the
+        :param iterable of tuple childrens: An iterable of input IDs of the
             children.
         '''
         out_parents = (self.node_ids[parent]
