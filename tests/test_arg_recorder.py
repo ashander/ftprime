@@ -42,6 +42,17 @@ class BasicTestCase(FtprimeTestCase):
         self.assertRaises(ValueError,
                           records.add_individuals_dbg, (1, ), (1.5, ))
 
+        # multi
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        records.add_individuals([5, 6], [2.0, 2.5], populations=[2, 1])
+        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
+        self.assertEqual(records.nodes.num_rows, 5)
+        self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
+        self.assertEqual(records.nodes.time[records.node_ids[6]], 2.5)
+        self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
+        self.assertRaises(ValueError,
+                          records.add_individuals_dbg, (1, 2), (1.5, 2.5))
+
     def test_add_record(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         records.add_individual(4, 2.0, population=2)
@@ -59,6 +70,24 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.edges.child[4], records.node_ids[4])
         # try adding record with parent who doesn't exist
         self.assertRaises(ValueError, records.add_record, 0.0, 0.5, 8, (0,1))
+
+        # multi
+        records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
+        records.add_individuals([4, 5], [2.0, 2.0], populations=[2, 2])
+        # adding edges should not change number of nodes
+        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
+        records.add_records([0.0, 0.5], [0.5, 1.0], [0, 0],
+                            [(4,5), (4, )])
+        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
+        print(records)
+        self.assertEqual(records.edges.num_rows, 5)  # initial 2 + 3 added above
+        self.assertEqual(records.edges.parent[2], records.node_ids[0])
+        self.assertEqual(records.edges.child[2], records.node_ids[4])
+        self.assertEqual(records.edges.child[3], records.node_ids[5])
+        self.assertEqual(records.edges.child[4], records.node_ids[4])
+        # try adding record with parent who doesn't exist
+        self.assertRaises(ValueError, records.add_records_dbg, (0.0, ),
+                          (0.5, ), (8, ), ((0,1), ))
 
     def test_update_times(self):
         records_a = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
