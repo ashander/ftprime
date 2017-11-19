@@ -167,20 +167,30 @@ class ARGrecorder(object):
         # ret += "\n---------\n"
         return ret
 
-    def __call__(self, parent, time, population, child, left, right):
+    def __call__(self, parents, times, populations, childrens, lefts, rights):
         """
-        Does both ``add_individual()`` and ``add_record steps()``.
+        Does both ``add_individuals()`` and ``add_records()`` steps.
 
-        :param int parent: Input ID of the parent.
-        :param float time: The time of birth of the child.
-        :param int population: The population ID where the child is born.
-        :param int child: Input ID of the child.
-        :param float left: Left end of the segment that child inherits from parent.
-        :param float right: Right end of the segment that child inherits from parent.
+        :param iterable of int parent: The input IDs of the parent.
+        :param iterable of int populations: The population ID of birth of the
+            children.
+        :param iterable of float times: The time of birth of the children.
+        :param iterable of tuple childrens: An iterable of input IDs of the
+            children.
+        :param iterable of float left: The left endpoint of the chromosomal
+            segment that child inherits from parent.
+        :param iterable of float right: The right endpoint of the chromosomal
+            segment that child inherits from parent.
         """
-        if child not in self.node_ids:
-            self.add_individual(input_id=child, time=time, population=population)
-        self.add_record(left=left, right=right, parent=parent, children=(child,))
+        alln = zip(childrens, times, populations)
+        new_nodes, new_times, new_pops = zip(*((child, time, pop)
+                                               for child_set, time, pop in alln
+                                               for child in child_set
+                                               if child not in self.node_ids))
+        self.add_individuals(input_ids=new_nodes, times=new_times,
+                             populations=new_pops)
+        self.add_records(lefts=lefts, rights=rights, parents=parents,
+                         childrens=childrens)
 
     def check_ids(self, input_ids):
         """
