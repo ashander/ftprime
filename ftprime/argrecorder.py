@@ -205,7 +205,7 @@ class ARGrecorder(object):
         :param iterable of float times: The time of birth of the individual.
         :param iterable of int flagss: Any msprime flags to record.
         :param iterable of int populations: The population ID of birth of the
-            indivdiual.
+            individual.
         '''
         if flagss is None:
             flagss = itertools.cycle((msprime.NODE_IS_SAMPLE, ))
