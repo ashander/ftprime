@@ -122,6 +122,7 @@ class BasicTestCase(FtprimeTestCase):
             node_id = records.node_ids[input_id]
             assert node_id in final_nodes
             node_id < self.init_ts.num_nodes + 2
+        records.check_ids(list(self.init_map.keys()) + [4, 5])
 
     def test_simplify(self):
         # test that we get the same tree sequence by doing tree_sequence

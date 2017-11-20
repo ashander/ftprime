@@ -10,10 +10,10 @@ from .breakpoints import (
 
 
 """
-Same as wf but using __call__() interface..
+Same as wf but using __call__() interface with long vectors.
 """
 
-def wf_call(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10,
+def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10,
        debug=False, seed=None) :
     '''
     SIMPLE simulation of a bisexual, haploid Wright-Fisher population of size N
@@ -93,6 +93,7 @@ def record_info_iter(new_inds, debug, time, dead):
             yield j, lparent, time, 0, offspring, 0.0, bp
         if bp < 1.0 :
             yield j, rparent, time, 0, offspring, bp, 1.0
+        j += 1
 
 # TODO add something like above for muts
 # for mut in muts:
