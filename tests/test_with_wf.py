@@ -82,7 +82,6 @@ class WfTestCase(FtprimeTestCase):
             # else:
             #     self.assertEqual(flags[k], 0)
 
-    @unittest.skip
     def test_overlapping_generations(self):
         records = self.run_wf(N=11, ngens=20, nsamples=5, survival=0.5)
 

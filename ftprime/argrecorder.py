@@ -120,10 +120,12 @@ class ARGrecorder(object):
             self.__nodes.set_columns(flags=nt['flags'],
                                      time=nt['time'],
                                      population=nt['population'])
+            self.last_sorted_edge = 0
         if ts is not None:
             ts.dump_tables(nodes=self.__nodes, edges=self.__edges,
                            sites=self.__sites, mutations=self.__mutations,
                            migrations=self.__migrations)
+            self.last_sorted_edge = self.edges.num_rows
         if sequence_length is not None:
             if ts is not None:
                 if sequence_length != ts.sequence_length:
@@ -373,20 +375,58 @@ class ARGrecorder(object):
         self.update_times()
         sample_nodes = self.get_nodes(samples)
         if self.timings is not None:
-            start = timer.process_time()
-        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
-                            sites=self.sites, mutations=self.mutations)
-        #                   migrations=self.migrations)
+            before = timer.process_time()
+
+        if self.last_sorted_edge < self.edges.num_rows:
+            # begin modified block from @jeromekelleher and @molpopgen
+            # Copy the already sorted edges to local arrays
+            left = self.edges.left[:self.last_sorted_edge]
+            right = self.edges.right[:self.last_sorted_edge]
+            parent = self.edges.parent[:self.last_sorted_edge]
+            child = self.edges.child[:self.last_sorted_edge]
+            # Get the new edges and reverse them. After this, we know that all edges
+            # are correctly sorted with respect to time. We then sort each time slice
+            # individually, reducing the overall cost of the sort.
+            new_left = self.edges.left[:self.last_sorted_edge:-1]
+            new_right = self.edges.right[:self.last_sorted_edge:-1]
+            new_parent = self.edges.parent[:self.last_sorted_edge:-1]
+            new_child = self.edges.child[:self.last_sorted_edge:-1]
+            parent_time = self.__nodes.time[new_parent]
+            breakpoints = np.where(parent_time[1:] != parent_time[:-1])[0] + 1
+            self.__edges.reset()
+            if self.timings is not None:
+                self.timings.time_appending += timer.process_time() - before
+                before = timer.process_time()
+            start = 0
+            for end in itertools.chain(breakpoints, [-1]):
+                assert np.all(parent_time[start: end] == parent_time[start])
+                self.__edges.append_columns(left=new_left[start: end],
+                                            right=new_right[start: end],
+                                            parent=new_parent[start: end],
+                                            child=new_child[start: end])
+                msprime.sort_tables(nodes=self.__nodes,
+                                    edges=self.__edges,
+                                    edge_start=start)
+                start = end
+            if self.timings is not None:
+                self.time_sorting += timer.process_time() - before
+                before = timer.process_time()
+    
+            # NOTE: matches fwdpy11_argexample code from 
+            # https://github.com/molpopgen/fwdpy11_arg_example/pull/8
+            # Append the old sorted edges to the table.
+            self.__edges.append_columns(left=left, right=right, parent=parent, child=child)
         if self.timings is not None:
-            start2 = timer.process_time()
-            self.timings.time_sorting += start2 - start
-        msprime.simplify_tables(samples=sample_nodes, nodes=self.nodes, 
-                                edges=self.edges, sites=self.sites, 
-                                mutations=self.mutations, 
+            before = timer.process_time()
+        msprime.simplify_tables(samples=sample_nodes, nodes=self.__nodes, 
+                                edges=self.__edges, sites=self.__sites, 
+                                mutations=self.__mutations, 
                                 sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
+        self.last_sorted_edge = self.edges.num_rows
+        # end modified block from @jeromekelleher and @molpopgen
         if self.timings is not None:
-            self.timings.time_simplifying += timer.process_time() - start2
+            self.timings.time_simplifying += timer.process_time() - before
         # update the internal state
         self.last_update_node = self.nodes.num_rows
         # update index map: sample[k] now maps to k
