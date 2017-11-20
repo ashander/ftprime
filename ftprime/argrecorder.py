@@ -121,8 +121,9 @@ class ARGrecorder(object):
                                      time=nt['time'],
                                      population=nt['population'])
         if ts is not None:
-            ts.dump_tables(nodes=self.nodes, edges=self.edges, sites=self.sites,
-                           mutations=self.mutations, migrations=self.migrations)
+            ts.dump_tables(nodes=self.__nodes, edges=self.__edges,
+                           sites=self.__sites, mutations=self.__mutations,
+                           migrations=self.__migrations)
         if sequence_length is not None:
             if ts is not None:
                 if sequence_length != ts.sequence_length:
@@ -167,7 +168,7 @@ class ARGrecorder(object):
         # ret += "\n---------\n"
         return ret
 
-    def __call__(self, parents, times, populations, childrens, lefts, rights):
+    def __call__(self, parents, times, populations, childs, lefts, rights):
         """
         Does both ``add_individuals()`` and ``add_records()`` steps.
 
@@ -175,21 +176,28 @@ class ARGrecorder(object):
         :param iterable of int populations: The population ID of birth of the
             children.
         :param iterable of float times: The time of birth of the children.
-        :param iterable of tuple childrens: An iterable of input IDs of the
+        :param iterable of int childs: An iterable of input IDs of the
             children.
         :param iterable of float left: The left endpoint of the chromosomal
             segment that child inherits from parent.
         :param iterable of float right: The right endpoint of the chromosomal
             segment that child inherits from parent.
         """
-        alln = zip(childrens, times, populations)
-        new_nodes, new_times, new_pops = zip(*((child, time, pop)
-                                               for child_set, time, pop in alln
-                                               for child in child_set))
+
+        def _unique(childs, times, pops):
+            seen = set()
+            for child, time, pop in zip(childs, times, pops):
+                if child not in seen:
+                    yield (child, time, pop)
+                seen.add(child)
+
+        new_nodes, new_times, new_pops = zip(*_unique(childs,
+                                                      times,
+                                                      populations))
         self.add_individuals(input_ids=new_nodes, times=new_times,
                              populations=new_pops)
         self.add_records(lefts=lefts, rights=rights, parents=parents,
-                         childrens=childrens)
+                         childs=childs)
 
     def check_ids(self, input_ids):
         """
@@ -215,6 +223,8 @@ class ARGrecorder(object):
         :param iterable of int flagss: Any msprime flags to record.
         :param iterable of int populations: The population ID of birth of the
             individual.
+
+        :raises ValueError for input_ids that have already been entered
         '''
         if flagss is None:
             flagss = itertools.cycle((msprime.NODE_IS_SAMPLE, ))
@@ -223,11 +233,16 @@ class ARGrecorder(object):
 
         # inflate to a list so we have a length; then set up the map from
         # node_ids to tree sequence samples
-        input_ids = list(self._valid_input_ids(input_ids))
-        for i, n in zip(input_ids, itertools.count(start=self.nodes.num_rows)):
-            self.node_ids[i] = n
+        num_new_nodes = 0
+        for u, n in zip(input_ids, itertools.count(start=self.nodes.num_rows)):
+            if u in self.node_ids:
+                raise ValueError("Input ID " + str(u) +
+                                 " already exits, and cannot be added as new.")
+            self.node_ids[u] = n
+            num_new_nodes += 1
+
         nt = np.fromiter(zip(flagss, times, populations), dtype=node_dt,
-                         count=len(input_ids))
+                         count=num_new_nodes)
         self.__nodes.append_columns(flags=nt['flags'],
                                     time=nt['time'],
                                     population=nt['population'])
@@ -249,56 +264,37 @@ class ARGrecorder(object):
         '''
         self.add_individuals((input_id, ), (time, ), (flags, ), (population, ))
 
-    def add_records(self, lefts, rights, parents, childrens):
+    def add_records(self, lefts, rights, parents, childs):
         '''
         Add multiple records corresponding to a reproduction event in which
-        children (a tuple of IDs) inherit from parent (a single ID) on the
-        interval [left,right).
+        childs (each a single ID), inherit from parent (also each  single ID) on
+        the interval [left, right).
 
         :param iterable of float left: The left endpoint of the chromosomal
             segment inherited.
         :param iterable of float right: The right endpoint of the chromosomal
             segment inherited.
         :param iterable of int parent: The input ID of the parent.
-        :param iterable of tuple childrens: An iterable of input IDs of the
+        :param iterable of int: An iterable of input IDs of the
             children.
         '''
+        def _valid_parents(parents):
+            for p in parents:
+                if p not in self.node_ids:
+                    raise ValueError("Parent " + str(p) +
+                                     "'s birth time has not been recorded with " +
+                                     ".add_individual().")
+                yield p
+
         out_parents = (self.node_ids[parent]
-                       for parent in self._valid_parents(parents))
-        out_childrens = (tuple(self.node_ids[u] for u in children)
-                         for children in childrens)
+                       for parent in _valid_parents(parents))
+        out_childrens = (self.node_ids[u] for u in childs)
         edges = zip(lefts, rights, out_parents, out_childrens)
-        edges_flat = ((left, right, parent, child)
-                      for left, right, parent, children in edges
-                      for child in children)
-        et = np.fromiter(edges_flat, dtype=edge_dt)
-        self.edges.append_columns(parent=et['parent'],
-                                  child=et['child'],
-                                  left=et['left'],
-                                  right=et['right'])
-
-    def _valid_parents(self, parents):
-        """
-        Check that all ``parents`` are valid.
-        """
-        for p in parents:
-            if p not in self.node_ids:
-                raise ValueError("Parent " + str(p) +
-                                 "'s birth time has not been recorded with " +
-                                 ".add_individual().")
-            yield p
-
-    def _valid_input_ids(self, input_ids):
-        """
-        Check that all ``input_ids`` are valid.
-        """
-        # nothing bad happens if we try to add an individual more than
-        # once, but this is helpful for debugging
-        for u in input_ids:
-            if u in self.node_ids:
-                raise ValueError("Input ID " + str(u) +
-                                 "already exits, and cannot be added as new.")
-            yield u
+        et = np.fromiter(edges, dtype=edge_dt)
+        self.__edges.append_columns(parent=et['parent'],
+                                    child=et['child'],
+                                    left=et['left'],
+                                    right=et['right'])
 
     def add_record(self, left, right, parent, children):
         '''
@@ -311,7 +307,11 @@ class ARGrecorder(object):
         :param int parent: The input ID of the parent.
         :param list children: An iterable of input IDs of the children.
         '''
-        self.add_records((left, ), (right, ), (parent, ), (children, ))
+        kids = tuple(c for c in children)
+        self.add_records(itertools.repeat(left, len(kids)),
+                         itertools.repeat(right, len(kids)),
+                         itertools.repeat(parent, len(kids)),
+                         kids)
 
     def add_mutation(self, position, node, derived_state, ancestral_state):
         """
@@ -346,7 +346,7 @@ class ARGrecorder(object):
         times = self.nodes.time
         times[:self.last_update_node] = times[:self.last_update_node] + dt
         times[self.last_update_node:] = self.max_time - times[self.last_update_node:]
-        self.nodes.set_columns(flags=self.nodes.flags,
+        self.__nodes.set_columns(flags=self.nodes.flags,
                                population=self.nodes.population,
                                time=times)
         self.last_update_time = self.max_time
@@ -471,7 +471,7 @@ class ARGrecorder(object):
         sample_flag = np.array(msprime.NODE_IS_SAMPLE, dtype='uint32')
         new_flags = self.nodes.flags & ~sample_flag
         new_flags[sample_nodes] |= sample_flag
-        self.nodes.set_columns(time=self.nodes.time,
+        self.__nodes.set_columns(time=self.nodes.time,
                                population=self.nodes.population,
                                flags=new_flags)
 

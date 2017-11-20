@@ -58,7 +58,7 @@ def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_inte
         for j, offspring in zip(js, offsprings):
             pop[j] = offspring
         records(parents=parents, times=times,
-                populations=pops, childrens=((o, ) for o in offsprings),
+                populations=pops, childs=offsprings,
                 lefts=lefts, rights=rights)
 
     if debug:
@@ -81,7 +81,7 @@ def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_inte
 def record_info_iter(new_inds, debug, time, dead):
     '''
     yields:
-        pop_idx, parents, times, populations, childrens, lefts, rights
+        pop_idx, parents, times, populations, childs, lefts, rights
     '''
     j = 0
     for offspring, lparent, rparent, bp, muts in new_inds :

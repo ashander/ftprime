@@ -76,8 +76,8 @@ class BasicTestCase(FtprimeTestCase):
         records.add_individuals([4, 5], [2.0, 2.0], populations=[2, 2])
         # adding edges should not change number of nodes
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
-        records.add_records([0.0, 0.5], [0.5, 1.0], [0, 0],
-                            [(4,5), (4, )])
+        records.add_records([0.0, 0.0, 0.5], [0.5, 0.5, 1.0], [0, 0, 0],
+                            [4, 5, 4])
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         print(records)
         self.assertEqual(records.edges.num_rows, 5)  # initial 2 + 3 added above
@@ -96,7 +96,8 @@ class BasicTestCase(FtprimeTestCase):
         records_b = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         for r in (records_a, records_b):
             r.add_individuals([4, 5], [2.0, 2.0], populations=[2,2])
-            r.add_records((0.0, 0.5), (0.5, 1.0), (0, 0), ((4,5), (4, )))
+            r.add_records([0.0, 0.0, 0.5], [0.5, 0.5, 1.0], [0, 0, 0],
+                            [4, 5, 4])
         records_a.update_times()
         records_b.update_times()
         self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
@@ -112,7 +113,8 @@ class BasicTestCase(FtprimeTestCase):
 
         print(records)
         records.add_individuals([4, 5], [2.0, 2.0], populations=[2,2])
-        records.add_records((0.0, 0.5), (0.5, 1.0), (0, 0), ((4,5), (4, )))
+        records.add_records((0.0, 0.0, 0.5), (0.5, 0.5, 1.0), (0, 0, 0),
+                            (4, 5, 4))
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         self.assertEqual(records.edges.num_rows, 5)
         print(records)
@@ -129,7 +131,8 @@ class BasicTestCase(FtprimeTestCase):
         # and simplify -> tree_sequence
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         records.add_individuals((4, 5), (2.0, 2.0), populations=(2,2))
-        records.add_records((0.0, 0.5), (0.5, 1.0), (0, 0), ((4,5), (4, )))
+        records.add_records((0.0, 0.0, 0.5), (0.5, 0.5, 1.0), (0, 0, 0),
+                            (4, 5, 4))
         print(records)
         tsa = records.tree_sequence([4, 5])
         print("---------------- sequence a -----------")

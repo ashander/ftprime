@@ -12,7 +12,7 @@ class WfTestCase(FtprimeTestCase):
 
     def run_wf(self, N, ngens, nsamples, survival=0.0, simplify_interval=10):
         records = wf_vector(N=N, ngens=ngens, nsamples=nsamples, survival=survival,
-                          debug=False, simplify_interval=simplify_interval,
+                          debug=True, simplify_interval=simplify_interval,
                           seed=self.random_seed)
         return records
 
@@ -30,7 +30,7 @@ class WfTestCase(FtprimeTestCase):
             self.assertTrue(ch < records.nodes.num_rows)
 
     def test_runs(self):
-        N = 10
+        N = 2
         ngens = 20
         records = self.run_wf(N=N, ngens=ngens, nsamples=N)
         self.check_tables(records)
