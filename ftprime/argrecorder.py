@@ -70,20 +70,15 @@ class ARGrecorder(object):
     def __init__(self, node_ids=None, ts=None, time=0.0,
                  sequence_length=None, timings=None):
         """
-        The tables passed in define history before the simulation begins.  If
-        these are missing, then the input IDs specified in ``node_ids`` must be
-        ``0...n-1``.
+        The tree sequence ``ts`` passed in defines history before the
+        simulation begins.  If this is missing, then the input IDs specified in
+        ``node_ids`` must be ``0...n-1``.
 
         :param dict node_ids: A dict indexed by input IDs so that
             ``node_ids[k]`` is the node ID of the node corresponding to sample
             ``k`` in the initial ``ts``.  Must specify this for every individual
             that may be a parent moving forward.
-        :param NodeTable nodes: A table describing prehistory of the simulation.
-        :param EdgeTable edges: A table describing prehistory of the simulation.
-        :param SiteTable sites: A table describing prehistory of the simulation.
-        :param MutationTable mutations: A table describing prehistory of the simulation.
-        :param MigrationTable migrations: A table describing prehistory of the simulation.
-        :param TreeSequence ts: An alternative method to specifying past history.
+        :param TreeSequence ts: The tree sequence containing prior history.
         :param float time: The (forwards) time of the "present" at the start of
             the simulation.
         :param float sequence_length: The total length of the sequence (derived
@@ -349,8 +344,8 @@ class ARGrecorder(object):
         times[:self.last_update_node] = times[:self.last_update_node] + dt
         times[self.last_update_node:] = self.max_time - times[self.last_update_node:]
         self.__nodes.set_columns(flags=self.nodes.flags,
-                               population=self.nodes.population,
-                               time=times)
+                                 population=self.nodes.population,
+                                 time=times)
         self.last_update_time = self.max_time
         self.last_update_node = self.nodes.num_rows
 
@@ -457,9 +452,10 @@ class ARGrecorder(object):
         self.update_times()
         if self.timings is not None:
             start = timer.process_time()
-        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
-                            sites=self.sites, mutations=self.mutations)
+        msprime.sort_tables(nodes=self.__nodes, edges=self.__edges,
+                            sites=self.__sites, mutations=self.__mutations)
         #                   migrations=self.migrations)
+        self.last_sorted_edge = self.edges.num_rows
         self.mark_samples(samples)
         if self.timings is not None:
             self.timings.time_sorting += start - timer.process_time()
@@ -515,8 +511,8 @@ class ARGrecorder(object):
         new_flags = self.nodes.flags & ~sample_flag
         new_flags[sample_nodes] |= sample_flag
         self.__nodes.set_columns(time=self.nodes.time,
-                               population=self.nodes.population,
-                               flags=new_flags)
+                                 population=self.nodes.population,
+                                 flags=new_flags)
 
     @property
     def nodes(self):
