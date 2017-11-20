@@ -116,6 +116,25 @@ class RecombCollector:
         if self.args.timings is not None:
             before = timer.process_time()
         for line in lines.strip().split(self.split):
+        nodes_data, edges_data = zip(*self._nodes_edges_iter(lines))
+        print(edges_data)
+        print(nodes_data)
+        child_chroms, times = zip(*nodes_data)
+        lefts, rights, parents, childs = zip(*((l, r, p, c)
+                                               for edges in edges_data
+                                               for l, r, p, c in edges))
+        for l, r in zip(lefts, rights):
+            print(l, r)
+        self.args.add_individuals(child_chroms, times)
+        self.args.add_records(lefts=lefts,
+                              rights=rights,
+                              parents=parents,
+                              childs=childs)
+        if self.args.timings is not None:
+            self.args.timings.time_appending += timer.process_time() - before
+
+    def _nodes_edges_iter(self, lines):
+        for line in lines.strip().split('\n'):
             # print("A: "+line)
             # child, parent, ploid,*rec = [int(x) for x in line.split()]
             linex = [int(x) for x in line.split()]
@@ -142,7 +161,8 @@ class RecombCollector:
 
             # print("  adding child:",child, child_p,"-i2c->",child_chrom,
             # self.time)
-            self.args.add_individual(child_chrom, self.time)
+            ndata = (child_chrom, self.time)
+            edata = []
             for r in rec:
                 # do this check to avoid a simuPOP bug
                 if r < len(self.locus_position) - 1:
@@ -150,23 +170,18 @@ class RecombCollector:
                                                 self.locus_position[r + 1])
                     # print("--- ",start, self.locus_position[r],
                     #       "< = ",breakpoint,"<=",self.locus_position[r+1])
-                    self.args.add_record(
-                            left=start,
-                            right=breakpoint,
-                            parent=self.i2c(parent, ploid),
-                            children=(child_chrom,))
+                    edata.append((start,
+                                  breakpoint,
+                                  self.i2c(parent, ploid),
+                                  child_chrom))
                     start = breakpoint
                     ploid = ((ploid + 1) % 2)
             # print("--- ",start, self.sequence_length," |")
-            self.args.add_record(
-                    left=start,
-                    right=self.sequence_length,
-                    parent=self.i2c(parent, ploid),
-                    children=(child_chrom,))
-
-        if self.args.timings is not None:
-            self.args.timings.time_appending += timer.process_time() - before
-
+            edata.append((start,
+                          self.sequence_length,
+                          self.i2c(parent, ploid),
+                          child_chrom))
+            yield ndata, edata
 
     def tree_sequence(self, samples):
             """
