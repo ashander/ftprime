@@ -40,7 +40,7 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
         self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
         self.assertRaises(ValueError,
-                          records.add_individuals_dbg, (1, ), (1.5, ))
+                          records.add_individuals, (1, ), (1.5, ))
 
         # multi
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
@@ -51,7 +51,7 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.nodes.time[records.node_ids[6]], 2.5)
         self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
         self.assertRaises(ValueError,
-                          records.add_individuals_dbg, (1, 2), (1.5, 2.5))
+                          records.add_individuals, (1, 2), (1.5, 2.5))
 
     def test_add_record(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
@@ -86,7 +86,7 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.edges.child[3], records.node_ids[5])
         self.assertEqual(records.edges.child[4], records.node_ids[4])
         # try adding record with parent who doesn't exist
-        self.assertRaises(ValueError, records.add_records_dbg, (0.0, ),
+        self.assertRaises(ValueError, records.add_records, (0.0, ),
                           (0.5, ), (8, ), ((0,1), ))
 
     def test_update_times(self):

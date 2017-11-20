@@ -223,7 +223,7 @@ class ARGrecorder(object):
 
         # inflate to a list so we have a length; then set up the map from
         # node_ids to tree sequence samples
-        input_ids = list(input_ids)
+        input_ids = list(self._valid_input_ids(input_ids))
         for i, n in zip(input_ids, itertools.count(start=self.nodes.num_rows)):
             self.node_ids[i] = n
         nt = np.fromiter(zip(flagss, times, populations), dtype=node_dt,
@@ -232,28 +232,6 @@ class ARGrecorder(object):
                                     time=nt['time'],
                                     population=nt['population'])
         self.max_time = max(self.max_time, max(times))
-
-    def add_individuals_dbg(self, input_ids, times, flagss=None,
-                            populations=None):
-        '''
-        Simple version of `.add_individuals` with more debug info
-        '''
-        if flagss is None:
-            flagss = itertools.cycle((msprime.NODE_IS_SAMPLE, ))
-        if populations is None:
-            populations = itertools.cycle((msprime.NULL_POPULATION, ))
-        for input_id, time, flags, population in zip(input_ids, times, flagss,
-                                                     populations):
-            if input_id not in self.node_ids:
-                self.node_ids[input_id] = self.nodes.num_rows
-                self.nodes.add_row(flags=flags, population=population,
-                                   time=time)
-                self.max_time = max(self.max_time, time)
-            else:
-                # nothing bad happens if we try to add an individual more than
-                # once, but this is helpful for debugging
-                raise ValueError("Attempted to add " + str(input_id) +
-                                 ", who already exits, as a new individual.")
 
     def add_individual(self, input_id, time,
                        flags=msprime.NODE_IS_SAMPLE,
@@ -300,30 +278,27 @@ class ARGrecorder(object):
                                   right=et['right'])
 
     def _valid_parents(self, parents):
-        for parent in parents:
-            if parent not in self.node_ids:
-                raise ValueError("Parent " + str(parent) +
+        """
+        Check that all ``parents`` are valid.
+        """
+        for p in parents:
+            if p not in self.node_ids:
+                raise ValueError("Parent " + str(p) +
                                  "'s birth time has not been recorded with " +
                                  ".add_individual().")
-            yield parent
+            yield p
 
-    def add_records_dbg(self, lefts, rights, parents, childrens):
-        '''
-        Simple version of `.add_records` with more debug info
-        '''
-        for left, right, parent, children in zip(lefts, rights,
-                                                 parents, childrens):
-            if parent not in self.node_ids:
-                raise ValueError("Parent " + str(parent) +
-                                 "'s birth time has not been recorded with " +
-                                 ".add_individual().")
-            out_parent = self.node_ids[parent]
-            out_children = tuple(self.node_ids[u] for u in children)
-            for child in out_children:
-                self.edges.add_row(parent=out_parent,
-                                   child=child,
-                                   left=left,
-                                   right=right)
+    def _valid_input_ids(self, input_ids):
+        """
+        Check that all ``input_ids`` are valid.
+        """
+        # nothing bad happens if we try to add an individual more than
+        # once, but this is helpful for debugging
+        for u in input_ids:
+            if u in self.node_ids:
+                raise ValueError("Input ID " + str(u) +
+                                 "already exits, and cannot be added as new.")
+            yield u
 
     def add_record(self, left, right, parent, children):
         '''
@@ -482,40 +457,6 @@ class ARGrecorder(object):
                                                     population[j],
                                                     time[j]))
 
-    def phony_samples(self, samples, dt=1):
-        '''
-        Add phony records to the end of the NodeTable that stand in for
-        sampling the IDs in `samples`. Will be recorded at living dt units of
-        time after the sampled individual.  This is necessary if any of the
-        samples are parents to other ones, to avoid ``msprime``'s restriction
-        on not sampling internal nodes.  These will be given arbitrary input
-        IDs, that will probably break if the simulation is run further.
-
-        DEPRECATED: this is unneeded with ancestral simplify; to be removed.
-        '''
-        self.check_ids(samples)
-        times = self.nodes.time
-        populations = self.nodes.population
-        sample_nodes = self.get_nodes(samples)
-        sample_times = [times[i] for i in sample_nodes]
-        sample_populations = [populations[i] for i in sample_nodes]
-        new_samples = [None for _ in samples]
-        j = 0
-        for k in range(len(samples)):
-            # find an unused input id
-            j = 1 + max(self.node_ids.keys())
-            new_samples[k] = j
-            self.add_individual(input_id=new_samples[k],
-                                time=sample_times[k] + dt,
-                                flags=msprime.NODE_IS_SAMPLE,
-                                population=sample_populations[k])
-            self.add_record(left=0.0,
-                            right=self.sequence_length,
-                            parent=samples[k],
-                            children=(new_samples[k],))
-        self.mark_samples(new_samples)
-        return new_samples
-
     def mark_samples(self, samples):
         """
         Mark these individuals as samples internally (but do not simplify).
@@ -538,38 +479,18 @@ class ARGrecorder(object):
     def nodes(self):
         return self.__nodes
 
-    @nodes.setter
-    def nodes(self, value):
-        self.__nodes = value
-
     @property
     def edges(self):
         return self.__edges
-
-    @edges.setter
-    def edges(self, value):
-        self.__edges = value
 
     @property
     def sites(self):
         return self.__sites
 
-    @sites.setter
-    def sites(self, value):
-        self.__sites = value
-
     @property
     def mutations(self):
         return self.__mutations
 
-    @mutations.setter
-    def mutations(self, value):
-        self.__mutations = value
-
     @property
     def migrations(self):
         return self.__migrations
-
-    @migrations.setter
-    def migrations(self, value):
-        self.__migrations = value
