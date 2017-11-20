@@ -406,21 +406,24 @@ class ARGrecorder(object):
                                             child=new_child[start: end])
                 msprime.sort_tables(nodes=self.__nodes,
                                     edges=self.__edges,
+                                    sites=self.__sites,
+                                    mutations=self.__mutations,
                                     edge_start=start)
                 start = end
             if self.timings is not None:
                 self.time_sorting += timer.process_time() - before
                 before = timer.process_time()
-    
-            # NOTE: matches fwdpy11_argexample code from 
+
+            # NOTE: matches fwdpy11_argexample code from
             # https://github.com/molpopgen/fwdpy11_arg_example/pull/8
             # Append the old sorted edges to the table.
-            self.__edges.append_columns(left=left, right=right, parent=parent, child=child)
+            self.__edges.append_columns(left=left, right=right, parent=parent,
+                                        child=child)
         if self.timings is not None:
             before = timer.process_time()
-        msprime.simplify_tables(samples=sample_nodes, nodes=self.__nodes, 
-                                edges=self.__edges, sites=self.__sites, 
-                                mutations=self.__mutations, 
+        msprime.simplify_tables(samples=sample_nodes, nodes=self.__nodes,
+                                edges=self.__edges, sites=self.__sites,
+                                mutations=self.__mutations,
                                 sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
         self.last_sorted_edge = self.edges.num_rows
