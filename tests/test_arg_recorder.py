@@ -143,7 +143,7 @@ class BasicTestCase(FtprimeTestCase):
         print(tsb.dump_tables())
         self.check_trees(tsa, tsb)
 
-    def test_simplify2(self):
+    def test_nonesense_seq_len(self):
         # test that nonsensical sequence_length gets caught
         self.assertRaises(ValueError, ftprime.ARGrecorder, ts=self.init_ts, 
                           node_ids=self.init_map, sequence_length=0.5)
