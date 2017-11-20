@@ -38,7 +38,7 @@ setup(name='ftprime',
               'sphinx',
               'recommonmark',
               'sphinx_rtd_theme',
-              'simuPOP>=1.1.7'
+              'simuPOP>=1.1.8'
           ],
       },
       )
