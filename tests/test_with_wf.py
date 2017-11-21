@@ -85,7 +85,7 @@ class WfTestCase(FtprimeTestCase):
     def test_overlapping_generations(self):
         records = self.run_wf(N=11, ngens=20, nsamples=5, survival=0.5)
 
-        check_tables(records)
+        self.check_tables(records)
 
         print(records)
 
