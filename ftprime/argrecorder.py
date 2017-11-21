@@ -388,32 +388,28 @@ class ARGrecorder(object):
             right = self.edges.right[:self.last_sorted_edge]
             parent = self.edges.parent[:self.last_sorted_edge]
             child = self.edges.child[:self.last_sorted_edge]
-            # Get the new edges and reverse them. After this, we know that all edges
-            # are correctly sorted with respect to time. We then sort each time slice
-            # individually, reducing the overall cost of the sort.
+            # Get the new edges and reverse them. After this, with
+            # nonoverlapping generations all edges would be correctly sorted
+            # with respect to time. For overlapping generations this isn't true.
+            # Nonetheless, reversing the order may reduce the cost of the sort.
             new_left = self.edges.left[:self.last_sorted_edge:-1]
             new_right = self.edges.right[:self.last_sorted_edge:-1]
             new_parent = self.edges.parent[:self.last_sorted_edge:-1]
             new_child = self.edges.child[:self.last_sorted_edge:-1]
-            parent_time = self.__nodes.time[new_parent]
-            breakpoints = np.where(parent_time[1:] != parent_time[:-1])[0] + 1
             self.__edges.reset()
             if self.timings is not None:
                 self.timings.time_appending += timer.process_time() - before
                 before = timer.process_time()
-            start = 0
-            for end in itertools.chain(breakpoints, [-1]):
-                assert np.all(parent_time[start: end] == parent_time[start])
-                self.__edges.append_columns(left=new_left[start: end],
-                                            right=new_right[start: end],
-                                            parent=new_parent[start: end],
-                                            child=new_child[start: end])
-                msprime.sort_tables(nodes=self.__nodes,
-                                    edges=self.__edges,
-                                    sites=self.__sites,
-                                    mutations=self.__mutations,
-                                    edge_start=start)
-                start = end
+            # end modified block from @jeromekelleher and @molpopgen
+            # TODO implement breakpoint-based sort with overlapping gens?
+            self.__edges.append_columns(left=new_left,
+                                        right=new_right,
+                                        parent=new_parent,
+                                        child=new_child)
+            msprime.sort_tables(nodes=self.__nodes,
+                                edges=self.__edges,
+                                sites=self.__sites,
+                                mutations=self.__mutations)
             if self.timings is not None:
                 self.time_sorting += timer.process_time() - before
                 before = timer.process_time()
@@ -431,7 +427,6 @@ class ARGrecorder(object):
                                 sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
         self.last_sorted_edge = self.edges.num_rows
-        # end modified block from @jeromekelleher and @molpopgen
         if self.timings is not None:
             self.timings.time_simplifying += timer.process_time() - before
         # update the internal state
