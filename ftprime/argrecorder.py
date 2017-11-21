@@ -144,6 +144,15 @@ class ARGrecorder(object):
         if self.timings is not None:
             self.timings.time_prepping += timer.process_time() - start
 
+    def __repr__(self):
+        ret = "\n---------\n"
+        ret += ' '.join(["Nodes:", repr(self.nodes), "\n"])
+        ret += ' '.join(["Edges:", repr(self.edges), "\n"])
+        ret += ' '.join(["Sites:", repr(self.sites), "\n"])
+        ret += ' '.join(["Mutations:", repr(self.mutations), "\n"])
+        # ret += "\n---------\n"
+        return ret
+
     def __str__(self):
         ret = "\n---------\n"
         ret += "Max time so far:\n"
