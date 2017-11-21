@@ -27,7 +27,13 @@ class RecombCollectorTest(FtprimeTestCase):
         node_ids = {(0,0):1, (0,1):2}
         locus_position = [0.0, 1.0, 2.0, 3.0]
         rc = ftprime.RecombCollector(ts=init_ts, node_ids=node_ids, 
-                                     locus_position=locus_position)
+                                     locus_position=locus_position,
+                                     benchmark=True)
+        assert rc.mode == 'text'
+        rc2 = ftprime.RecombCollector(ts=init_ts, node_ids=node_ids, 
+                                     locus_position=locus_position,
+                                     benchmark=True, mode='binary')
+        assert rc2.mode == 'binary'
         return rc, node_ids
 
     def bigger_ex(self):

@@ -22,8 +22,8 @@ class RecombCollector:
         - ...
 
     '''
-
-    def __init__(self, ts, node_ids, locus_position, benchmark=False):
+    def __init__(self, ts, node_ids, locus_position, benchmark=False,
+                 mode='text'):
         """
         :param TreeSequence ts: A tree sequence describing the history of each
             chromosome in the population before the simulation starts.
@@ -37,7 +37,16 @@ class RecombCollector:
             and also at the end of the chromosome.
             :param bool benchmark: Whether to store benchmark information in the
             ARGrecorder.
+        :param str mode: can be 'text or 'binary' then bstrs must be passed to
+            `.collect_recombs`.
+
         """
+        if mode == 'text':
+            self.split = '\n'
+        elif mode == 'binary':
+            self.split = b'\n'
+        else:
+            raise ValueError("mode must be 'str' or 'binary'")
         self.sequence_length = ts.sequence_length
         self.locus_position = locus_position
         self.last_child = -1
@@ -59,6 +68,13 @@ class RecombCollector:
         # but note we don't keep anything else about them here (time, location)
         # as this is recorded by the ARGrecorder
         self.diploid_samples = None
+
+    @property
+    def mode(self):
+        if self.split == '\n':
+            return 'text'
+        elif self.split == b'\n':
+            return 'binary'
 
     def i2c(self, k, p):
         """
@@ -99,8 +115,7 @@ class RecombCollector:
         """
         if self.args.timings is not None:
             before = timer.process_time()
-            
-        for line in lines.strip().split('\n'):
+        for line in lines.strip().split(self.split):
             # print("A: "+line)
             # child, parent, ploid,*rec = [int(x) for x in line.split()]
             linex = [int(x) for x in line.split()]
