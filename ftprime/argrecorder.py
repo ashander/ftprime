@@ -380,51 +380,17 @@ class ARGrecorder(object):
         sample_nodes = self.get_nodes(samples)
         if self.timings is not None:
             before = timer.process_time()
-        if  True:
-            # begin modified block from @jeromekelleher and @molpopgen
-            # Copy the already sorted edges to local arrays
-            left = self.edges.left[:self.last_sorted_edge]
-            right = self.edges.right[:self.last_sorted_edge]
-            parent = self.edges.parent[:self.last_sorted_edge]
-            child = self.edges.child[:self.last_sorted_edge]
-            # Get the new edges and reverse them. After this, with
-            # nonoverlapping generations all edges would be correctly sorted
-            # with respect to time. For overlapping generations this isn't true.
-            # Nonetheless, reversing the order may reduce the cost of the sort.
-            new_left = self.edges.left[:self.last_sorted_edge:-1]
-            new_right = self.edges.right[:self.last_sorted_edge:-1]
-            new_parent = self.edges.parent[:self.last_sorted_edge:-1]
-            new_child = self.edges.child[:self.last_sorted_edge:-1]
-            self.__edges.reset()
-            if self.timings is not None:
-                self.timings.time_appending += timer.process_time() - before
-                before = timer.process_time()
-            # end modified block from @jeromekelleher and @molpopgen
-            self.__edges.append_columns(left=new_left,
-                                        right=new_right,
-                                        parent=new_parent,
-                                        child=new_child)
-            msprime.sort_tables(nodes=self.__nodes,
-                                edges=self.__edges,
-                                sites=self.__sites,
-                                mutations=self.__mutations)
-            if self.timings is not None:
-                self.time_sorting += timer.process_time() - before
-                before = timer.process_time()
-
-            # NOTE: matches fwdpy11_argexample code from
-            # https://github.com/molpopgen/fwdpy11_arg_example/pull/8
-            # Append the old sorted edges to the table.
-            self.__edges.append_columns(left=left, right=right, parent=parent,
-                                        child=child)
+        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
+                            sites=self.sites, mutations=self.mutations)
+        #                   migrations=self.migrations)
         if self.timings is not None:
+            self.time_sorting += timer.process_time() - before
             before = timer.process_time()
         msprime.simplify_tables(samples=sample_nodes, nodes=self.__nodes,
                                 edges=self.__edges, sites=self.__sites,
                                 mutations=self.__mutations,
                                 sequence_length=self.sequence_length)
         #                       migrations=self.migrations)
-        self.last_sorted_edge = self.edges.num_rows
         if self.timings is not None:
             self.timings.time_simplifying += timer.process_time() - before
         # update the internal state
@@ -457,7 +423,6 @@ class ARGrecorder(object):
         msprime.sort_tables(nodes=self.__nodes, edges=self.__edges,
                             sites=self.__sites, mutations=self.__mutations)
         #                   migrations=self.migrations)
-        self.last_sorted_edge = self.edges.num_rows
         self.mark_samples(samples)
         if self.timings is not None:
             self.timings.time_sorting += start - timer.process_time()
