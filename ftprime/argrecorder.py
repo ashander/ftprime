@@ -380,12 +380,7 @@ class ARGrecorder(object):
         sample_nodes = self.get_nodes(samples)
         if self.timings is not None:
             before = timer.process_time()
-        i = self.last_sorted_edge - 1
-        while True:
-            if self.__edges.parent[i] not in sample_nodes:
-                break
-            i -= 1
-        if  i < self.edges.num_rows:
+        if  True:
             # begin modified block from @jeromekelleher and @molpopgen
             # Copy the already sorted edges to local arrays
             left = self.edges.left[:self.last_sorted_edge]
@@ -405,7 +400,6 @@ class ARGrecorder(object):
                 self.timings.time_appending += timer.process_time() - before
                 before = timer.process_time()
             # end modified block from @jeromekelleher and @molpopgen
-            # TODO implement breakpoint-based sort with overlapping gens?
             self.__edges.append_columns(left=new_left,
                                         right=new_right,
                                         parent=new_parent,
