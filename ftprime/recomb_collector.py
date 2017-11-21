@@ -117,14 +117,10 @@ class RecombCollector:
             before = timer.process_time()
         for line in lines.strip().split(self.split):
         nodes_data, edges_data = zip(*self._nodes_edges_iter(lines))
-        print(edges_data)
-        print(nodes_data)
         child_chroms, times = zip(*nodes_data)
         lefts, rights, parents, childs = zip(*((l, r, p, c)
                                                for edges in edges_data
                                                for l, r, p, c in edges))
-        for l, r in zip(lefts, rights):
-            print(l, r)
         self.args.add_individuals(child_chroms, times)
         self.args.add_records(lefts=lefts,
                               rights=rights,
