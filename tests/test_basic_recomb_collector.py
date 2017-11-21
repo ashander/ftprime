@@ -169,7 +169,7 @@ class RecombCollectorTest(FtprimeTestCase):
         rc.increment_time()
         self.assertEqual(rc.time, 1.0)
 
-    def test_collect_recombs_simple(self):
+    def test_collect_recombs_medium(self):
         rc, ee, en = self.medium_ex()
         self.assertEqual(rc.time, 1.0)
         print(rc.args.node_ids)

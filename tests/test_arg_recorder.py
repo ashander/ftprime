@@ -23,6 +23,11 @@ class BasicTestCase(FtprimeTestCase):
     init_ts = msprime.load_text(nodes=nodes, edges=edges)
     init_map = {0:1, 1:2}
 
+    def test_init_no_tree(self):
+        self.assertRaises(ValueError, ftprime.ARGrecorder, {0:0, 1:1})
+        arg = ftprime.ARGrecorder(node_ids={0:0, 1:1}, sequence_length=1.0)
+        assert arg.nodes.num_rows == 2
+
     def test_init(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         for input_id in self.init_map:
@@ -346,6 +351,7 @@ class ExplicitTestCase(FtprimeTestCase):
         node_times = {u:arg.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
         print(arg)
         arg.simplify(self.sample_input_ids)
+        print(repr(arg))
         print(arg)
         new_node_times = {u:arg.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
         for u in self.sample_input_ids:

@@ -110,8 +110,8 @@ class ARGrecorder(object):
             for j, k in enumerate(sorted(self.node_ids.keys())):
                 assert j == self.node_ids[k]
             default = (msprime.NODE_IS_SAMPLE, time, msprime.NULL_POPULATION)
-            nt = np.fromiter(zip(itertools.cycle((default, ))),
-                             count=len(self.node_ids), dtype=node_dt)
+            nt = np.fromiter(itertools.repeat(default),
+                             count=len(node_ids), dtype=node_dt)
             self.__nodes.set_columns(flags=nt['flags'],
                                      time=nt['time'],
                                      population=nt['population'])
