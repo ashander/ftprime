@@ -384,7 +384,7 @@ class ARGrecorder(object):
                             sites=self.sites, mutations=self.mutations)
         #                   migrations=self.migrations)
         if self.timings is not None:
-            self.time_sorting += timer.process_time() - before
+            self.timings.time_sorting += timer.process_time() - before
             before = timer.process_time()
         msprime.simplify_tables(samples=sample_nodes, nodes=self.__nodes,
                                 edges=self.__edges, sites=self.__sites,
