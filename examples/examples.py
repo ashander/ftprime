@@ -169,7 +169,6 @@ def run(args):
     logfile.flush()
     
     logfile.write("All done!\n")
-    logfile.close()
 
 if __name__ == '__main__':
         
@@ -206,7 +205,7 @@ if __name__ == '__main__':
             help="name of file to output selected locus information", default="sel_loci.txt")
     parser.add_argument("--treefile","-t", type=str, dest="treefile",
             help="name of output file for trees (default: not output)",default=None)
-    parser.add_argument("--nsim","-n", type=str, dest="nsims",
+    parser.add_argument("--nsim","-n", type=int, dest="nsims",
                         help="repetitions",default=1)
     
     args = parser.parse_args()
