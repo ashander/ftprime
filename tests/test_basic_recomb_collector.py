@@ -36,6 +36,29 @@ class RecombCollectorTest(FtprimeTestCase):
         assert rc2.mode == 'binary'
         return rc, node_ids
 
+    def medium_ex(self):
+        """
+        below we add two new offspring with no recombinations
+        this adds 2 nodes and 3 edges
+        """
+        rc, node_ids = self.simple_ex()
+        self.assertListEqual(rc.locus_position,
+                             [0.0, 1.0, 2.0, 3.0])
+        # Input is pairs of
+        #     offspringID parentID startingPloidy rec1 rec2 ....
+        # in pairs of offpsring chromosomes
+        lines_list = ["""
+        1   0   1
+        1   0   0   1
+        """]
+        for lines in lines_list:
+            rc.increment_time()
+            rc.collect_recombs(lines)
+        rc.args.update_times()
+        expected_nodes = 3 + 2
+        expected_edges = 2 + 3
+        return rc, expected_edges, expected_nodes
+
     def bigger_ex(self):
         """
         Below we have this situation ('indiv' is the diploid ID)
@@ -145,6 +168,35 @@ class RecombCollectorTest(FtprimeTestCase):
         self.assertEqual(rc.time, 0.0)
         rc.increment_time()
         self.assertEqual(rc.time, 1.0)
+
+    def test_collect_recombs_simple(self):
+        rc, ee, en = self.medium_ex()
+        self.assertEqual(rc.time, 1.0)
+        print(rc.args.node_ids)
+        print(rc.args)
+        nodes = rc.args.nodes
+        print(nodes)
+        self.assertEqual(nodes.num_rows, en)
+        edges = rc.args.edges
+        self.assertArrayEqual(nodes.time,
+                              [2.0, 1.0, 1.0] + [0.0, 0.0])
+        print(edges)
+        self.assertEqual(edges.num_rows, ee)
+        # Node IDs:
+        # {0: 1, 1: 2, 2: 3, 3: 4}
+        # Nodes:
+        # id	flags	population	time
+        # 0	    0	    0		    2.00000000000000
+        # 1	    1	    1		    1.00000000000000
+        # 2	    1	    2		    1.00000000000000
+        # 3	    1	    -1		    0.00000000000000
+        # 4	    1	    -1		    0.00000000000000
+        # Edges:
+        # id	left		right		parent	child
+        # 0	0.00000000	3.00000000	0	1
+        # 1	0.00000000	3.00000000	0	2
+        # 2	0.00000000	3.00000000	2	3
+        # 3	0.00000000	3.00000000	1	4
 
     def test_collect_recombs(self):
         rc = self.bigger_ex()
