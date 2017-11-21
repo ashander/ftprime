@@ -380,8 +380,12 @@ class ARGrecorder(object):
         sample_nodes = self.get_nodes(samples)
         if self.timings is not None:
             before = timer.process_time()
-
-        if self.last_sorted_edge < self.edges.num_rows:
+        i = self.last_sorted_edge - 1
+        while True:
+            if self.__edges.parent[i] not in sample_nodes:
+                break
+            i -= 1
+        if  i < self.edges.num_rows:
             # begin modified block from @jeromekelleher and @molpopgen
             # Copy the already sorted edges to local arrays
             left = self.edges.left[:self.last_sorted_edge]
