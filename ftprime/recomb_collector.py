@@ -1,5 +1,11 @@
-from .argrecorder import ARGrecorder
+from .argrecorder import (
+    ARGrecorder,
+    edge_dt,
+    node_dt,
+)
+import msprime
 import random
+import numpy as np
 import time as timer
 from .benchmarker import Timings
 
@@ -83,13 +89,13 @@ class RecombCollector:
         :param int k: The individual ID.
         :param int p: The chromosome index (0 or 1).
 
-        :return int: The "input ID" used by the underlying ARGrecorder
+        :return numpy.int32: The "input ID" used by the underlying ARGrecorder
         corresponding to this chromsome.
         """
         # individual ID to chromsome ID
-        if not (p == 0 or p == 1):
+        if not (p == np.int32(0) or p == np.int32(1)):
             raise ValueError("Chromosome ID must be 0 (paternal) or 1 (maternal).")
-        return int(2 * k + p)
+        return np.int32(2) * k + p
 
     def i2n(self, k, p):
         """
@@ -132,16 +138,16 @@ class RecombCollector:
         for line in lines.strip().split(self.split):
             # print("A: "+line)
             # child, parent, ploid,*rec = [int(x) for x in line.split()]
-            linex = [int(x) for x in line.split()]
+            linex = np.fromstring(line, sep=' ', dtype=np.int32)
             child = linex[0]
             parent = linex[1]
             ploid = linex[2]
             rec = linex[3:]
             # lines come in pairs: maternal/paternal.
             if child == self.last_child:
-                child_p = 1
+                child_p = np.int32(1)
             else:
-                child_p = 0
+                child_p = np.int32(0)
                 self.last_child = child
             # if self.ind_to_time(child) > self.ind_to_time(parent):
             #     raise ValueError(str(child)+" at "+
@@ -151,31 +157,36 @@ class RecombCollector:
 
             start = 0.0
             child_chrom = self.i2c(child, child_p)
+            assert type(child_chrom) is np.int32, str(type(child_chrom))
             # print("  existing parent:",parent, ploid,"-i2c->",
             # self.i2c(parent, ploid))
 
             # print("  adding child:",child, child_p,"-i2c->",child_chrom,
             # self.time)
-            ndata = (child_chrom, self.time)
-            edata = []
-            for r in rec:
-                # do this check to avoid a simuPOP bug
-                if r < len(self.locus_position) - 1:
-                    breakpoint = random.uniform(self.locus_position[r],
-                                                self.locus_position[r + 1])
-                    # print("--- ",start, self.locus_position[r],
-                    #       "< = ",breakpoint,"<=",self.locus_position[r+1])
-                    edata.append((start,
-                                  breakpoint,
-                                  self.i2c(parent, ploid),
-                                  child_chrom))
-                    start = breakpoint
-                    ploid = ((ploid + 1) % 2)
+            ndata = np.array((child_chrom, self.time, msprime.NULL_POPULATION),
+                             dtype=node_dt)
+            esize = min(len(rec), len(self.locus_position))
+            edata = np.empty((4, esize),
+                             dtype=edge_dt)
+            ep_iter = ((self.locus_position[r], self.locus_position[r + 1])
+                       for r in rec
+                       # do this check to avoid a simuPOP bug
+                       if r < len(self.locus_position) - 1)
+            for i, eps in enumerate(ep_iter):
+                breakpoint = random.uniform(*eps)
+                # print("--- ",start, self.locus_position[r],
+                #       "< = ",breakpoint,"<=",self.locus_position[r+1])
+                edata[i] = (start,
+                            breakpoint,
+                            self.i2c(parent, ploid),
+                            child_chrom)
+                start = breakpoint
+                ploid = ((ploid + 1) % 2)
             # print("--- ",start, self.sequence_length," |")
-            edata.append((start,
-                          self.sequence_length,
-                          self.i2c(parent, ploid),
-                          child_chrom))
+            edata[esize] = (start,
+                            self.sequence_length,
+                            self.i2c(parent, ploid),
+                            child_chrom)
             yield ndata, edata
 
     def tree_sequence(self, samples):
