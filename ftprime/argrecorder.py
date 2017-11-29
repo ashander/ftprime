@@ -219,23 +219,18 @@ class ARGrecorder(object):
         """
         return [self.node_ids[j] for j in input_ids]
 
-    def add_individuals(self, input_ids, times, flagss=None, populations=None):
+    def add_individuals(self, input_ids, data):
         '''
         Add new individuals, resulting in records as in `.add_individual`, but
         more efficiently.
 
         :param iterable of int input_ids: The input ID of the new individual.
-        :param iterable of float times: The time of birth of the individual.
-        :param iterable of int flagss: Any msprime flags to record.
-        :param iterable of int populations: The population ID of birth of the
-            individual.
+        :param iterable of tuple: (Any msprime flags to record, The time of
+            birth of the individual, The population ID of birth of the
+            individual.)
 
         :raises ValueError for input_ids that have already been entered
         '''
-        if flagss is None:
-            flagss = itertools.cycle((msprime.NODE_IS_SAMPLE, ))
-        if populations is None:
-            populations = itertools.cycle((msprime.NULL_POPULATION, ))
 
         # inflate to a list so we have a length; then set up the map from
         # node_ids to tree sequence samples
@@ -247,12 +242,9 @@ class ARGrecorder(object):
             self.node_ids[u] = n
             num_new_nodes += 1
 
-        nt = np.fromiter(zip(flagss, times, populations), dtype=node_dt,
-                         count=num_new_nodes)
-        self.__nodes.append_columns(flags=nt['flags'],
-                                    time=nt['time'],
-                                    population=nt['population'])
-        self.max_time = max(self.max_time, max(times))
+        nt = np.array(data, dtype=node_dt, copy=False)
+        self.nodes.append_columns(flags=nt['flags'], time=nt['time'], population=nt['population'])
+        self.max_time = max(self.max_time, max(nt['time']))
 
     def add_individual(self, input_id, time,
                        flags=msprime.NODE_IS_SAMPLE,
@@ -268,7 +260,7 @@ class ARGrecorder(object):
         :param population int: The population ID of birth of the indivdiual
             (may be omitted).
         '''
-        self.add_individuals((input_id, ), (time, ), (flags, ), (population, ))
+        self.add_individuals((input_id, ), ((flags, time, population), ))
 
     def add_records(self, lefts, rights, parents, childs):
         '''
