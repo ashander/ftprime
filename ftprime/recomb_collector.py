@@ -125,13 +125,10 @@ class RecombCollector:
         node_ids, nodes_data = zip(*nodes)
         # Below we use flatten to avoid [[(el1), (el2), ... (el3)]]
         nd = np.column_stack(nodes_data).flatten()
-        ed = np.column_stack(edge
-                             for edges in edges_data
-                             for edge in edges
-                             if len(edge) > 0  # TODO - fix. this is bc of incorrect esize below
-                             ).flatten()
         self.args.add_individuals(node_ids, nd)
-        self.args.add_records(ed)
+        self.args.add_records([edge
+                              for edges in edges_data
+                              for edge in edges])
         if self.args.timings is not None:
             self.args.timings.time_appending += timer.process_time() - before
 
@@ -168,28 +165,26 @@ class RecombCollector:
                      np.array(
                          (msprime.NODE_IS_SAMPLE, self.time, msprime.NULL_POPULATION),
                          dtype=node_dt))
-            # TODO is this right? seems not bc need hack above
-            esize = min(len(rec), len(self.locus_position) - 2)
             ep_iter = ((self.locus_position[r], self.locus_position[r + 1])
                        for r in rec
                        # do this check to avoid a simuPOP bug
                        if r < len(self.locus_position) - 1)
-            edata = np.empty((4, esize), dtype=edge_dt)
+            edata = []
             for i, eps in enumerate(ep_iter):
                 breakpoint = random.uniform(*eps)
                 # print("--- ",start, self.locus_position[r],
                 #       "< = ",breakpoint,"<=",self.locus_position[r+1])
-                edata[i] = (start,
-                            breakpoint,
-                            self.i2c(parent, ploid),
-                            child_chrom)
+                edata.append((start,
+                              breakpoint,
+                              self.i2c(parent, ploid),
+                              child_chrom))
                 start = breakpoint
                 ploid = ((ploid + 1) % 2)
             # print("--- ",start, self.sequence_length," |")
-            edata[esize] = (start,
-                            self.sequence_length,
-                            self.i2c(parent, ploid),
-                            child_chrom)
+            edata.append((start,
+                          self.sequence_length,
+                          self.i2c(parent, ploid),
+                          child_chrom))
             yield ndata, edata
 
     def tree_sequence(self, samples):
