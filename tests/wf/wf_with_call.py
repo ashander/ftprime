@@ -10,10 +10,10 @@ from .breakpoints import (
 
 
 """
-Same as wf but using __call__() interface with long vectors.
+Same as wf but using __call__() interface..
 """
 
-def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10,
+def wf_call(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10,
        debug=False, seed=None) :
     '''
     SIMPLE simulation of a bisexual, haploid Wright-Fisher population of size N
@@ -34,8 +34,7 @@ def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_inte
     # initial population
     init_ts = msprime.simulate(N, recombination_rate=1.0)
     init_samples = init_ts.samples()
-    records = ARGrecorder(ts=init_ts,
-                          node_ids={k:init_samples[k] for k in range(N)})
+    records = ARGrecorder(ts=init_ts, node_ids={k:init_samples[k] for k in range(N)})
 
     for t in range(1, 1+ngens) :
         if debug:
@@ -48,18 +47,28 @@ def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_inte
 
         dead = [(random.random() > survival) for k in pop]
         # this is: offspring ID, lparent, rparent, breakpoint
-        new_inds = [(next(labels), random.choice(pop), random.choice(pop),
+        new_inds = [(next(labels), random.choice(pop), random.choice(pop), 
                      random_breakpoint(), random_mutations(mutation_rate))
                     for k in range(sum(dead))]
+        j=0
         if debug:
             print("Replacing", sum(dead), "individuals.")
-        js, parents, times, pops, offsprings, lefts, rights = \
-            zip(*record_info_iter(new_inds, debug, time=t, dead=dead))
-        for j, offspring in zip(js, offsprings):
-            pop[j] = offspring
-        records(parents=parents, times=times,
-                populations=pops, childs=offsprings,
-                lefts=lefts, rights=rights)
+        for offspring, lparent, rparent, bp, muts in new_inds :
+            if debug:
+                print("--->", offspring, lparent, rparent, bp)
+            while not dead[j] :
+                j+=1
+            pop[j]=offspring
+            j+=1
+            if bp > 0.0 :
+                records(parent=lparent, time=t, population=0, child=offspring,
+                        left=0.0, right=bp)
+            if bp < 1.0 :
+                records(parent=rparent, time=t, population=0, child=offspring,
+                        left=bp, right=1.0)
+            for mut in muts:
+                records.add_mutation(position=mut, node=input_id, 
+                                     derived_state=1, ancestral_state=0)
 
     if debug:
         print("Done, now sampling.")
@@ -77,25 +86,3 @@ def wf_vector(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_inte
 
     return records
 
-
-def record_info_iter(new_inds, debug, time, dead):
-    '''
-    yields:
-        pop_idx, parents, times, populations, childs, lefts, rights
-    '''
-    j = 0
-    for offspring, lparent, rparent, bp, muts in new_inds :
-        while not dead[j] :
-            j+=1
-        if debug:
-            print("--->", offspring, lparent, rparent, bp)
-        if bp > 0.0 :
-            yield j, lparent, time, 0, offspring, 0.0, bp
-        if bp < 1.0 :
-            yield j, rparent, time, 0, offspring, bp, 1.0
-        j += 1
-
-# TODO add something like above for muts
-# for mut in muts:
-#     records.add_mutation(position=mut, node=input_id,
-#                          derived_state=1, ancestral_state=0)

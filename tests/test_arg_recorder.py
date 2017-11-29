@@ -44,19 +44,23 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.nodes.num_rows, 4)
         self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
         self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
-        self.assertRaises(ValueError,
-                          records.add_individuals, (1, ), (1.5, ))
+        self.assertRaises(ValueError,  # already added
+                          records.add_individuals, [1],
+                          [(msprime.NODE_IS_SAMPLE, 1.5, 1)])
 
         # multi
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
-        records.add_individuals([5, 6], [2.0, 2.5], populations=[2, 1])
+        records.add_individuals([5, 6], [(msprime.NODE_IS_SAMPLE, 2.0, 2),
+                                         (msprime.NODE_IS_SAMPLE, 2.5, 1)])
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         self.assertEqual(records.nodes.num_rows, 5)
         self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
         self.assertEqual(records.nodes.time[records.node_ids[6]], 2.5)
         self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
         self.assertRaises(ValueError,
-                          records.add_individuals, (1, 2), (1.5, 2.5))
+                          records.add_individuals, (1, 2),
+                          [(msprime.NODE_IS_SAMPLE, 2.0, 2),
+                                         (msprime.NODE_IS_SAMPLE, 2.5, 1)])
 
     def test_add_record(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
@@ -78,11 +82,13 @@ class BasicTestCase(FtprimeTestCase):
 
         # multi
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
-        records.add_individuals([4, 5], [2.0, 2.0], populations=[2, 2])
+        records.add_individuals([4, 5], [(msprime.NODE_IS_SAMPLE, 2.0, 2),
+                                         (msprime.NODE_IS_SAMPLE, 2.0, 2)])
         # adding edges should not change number of nodes
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
-        records.add_records([0.0, 0.0, 0.5], [0.5, 0.5, 1.0], [0, 0, 0],
-                            [4, 5, 4])
+        records.add_records([(0.0, 0.5, 0, 4),
+                             (0.0, 0.5, 0, 5),
+                             (0.5, 1.0, 0, 4)])
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         print(records)
         self.assertEqual(records.edges.num_rows, 5)  # initial 2 + 3 added above
@@ -91,8 +97,7 @@ class BasicTestCase(FtprimeTestCase):
         self.assertEqual(records.edges.child[3], records.node_ids[5])
         self.assertEqual(records.edges.child[4], records.node_ids[4])
         # try adding record with parent who doesn't exist
-        self.assertRaises(ValueError, records.add_records, (0.0, ),
-                          (0.5, ), (8, ), ((0,1), ))
+        self.assertRaises(ValueError, records.add_records, [(0.0, 0.5, 8, 0)])
 
     def test_update_times(self):
         records_a = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
@@ -100,9 +105,11 @@ class BasicTestCase(FtprimeTestCase):
         records_a.update_times()
         records_b = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         for r in (records_a, records_b):
-            r.add_individuals([4, 5], [2.0, 2.0], populations=[2,2])
-            r.add_records([0.0, 0.0, 0.5], [0.5, 0.5, 1.0], [0, 0, 0],
-                            [4, 5, 4])
+            r.add_individuals([4, 5], [(msprime.NODE_IS_SAMPLE, 2.0, 2),
+                                       (msprime.NODE_IS_SAMPLE, 2.0, 2)])
+            r.add_records([(0.0, 0.5, 0, 4),
+                           (0.0, 0.5, 0, 5),
+                           (0.5, 1.0, 0, 4)])
         records_a.update_times()
         records_b.update_times()
         self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
@@ -117,9 +124,11 @@ class BasicTestCase(FtprimeTestCase):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
 
         print(records)
-        records.add_individuals([4, 5], [2.0, 2.0], populations=[2,2])
-        records.add_records((0.0, 0.0, 0.5), (0.5, 0.5, 1.0), (0, 0, 0),
-                            (4, 5, 4))
+        records.add_individuals([4, 5], [(msprime.NODE_IS_SAMPLE, 2.0, 2),
+                                         (msprime.NODE_IS_SAMPLE, 2.0, 2)])
+        records.add_records([(0.0, 0.5, 0, 4),
+                             (0.0, 0.5, 0, 5),
+                             (0.5, 1.0, 0, 4)])
         self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
         self.assertEqual(records.edges.num_rows, 5)
         print(records)
@@ -135,9 +144,11 @@ class BasicTestCase(FtprimeTestCase):
         # test that we get the same tree sequence by doing tree_sequence
         # and simplify -> tree_sequence
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
-        records.add_individuals((4, 5), (2.0, 2.0), populations=(2,2))
-        records.add_records((0.0, 0.0, 0.5), (0.5, 0.5, 1.0), (0, 0, 0),
-                            (4, 5, 4))
+        records.add_individuals([4, 5], [(msprime.NODE_IS_SAMPLE, 2.0, 2),
+                                         (msprime.NODE_IS_SAMPLE, 2.0, 2)])
+        records.add_records([(0.0, 0.5, 0, 4),
+                             (0.0, 0.5, 0, 5),
+                             (0.5, 1.0, 0, 4)])
         print(records)
         tsa = records.tree_sequence([4, 5])
         print("---------------- sequence a -----------")
