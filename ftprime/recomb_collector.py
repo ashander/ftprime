@@ -115,7 +115,6 @@ class RecombCollector:
         """
         if self.args.timings is not None:
             before = timer.process_time()
-        for line in lines.strip().split(self.split):
         nodes_data, edges_data = zip(*self._nodes_edges_iter(lines))
         child_chroms, times = zip(*nodes_data)
         lefts, rights, parents, childs = zip(*((l, r, p, c)
@@ -130,7 +129,7 @@ class RecombCollector:
             self.args.timings.time_appending += timer.process_time() - before
 
     def _nodes_edges_iter(self, lines):
-        for line in lines.strip().split('\n'):
+        for line in lines.strip().split(self.split):
             # print("A: "+line)
             # child, parent, ploid,*rec = [int(x) for x in line.split()]
             linex = [int(x) for x in line.split()]
