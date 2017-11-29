@@ -1,7 +1,5 @@
-import ftprime
 import msprime
 import random
-import unittest
 
 from tests import *
 
