@@ -10,10 +10,11 @@ from .wf import wf_call
 
 class WfTestCase(FtprimeTestCase):
 
-    def run_wf(self, N, ngens, nsamples, survival=0.0, simplify_interval=10):
+    def run_wf(self, N, ngens, nsamples, survival=0.0, simplify_interval=10,
+               mutation_rate=0.0):
         records = wf_call(N=N, ngens=ngens, nsamples=nsamples, survival=survival,
                           debug=False, simplify_interval=simplify_interval,
-                          seed=self.random_seed)
+                          seed=self.random_seed, mutation_rate=mutation_rate)
         return records
 
     def check_tables(self, records):

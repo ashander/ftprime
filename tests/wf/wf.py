@@ -59,9 +59,9 @@ def wf(N, ngens, nsamples, survival=0.0, mutation_rate=0.0, simplify_interval=10
                 records.add_record(left=0.0, right=bp, parent=lparent, children=(offspring,))
             if bp < 1.0 :
                 records.add_record(left=bp, right=1.0, parent=rparent, children=(offspring,))
-            for mut in muts:
-                records.add_mutation(position=mut, node=input_id, 
-                                     derived_state=1, ancestral_state=0)
+            # for mut in muts:
+            #     records.add_mutation(position=mut, node=offspring, 
+            #                          derived_state=1, ancestral_state=0)
 
     if debug:
         print("Done, now sampling.")
