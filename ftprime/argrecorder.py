@@ -353,55 +353,6 @@ class ARGrecorder(object):
                 out.append(input_id)
         return out
 
-    def dump_sample_table(self, out):
-        '''
-        Write out the table of info about the samples.
-        '''
-        flags = self.nodes.flags
-        population = self.nodes.population
-        time = self.nodes.time
-        out.write("id\tflags\tpopulation\ttime\n")
-        for j in range(self.nodes.num_rows):
-            if flags[j] & msprime.NODE_IS_SAMPLE:
-                out.write("{}\t{}\t{}\t{}\n".format(j,
-                                                    flags[j],
-                                                    population[j],
-                                                    time[j]))
-
-    def phony_samples(self, samples, dt=1):
-        '''
-        Add phony records to the end of the NodeTable that stand in for
-        sampling the IDs in `samples`. Will be recorded at living dt units of
-        time after the sampled individual.  This is necessary if any of the
-        samples are parents to other ones, to avoid ``msprime``'s restriction
-        on not sampling internal nodes.  These will be given arbitrary input
-        IDs, that will probably break if the simulation is run further.
-
-        DEPRECATED: this is unneeded with ancestral simplify; to be removed.
-        '''
-        self.check_ids(samples)
-        times = self.nodes.time
-        populations = self.nodes.population
-        sample_nodes = self.get_nodes(samples)
-        sample_times = [times[i] for i in sample_nodes]
-        sample_populations = [populations[i] for i in sample_nodes]
-        new_samples = [None for _ in samples]
-        j = 0
-        for k in range(len(samples)):
-            # find an unused input id
-            j = 1 + max(self.node_ids.keys())
-            new_samples[k] = j
-            self.add_individual(input_id=new_samples[k],
-                                time=sample_times[k] + dt,
-                                flags=msprime.NODE_IS_SAMPLE,
-                                population=sample_populations[k])
-            self.add_record(left=0.0,
-                            right=self.sequence_length,
-                            parent=samples[k],
-                            children=(new_samples[k],))
-        self.mark_samples(new_samples)
-        return new_samples
-
     def mark_samples(self, samples):
         """
         Mark these individuals as samples internally (but do not simplify).
