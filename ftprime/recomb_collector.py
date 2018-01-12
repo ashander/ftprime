@@ -19,8 +19,6 @@ class RecombCollector:
         - the initial generation is recorded at time 0.0
         - calling increment_time() increases the time by 1
         - the first generation is recorded at time 1.0
-        - ...
-
     '''
     def __init__(self, ts, node_ids, locus_position, benchmark=False,
                  mode='text'):
@@ -107,8 +105,16 @@ class RecombCollector:
 
     def collect_recombs(self, lines):
         """
-        Collects recombinations arriving in text form like:
+        Collects recombinations arriving in text form from simuPOP.
+
+        :param str lines: Recombination data from simuPOP.
+
+        :details
+
+        Data arrives in form
+
             offspringID parentID startingPloidy rec1 rec2 ....
+
         in *pairs* for (paternal, maternal) chromosomes, as output by
         ``simuPOP.Recombinator()``. A parental chromosome inherited without a
         crossover would be recorded with no recombinations.
@@ -166,7 +172,6 @@ class RecombCollector:
 
         if self.args.timings is not None:
             self.args.timings.time_appending += timer.process_time() - before
-
 
     def tree_sequence(self, samples):
             """

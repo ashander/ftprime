@@ -40,12 +40,9 @@ class ARGrecorder(object):
         output IDs (node IDs in the tree sequence).
 
     1. Each time a new individual (chromosome) is born, record:
-    
         a. their birth time with ``add_individual``,
 
-        b. how their chromosome was inherited from her parents with ``add_record``,
-
-        c. and any new mutations with ``add_mutation``. 
+        b. how their chromosome was inherited from her parents with ``add_record``.
 
     2. Periodically, run ``simplify(samples)`` to remove unnecessary
         information from the recorded tables.  ``samples`` should be a list of
