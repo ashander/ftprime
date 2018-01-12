@@ -1,7 +1,7 @@
 ftprime
 ======
 
-This code was mentioned during the Evolution 2017 talk:
+An earlier version of this code was mentioned during the Evolution 2017 talk:
 > Ashander, McCartney-Melstad, Ralph, Shaffer (2017) "Using Genomic Data to Inform Population Viability in a Long-Lived Endangered Vertebrate". 
 
 Note the code is pre-production but if you're building on the ideas here please cite this repository using the DOI: [![DOI](https://zenodo.org/badge/72480698.svg)](https://zenodo.org/badge/latestdoi/72480698)
@@ -11,10 +11,10 @@ Contents
 --------
 
 The purpose of this package is to provide python code to easily store ancestry information from a forwards-time, 
-individual-based simulation, using [msprime](https://github.com/jeromekelleher/msprime), so that after the simulation,
+individual-based simulation, using [msprime](https://github.com/jeromekelleher/msprime)'s "tree sequence" data format, so that after the simulation,
 we can
 
-1. have the entire tree sequence (ARG equivalent) of the final generation
+1. have the entire tree sequence (equivalent to the ARG) of the final generation:w
 2. put down neutral mutations on the tree sequence afterwards without carrying them along in the simulation, and
 3. use [msprime](https://github.com/jeromekelleher/msprime) to efficiently store results and quickly compute statistics.
 
@@ -28,11 +28,11 @@ We also provide a class to facilitate doing this with [simuPOP](https://github.c
     with a diploid simulation with discrete loci, whose function `collect_recombs` can be used as output for simuPOP's `Recombinator` operator.
 
 
-Tests and examples:
+Tests:
 
--  [simupop_example.py](simupop_example.py): A simple walk-through of using with simuPOP.
--  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
--  [tests/test_with_wf.py](tests/test_with_wf.py): Example of using the wf interface.
+-  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the `ARGrecorder`.
+-  [tests/test_with_wf.py](tests/test_with_wf.py): Example of using the Wright-Fisher interface.
+-  [examples/](examples/): more complex examples using `RecombCollector`.
 
 
 Development

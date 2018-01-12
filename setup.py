@@ -7,29 +7,32 @@ from warnings import warn
 with codecs_open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
-HAVE_SIMUPOP = False
-HAVE_MSPRIME = False
 try:
-    import msprime
+    import msprime  #NOQA
 except ImportError:
     warn("`msprime` not present and must be installed")
+try:
+    import simuPOP  #NOQA
+except ImportError:
+    warn("`simuPOP` not present and must be installed")
 
 
 setup(name='ftprime',
       version='0.0.6-rc',
-      description=u"fill msprime data structure in forward time",
+      description=u"Simulate a `msprime` tree sequence in forward time",
       long_description=long_description,
-      classifiers=[],
-      keywords='',
+      keywords=['tree sequence'],
       author=u"Jaime Ashander",
-      author_email='jashander@ucdavis.edu',
+      author_email='jashander@ucla.edu',
       url='https://github.com/ashander/ftprime',
       license='GPL3',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['writeups', 'ez_setup', 'examples',
+                                      'tests']),
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'click'
+          'msprime',
+          'numpy',
       ],
       extras_require={
           'dev': [
@@ -38,7 +41,22 @@ setup(name='ftprime',
               'sphinx',
               'recommonmark',
               'sphinx_rtd_theme',
-              'simuPOP>=1.1.7'
+              'six',
           ],
+          'recomb_collector': [
+              'simuPOP>=1.1.8.3',
+          ]
       },
+      platforms=["POSIX"],
+      classifiers=['Intended Audience :: Science/Research',
+                   'License :: OSI Approved :: GNU General Public License v3 ' +
+                   'or later (GPLv3+)'
+                   'Operating System :: POSIX',
+                   'Topic :: Scientific/Engineering :: Bio-Informatics',
+                   'Programming Language :: Python :: 3.5',
+                   'Programming Language :: Python :: 3.6',
+                   'Development Status :: 3 - Alpha',
+                   'Environment :: Other Environment',
+                   'Intended Audience :: Science/Research',
+                   ],
       )
