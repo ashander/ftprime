@@ -62,7 +62,6 @@ already satisfied (because you've installed them with ``conda``, above):
 
     pip install -e .[dev]  # Don't need the [dev] if you used conda above
     pytest
-<<<<<<< HEAD
 
 Earlier work
 ------------
