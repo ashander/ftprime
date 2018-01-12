@@ -20,7 +20,7 @@ class BasicTestCase(FtprimeTestCase):
     0       0.00000000      1.00000000      0       1
     1       0.00000000      1.00000000      0       2
     """)
-    init_ts = msprime.load_text(nodes=nodes, edges=edges)
+    init_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
     init_map = {0:1, 1:2}
 
     def test_init(self):
@@ -210,7 +210,7 @@ class ExplicitTestCase(FtprimeTestCase):
     0       0.90000000      1.00000000      0       2
     0       0.90000000      1.00000000      0       3
     """)
-    true_ts = msprime.load_text(nodes=nodes, edges=edges)
+    true_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
     true_tss = true_ts.simplify()
 
     ids = dict( [ (y,x) for x,y in enumerate(['a','b','c','d','e','f','g','h','i','j','k']) ] )
@@ -231,7 +231,7 @@ class ExplicitTestCase(FtprimeTestCase):
         0       0.00000000      1.00000000      0       1
         1       0.00000000      1.00000000      0       2
         """)
-        init_ts = msprime.load_text(nodes=nodes, edges=edges)
+        init_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
 
         first_gen = {self.ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
         arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
@@ -284,7 +284,7 @@ class ExplicitTestCase(FtprimeTestCase):
         0       0.00000000      1.00000000      0       1
         1       0.00000000      1.00000000      0       2
         """)
-        init_ts = msprime.load_text(nodes=nodes, edges=edges)
+        init_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
         first_gen = {self.ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
         arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
         self.f(arg, 'b', 'a', 0.9, 'd', 2.0)
@@ -317,7 +317,7 @@ class ExplicitTestCase(FtprimeTestCase):
         id      left            right           parent  children
         0       0.00000000      1.00000000      0       1,2
         """)
-        init_ts = msprime.load_text(nodes=nodes, edges=edges)
+        init_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
 
         first_gen = {self.ids[k] : v for k, v in [('a', 0), ('b', 1), ('c', 2)]}
         arg = ftprime.ARGrecorder(ts=init_ts, node_ids=first_gen, time=1.0)
