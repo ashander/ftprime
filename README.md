@@ -62,6 +62,7 @@ already satisfied (because you've installed them with ``conda``, above):
 
     pip install -e .[dev]  # Don't need the [dev] if you used conda above
     pytest
+<<<<<<< HEAD
 
 Earlier work
 ------------
@@ -80,8 +81,3 @@ for such a set, and thinking about different ways to do it.
 -  [writeups/forwards_algorithm.md](writeups/forwards_algorithm.md): Description of the algorithm for outputting a valid tree sequence from a forwards-time simulation.
 -  [writeups/algorithm-notes.md](writeups/algorithm-notes.md): A writeup of algorithmic considerations.
 -  [devel/test_msprime.py](devel/test_msprime.py): An exploration of the capabilities of msprime to digest various notions of a tree sequence.
-
-To-do
-=====
-
-1. Change recombination to be Poisson, and **check** we are not missing a factor of 2 in the definition of Morgans.
