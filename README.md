@@ -14,8 +14,8 @@ The purpose of this package is to provide python code to easily store ancestry i
 individual-based simulation, using [msprime](https://github.com/jeromekelleher/msprime), so that after the simulation,
 we can
 
-1. reconstruct the entire ARG of the final generation
-2. put down neutral mutations on the ARG afterwards without carrying them along in the simulation, and
+1. have the entire tree sequence (ARG equivalent) of the final generation
+2. put down neutral mutations on the tree sequence afterwards without carrying them along in the simulation, and
 3. use [msprime](https://github.com/jeromekelleher/msprime) to efficiently store results and quickly compute statistics.
 
 We also provide a class to facilitate doing this with [simuPOP](https://github.com/BoPeng/simuPOP).
@@ -33,23 +33,6 @@ Tests and examples:
 -  [simupop_example.py](simupop_example.py): A simple walk-through of using with simuPOP.
 -  [tests/wf/](test/wf/__init__.py): Very simple forwards-time Wright-Fisher simulation that uses the underlying machinery to the ARGrecorder.
 -  [tests/test_with_wf.py](tests/test_with_wf.py): Example of using the wf interface.
-
-
-Legacy interface:
-
--  [attic/meiosistagger.py](attic/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
-    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
-
-[Documentation of the problem and the methods:](writeups/)
-
-Since there are many different ways to store an ARG as a set of coalescence records,
-a good deal of this is devoted to describing and verifying msprime's requirements
-for such a set, and thinking about different ways to do it.
-
--  [writeups/forwards_algorithm.md](writeups/forwards_algorithm.md): Description of the algorithm for outputting a valid tree sequence from a forwards-time simulation.
--  [writeups/algorithm-notes.md](writeups/algorithm-notes.md): A writeup of algorithmic considerations.
--  [devel/test_msprime.py](devel/test_msprime.py): An exploration of the capabilities of msprime to digest various notions of a tree sequence.
-
 
 
 Development
@@ -79,6 +62,24 @@ already satisfied (because you've installed them with ``conda``, above):
 
     pip install -e .[dev]  # Don't need the [dev] if you used conda above
     pytest
+
+Earlier work
+------------
+
+Legacy interface:
+
+-  [attic/meiosistagger.py](attic/meiosistagger.py): Provides `MeiosisTagger`, which can be used as an IdTagger in simuPOP
+    with the side effect of simulating recombination events and storing everything in an `ARGrecorder`.
+
+[Documentation of the problem and the methods:](writeups/)
+
+Since there are many different ways to store an ARG as a set of coalescence records,
+a good deal of this is devoted to describing and verifying msprime's requirements
+for such a set, and thinking about different ways to do it.
+
+-  [writeups/forwards_algorithm.md](writeups/forwards_algorithm.md): Description of the algorithm for outputting a valid tree sequence from a forwards-time simulation.
+-  [writeups/algorithm-notes.md](writeups/algorithm-notes.md): A writeup of algorithmic considerations.
+-  [devel/test_msprime.py](devel/test_msprime.py): An exploration of the capabilities of msprime to digest various notions of a tree sequence.
 
 To-do
 =====

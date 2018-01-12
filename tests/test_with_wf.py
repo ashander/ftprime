@@ -10,10 +10,11 @@ from .wf import wf
 
 class WfTestCase(FtprimeTestCase):
 
-    def run_wf(self, N, ngens, nsamples, survival=0.0, simplify_interval=10):
+    def run_wf(self, N, ngens, nsamples, survival=0.0, simplify_interval=10,
+               mutation_rate=0.0):
         records = wf(N=N, ngens=ngens, nsamples=nsamples, survival=survival,
                      debug=False, simplify_interval=simplify_interval,
-                     seed=self.random_seed)
+                     seed=self.random_seed, mutation_rate=mutation_rate)
         return records
 
     def check_tables(self, records):
@@ -82,11 +83,10 @@ class WfTestCase(FtprimeTestCase):
             # else:
             #     self.assertEqual(flags[k], 0)
 
-    @unittest.skip
     def test_overlapping_generations(self):
         records = self.run_wf(N=11, ngens=20, nsamples=5, survival=0.5)
 
-        check_tables(records)
+        self.check_tables(records)
 
         print(records)
 

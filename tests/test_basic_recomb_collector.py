@@ -22,7 +22,7 @@ class RecombCollectorTest(FtprimeTestCase):
         0       0.00000000      3.00000000      0       1
         1       0.00000000      3.00000000      0       2
         """)
-        init_ts = msprime.load_text(nodes=nodes, edges=edges)
+        init_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
         # diploid 0 maps initially to haploids 1 and 2 in init_ts:
         node_ids = {(0,0):1, (0,1):2}
         locus_position = [0.0, 1.0, 2.0, 3.0]
