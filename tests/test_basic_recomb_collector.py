@@ -22,7 +22,15 @@ class RecombCollectorTest(FtprimeTestCase):
         0       0.00000000      3.00000000      0       1
         1       0.00000000      3.00000000      0       2
         """)
-        init_ts = msprime.load_text(nodes=nodes, edges=edges, strict=False)
+        populations = six.StringIO("""\
+        id      metadata
+        0       .
+        1       .
+        2       .
+        """)
+        init_ts = msprime.load_text(nodes=nodes, edges=edges, 
+                                    populations=populations,
+                                    strict=False)
         # diploid 0 maps initially to haploids 1 and 2 in init_ts:
         node_ids = {(0,0):1, (0,1):2}
         locus_position = [0.0, 1.0, 2.0, 3.0]
@@ -114,7 +122,7 @@ class RecombCollectorTest(FtprimeTestCase):
     def test_init(self):
         rc, node_ids = self.simple_ex()
         self.assertEqual(rc.sequence_length, 3.0)
-        self.assertEqual(rc.args.nodes.num_rows, 3)
+        self.assertEqual(rc.args.tables.nodes.num_rows, 3)
         self.assertEqual(rc.time, 0.0)
         self.check_node_ids(rc, node_ids)
 
@@ -150,14 +158,14 @@ class RecombCollectorTest(FtprimeTestCase):
         rc = self.bigger_ex()
         self.assertEqual(rc.time, 2.0)
         # check nodes
-        nodes = rc.args.nodes
+        nodes = rc.args.tables.nodes
         print(nodes)
         self.assertEqual(nodes.num_rows, 3+10)
         self.assertArrayEqual(nodes.time,
                 [3.0, 2.0, 2.0]
                  + [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
         # check edges
-        edges = rc.args.edges
+        edges = rc.args.tables.edges
         print(edges)
         self.assertEqual(edges.num_rows, 2 + 21)
         dip_parents = [[(0,1)],
@@ -235,7 +243,7 @@ class RecombCollectorTest(FtprimeTestCase):
         dip_locations = [2+x for x in random.sample(dip_indivs, len(dip_indivs))]
         rc.add_locations(input_ids=dip_indivs, locations=dip_locations)
         true_locations = [dip_locations[k-1] for k in dip_indivs for p in [0,1]]
-        obs_locations = [rc.args.nodes.population[rc.i2n(k,p)] for k in dip_indivs for p in [0,1]]
+        obs_locations = [rc.args.tables.nodes.population[rc.i2n(k,p)] for k in dip_indivs for p in [0,1]]
         print(true_locations)
         print(obs_locations)
         self.assertArrayEqual(true_locations, obs_locations)
@@ -243,9 +251,9 @@ class RecombCollectorTest(FtprimeTestCase):
     def test_simple_simplify(self):
         rc, node_ids = self.simple_ex()
         rc.simplify([0])
-        self.assertArrayEqual(rc.args.nodes.time, [0,0,1])
-        self.assertArrayEqual(rc.args.edges.parent, [2, 2])
-        self.assertArrayEqual(rc.args.edges.child, [0,1])
+        self.assertArrayEqual(rc.args.tables.nodes.time, [0,0,1])
+        self.assertArrayEqual(rc.args.tables.edges.parent, [2, 2])
+        self.assertArrayEqual(rc.args.tables.edges.child, [0,1])
 
     def test_simplify(self):
         rc = self.bigger_ex()
@@ -258,23 +266,23 @@ class RecombCollectorTest(FtprimeTestCase):
             else:
                 return (math.floor(x) + math.ceil(x))/2.0
         # round breakpoints so we know what's supposed to happen
-        round_left = [f(x) for x in rc.args.edges.left]
-        round_right = [f(x) for x in rc.args.edges.right]
-        rc.args.edges.set_columns(left=round_left, right=round_right,
-                                     parent=rc.args.edges.parent,
-                                     child=rc.args.edges.child)
+        round_left = [f(x) for x in rc.args.tables.edges.left]
+        round_right = [f(x) for x in rc.args.tables.edges.right]
+        rc.args.tables.edges.set_columns(left=round_left, right=round_right,
+                                     parent=rc.args.tables.edges.parent,
+                                     child=rc.args.tables.edges.child)
 
         print(rc.args)
         rc.simplify([4,5])
         print(rc.args)
         # this should remove (3,0) and (3,1) and (0,0) (see above)
-        nodes = rc.args.nodes
+        nodes = rc.args.tables.nodes
         self.assertEqual(nodes.num_rows, 10)
         true_times = [3.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
         true_times.reverse()
         self.assertArrayEqual(nodes.time, true_times)
         # check edges
-        edges = rc.args.edges
+        edges = rc.args.tables.edges
         self.assertEqual(edges.num_rows, 19)
         true_parents = [4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9, 9]
         self.assertArrayEqual(true_parents, edges.parent)

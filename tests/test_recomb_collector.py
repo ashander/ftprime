@@ -17,18 +17,17 @@ def reset_id_tagger():
 
 
 def check_tables(args):
-    nodes = args.nodes
-    assert(nodes.num_rows == args.nodes.num_rows)
-    edges = args.edges
+    nodes = args.tables.nodes
+    edges = args.tables.edges
     # check edges are in order and all parents are recorded
     node_times = nodes.time
     last_time = 0.0
     for p in edges.parent:
         assert(node_times[p] >= last_time)
         last_time = node_times[p]
-        assert(p < args.nodes.num_rows)
+        assert(p < args.tables.nodes.num_rows)
     for ch in edges.child:
-        assert(ch < args.nodes.num_rows)
+        assert(ch < args.tables.nodes.num_rows)
 
 
 @pytest.fixture(scope="function", params=[
@@ -187,7 +186,7 @@ def test_recombination(make_pop, generations, popsize, locus_position):
     print(rc.args)
 
     # check for uniformity of recombination breakpoints
-    edges = rc.args.edges
+    edges = rc.args.tables.edges
 
     breakpoints = [x for x in edges.left if (x > 0.0) and (x < 1.0)]
     breakpoints += [x for x in edges.right if (x > 0.0) and (x < 1.0)]

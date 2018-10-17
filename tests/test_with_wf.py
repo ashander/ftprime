@@ -18,17 +18,15 @@ class WfTestCase(FtprimeTestCase):
         return records
 
     def check_tables(self, records):
-        nodes = records.nodes
-        edges = records.edges
         # check edges are in order and all parents are recorded
-        node_times = nodes.time
+        node_times = records.tables.nodes.time
         last_time = 0.0
-        for p in edges.parent:
+        for p in records.tables.edges.parent:
             self.assertTrue(node_times[p] >= last_time)
             last_time = node_times[p]
-            self.assertTrue(p < records.nodes.num_rows)
-        for ch in edges.child:
-            self.assertTrue(ch < records.nodes.num_rows)
+            self.assertTrue(p < records.tables.nodes.num_rows)
+        for ch in records.tables.edges.child:
+            self.assertTrue(ch < records.tables.nodes.num_rows)
 
     def test_runs(self):
         N = 10
@@ -41,17 +39,25 @@ class WfTestCase(FtprimeTestCase):
         # running with different simplify_intervals.
         N = 5
         ngens = 20
-        records_a = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=20)
-        records_b = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=2)
-        records_c = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=100)
-        self.assertEqual(records_a.num_simplifies, 1+1)
-        self.assertEqual(records_b.num_simplifies, 10+1)
-        self.assertEqual(records_c.num_simplifies, 0+1)
-        sample_ids = [N*ngens + x for x in range(N)]
-        self.check_trees(records_a.tree_sequence(sample_ids),
-                         records_b.tree_sequence(sample_ids))
-        self.check_trees(records_a.tree_sequence(sample_ids),
-                         records_c.tree_sequence(sample_ids))
+        for mut_rate in [0.0]:
+            records_a = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=20,
+                                    mutation_rate=mut_rate)
+            records_b = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=2,
+                                    mutation_rate=mut_rate)
+            records_c = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=100,
+                                    mutation_rate=mut_rate)
+            self.assertEqual(records_a.num_simplifies, 1+1)
+            self.assertEqual(records_b.num_simplifies, 10+1)
+            self.assertEqual(records_c.num_simplifies, 0+1)
+            sample_ids = [N*ngens + x for x in range(N)]
+            self.check_trees(records_a.tree_sequence(sample_ids),
+                             records_b.tree_sequence(sample_ids))
+            self.check_trees(records_a.tree_sequence(sample_ids),
+                             records_c.tree_sequence(sample_ids))
+            self.check_haplotypes(records_a.tree_sequence(sample_ids),
+                                  records_b.tree_sequence(sample_ids))
+            self.check_haplotypes(records_a.tree_sequence(sample_ids),
+                                  records_c.tree_sequence(sample_ids))
 
     def test_get_nodes(self):
         N = 10
@@ -61,9 +67,9 @@ class WfTestCase(FtprimeTestCase):
         final_gen = random.sample([N*ngens + x for x in range(N)], N)
         records.check_ids(final_gen)
         final_nodes = records.get_nodes(final_gen)
-        flags = records.nodes.flags
+        flags = records.tables.nodes.flags
         for k in range(N):
-            self.assertTrue(final_nodes[k] < records.nodes.num_rows)
+            self.assertTrue(final_nodes[k] < records.tables.nodes.num_rows)
             self.assertEqual(records.node_ids[final_gen[k]], final_nodes[k])
             self.assertEqual(flags[final_nodes[k]], msprime.NODE_IS_SAMPLE)
 
@@ -72,7 +78,7 @@ class WfTestCase(FtprimeTestCase):
         records = self.run_wf(N=11, ngens=20, nsamples=5)
         sample_ids = records.sample_ids()
         sample_nodes = [records.node_ids[k] for k in sample_ids]
-        flags = records.nodes.flags
+        flags = records.tables.nodes.flags
         print(records)
         print("samples:", sample_ids)
         print("sample nodes:", sample_nodes)
@@ -96,3 +102,4 @@ class WfTestCase(FtprimeTestCase):
 
         for t in ts.trees():
             print(t)
+

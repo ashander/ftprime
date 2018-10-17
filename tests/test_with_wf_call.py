@@ -18,17 +18,17 @@ class WfTestCase(FtprimeTestCase):
         return records
 
     def check_tables(self, records):
-        nodes = records.nodes
-        edges = records.edges
+        nodes = records.tables.nodes
+        edges = records.tables.edges
         # check edges are in order and all parents are recorded
         node_times = nodes.time
         last_time = 0.0
         for p in edges.parent:
             self.assertTrue(node_times[p] >= last_time)
             last_time = node_times[p]
-            self.assertTrue(p < records.nodes.num_rows)
+            self.assertTrue(p < records.tables.nodes.num_rows)
         for ch in edges.child:
-            self.assertTrue(ch < records.nodes.num_rows)
+            self.assertTrue(ch < records.tables.nodes.num_rows)
 
     def test_runs(self):
         N = 10
@@ -61,9 +61,9 @@ class WfTestCase(FtprimeTestCase):
         final_gen = random.sample([N*ngens + x for x in range(N)], N)
         records.check_ids(final_gen)
         final_nodes = records.get_nodes(final_gen)
-        flags = records.nodes.flags
+        flags = records.tables.nodes.flags
         for k in range(N):
-            self.assertTrue(final_nodes[k] < records.nodes.num_rows)
+            self.assertTrue(final_nodes[k] < records.tables.nodes.num_rows)
             self.assertEqual(records.node_ids[final_gen[k]], final_nodes[k])
             self.assertEqual(flags[final_nodes[k]], msprime.NODE_IS_SAMPLE)
 
@@ -72,7 +72,7 @@ class WfTestCase(FtprimeTestCase):
         records = self.run_wf(N=11, ngens=20, nsamples=5)
         sample_ids = records.sample_ids()
         sample_nodes = [records.node_ids[k] for k in sample_ids]
-        flags = records.nodes.flags
+        flags = records.tables.nodes.flags
         print(records)
         print("samples:", sample_ids)
         print("sample nodes:", sample_nodes)
