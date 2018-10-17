@@ -6,6 +6,9 @@ An earlier version of this code was mentioned during the Evolution 2017 talk:
 
 Note the code is pre-production but if you're building on the ideas here please cite this repository using the DOI: [![DOI](https://zenodo.org/badge/72480698.svg)](https://zenodo.org/badge/latestdoi/72480698)
 
+The current version of this package (on `HEAD`) works with msprime version 0.6.1 (current as of Oct 17 2018).
+For the earlier version, used in [the paper](https://www.biorxiv.org/content/early/2018/06/07/248500), get [tag 0.0.6](https://github.com/ashander/ftprime/tree/0.0.6).
+
 
 Contents
 --------
