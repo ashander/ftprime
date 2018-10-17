@@ -39,7 +39,7 @@ class WfTestCase(FtprimeTestCase):
         # running with different simplify_intervals.
         N = 5
         ngens = 20
-        for mut_rate in [0.0]:
+        for mut_rate in [0.0, 0.1]:
             records_a = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=20,
                                     mutation_rate=mut_rate)
             records_b = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=2,

@@ -220,6 +220,24 @@ class ARGrecorder(object):
                                       child=child,
                                       left=left,
                                       right=right)
+    def add_mutation(self, position, node, derived_state, ancestral_state):
+        """
+        Adds a new mutation to mutation table, and a new site if necessary as well.
+        :param float position: The chromosomal position of the mutation.
+        :param int node: The input ID of the individual on whose chromosome the
+            mutation occurred.  
+        :param string derived_state: The allele resulting from the mutation.
+        :param string ancestral_state: The original allele that the mutation
+            replaces (only used if this is the first mutation at this position).
+        """
+        if position not in self.site_positions:
+            site = self.sites.num_rows
+            self.sites.add_row(position=position, ancestral_state=ancestral_state)
+            self.site_positions[position] = site
+        else:
+            site = self.site_positions[position]
+        self.mutations.add_row(site=site, node=self.node_ids[node], 
+                               derived_state=derived_state)
 
     def update_times(self):
         """
