@@ -1,6 +1,6 @@
 import ftprime
 import msprime
-import random
+import numpy as np
 import unittest
 
 from tests import *
@@ -40,7 +40,9 @@ class WfTestCase(FtprimeTestCase):
         N = 5
         ngens = 20
         for mut_rate in [0.0, 0.1]:
-            records_a = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=20,
+            print("-------------------------\n")
+            print("Mut rate:" + str(mut_rate) + "\n")
+            records_a = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=ngens,
                                     mutation_rate=mut_rate)
             records_b = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=2,
                                     mutation_rate=mut_rate)
@@ -64,7 +66,8 @@ class WfTestCase(FtprimeTestCase):
         ngens = 20
         records = self.run_wf(N=N, ngens=ngens, nsamples=N)
         # this should be the input IDs for final gen
-        final_gen = random.sample([N*ngens + x for x in range(N)], N)
+        final_gen = np.random.choice([N*ngens + x for x in range(N)], N,
+                                     replace=False)
         records.check_ids(final_gen)
         final_nodes = records.get_nodes(final_gen)
         flags = records.tables.nodes.flags

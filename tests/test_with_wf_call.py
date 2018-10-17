@@ -1,6 +1,6 @@
 import ftprime
 import msprime
-import random
+import numpy as np
 import unittest
 
 from tests import *
@@ -41,24 +41,31 @@ class WfTestCase(FtprimeTestCase):
         # running with different simplify_intervals.
         N = 5
         ngens = 20
-        records_a = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=20)
-        records_b = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=2)
-        records_c = self.run_wf(N=N, ngens=20, nsamples=N, simplify_interval=100)
-        self.assertEqual(records_a.num_simplifies, 1+1)
-        self.assertEqual(records_b.num_simplifies, 10+1)
-        self.assertEqual(records_c.num_simplifies, 0+1)
-        sample_ids = [N*ngens + x for x in range(N)]
-        self.check_trees(records_a.tree_sequence(sample_ids),
-                         records_b.tree_sequence(sample_ids))
-        self.check_trees(records_a.tree_sequence(sample_ids),
-                         records_c.tree_sequence(sample_ids))
+        for mut_rate in [0.0, 0.1]:
+            print("-------------------------\n")
+            print("Mut rate:" + str(mut_rate) + "\n")
+            records_a = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=ngens,
+                                    mutation_rate=mut_rate)
+            records_b = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=2,
+                                    mutation_rate=mut_rate)
+            records_c = self.run_wf(N=N, ngens=ngens, nsamples=N, simplify_interval=100,
+                                    mutation_rate=mut_rate)
+            self.assertEqual(records_a.num_simplifies, 1+1)
+            self.assertEqual(records_b.num_simplifies, 10+1)
+            self.assertEqual(records_c.num_simplifies, 0+1)
+            sample_ids = [N*ngens + x for x in range(N)]
+            self.check_trees(records_a.tree_sequence(sample_ids),
+                             records_b.tree_sequence(sample_ids))
+            self.check_trees(records_a.tree_sequence(sample_ids),
+                             records_c.tree_sequence(sample_ids))
 
     def test_get_nodes(self):
         N = 10
         ngens = 20
         records = self.run_wf(N=N, ngens=ngens, nsamples=N)
         # this should be the input IDs for final gen
-        final_gen = random.sample([N*ngens + x for x in range(N)], N)
+        final_gen = np.random.choice([N*ngens + x for x in range(N)], N,
+                                     replace=False)
         records.check_ids(final_gen)
         final_nodes = records.get_nodes(final_gen)
         flags = records.tables.nodes.flags

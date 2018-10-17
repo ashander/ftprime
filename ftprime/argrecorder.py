@@ -231,13 +231,13 @@ class ARGrecorder(object):
             replaces (only used if this is the first mutation at this position).
         """
         if position not in self.site_positions:
-            site = self.sites.num_rows
-            self.sites.add_row(position=position, ancestral_state=ancestral_state)
+            site = self.tables.sites.num_rows
+            self.tables.sites.add_row(position=position, ancestral_state=ancestral_state)
             self.site_positions[position] = site
         else:
             site = self.site_positions[position]
-        self.mutations.add_row(site=site, node=self.node_ids[node], 
-                               derived_state=derived_state)
+        self.tables.mutations.add_row(site=site, node=self.node_ids[node], 
+                                      derived_state=derived_state)
 
     def update_times(self):
         """
