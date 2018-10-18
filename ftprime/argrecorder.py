@@ -94,7 +94,7 @@ class ARGrecorder(object):
         if ts is not None:
             tables = ts.dump_tables()
         elif tables is None:
-            tables = msprime.TableCollection()
+            tables = msprime.TableCollection(sequence_length=sequence_length)
             if ts is None:
                 for j, k in enumerate(sorted(self.node_ids.keys())):
                     assert j == self.node_ids[k]
