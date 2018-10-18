@@ -27,18 +27,18 @@ class BasicTestCase(FtprimeTestCase):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         for input_id in self.init_map:
             node_id = self.init_map[input_id]
-            self.assertEqual(records.nodes.time[node_id], 
+            self.assertEqual(records.tables.nodes.time[node_id],
                              self.init_ts.node(node_id).time)
             self.assertEqual(records.node_ids[input_id], node_id)
-            self.assertEqual(records.edges.num_rows, self.init_ts.num_edges)
+            self.assertEqual(records.tables.edges.num_rows, self.init_ts.num_edges)
 
     def test_add_individual(self):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         records.add_individual(5, 2.0, population=2)
-        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+1)
-        self.assertEqual(records.nodes.num_rows, 4)
-        self.assertEqual(records.nodes.time[records.node_ids[5]], 2.0)
-        self.assertEqual(records.nodes.population[records.node_ids[5]], 2)
+        self.assertEqual(records.tables.nodes.num_rows, self.init_ts.num_nodes+1)
+        self.assertEqual(records.tables.nodes.num_rows, 4)
+        self.assertEqual(records.tables.nodes.time[records.node_ids[5]], 2.0)
+        self.assertEqual(records.tables.nodes.population[records.node_ids[5]], 2)
         self.assertRaises(ValueError, records.add_individual, 1, 1.5)
 
     def test_add_record(self):
@@ -46,16 +46,16 @@ class BasicTestCase(FtprimeTestCase):
         records.add_individual(4, 2.0, population=2)
         records.add_individual(5, 2.0, population=2)
         # adding edges should not change number of nodes
-        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
+        self.assertEqual(records.tables.nodes.num_rows, self.init_ts.num_nodes+2)
         records.add_record(0.0, 0.5, 0, (4,5))
         records.add_record(0.5, 1.0, 0, (4,))
-        self.assertEqual(records.nodes.num_rows, self.init_ts.num_nodes+2)
+        self.assertEqual(records.tables.nodes.num_rows, self.init_ts.num_nodes+2)
         print(records)
-        self.assertEqual(records.edges.num_rows, 5)  # initial 2 + 3 added above
-        self.assertEqual(records.edges.parent[2], records.node_ids[0])
-        self.assertEqual(records.edges.child[2], records.node_ids[4])
-        self.assertEqual(records.edges.child[3], records.node_ids[5])
-        self.assertEqual(records.edges.child[4], records.node_ids[4])
+        self.assertEqual(records.tables.edges.num_rows, 5)  # initial 2 + 3 added above
+        self.assertEqual(records.tables.edges.parent[2], records.node_ids[0])
+        self.assertEqual(records.tables.edges.child[2], records.node_ids[4])
+        self.assertEqual(records.tables.edges.child[3], records.node_ids[5])
+        self.assertEqual(records.tables.edges.child[4], records.node_ids[4])
         # try adding record with parent who doesn't exist
         self.assertRaises(ValueError, records.add_record, 0.0, 0.5, 8, (0,1))
 
@@ -71,12 +71,14 @@ class BasicTestCase(FtprimeTestCase):
             r.add_record(0.5, 1.0, 0, (4,))
         records_a.update_times()
         records_b.update_times()
-        self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
+        self.assertArrayEqual(records_a.tables.nodes.time,
+                              records_b.tables.nodes.time)
         # check update_times is idempotent
         records_b.update_times()
-        self.assertArrayEqual(records_a.nodes.time, records_b.nodes.time)
+        self.assertArrayEqual(records_a.tables.nodes.time,
+                              records_b.tables.nodes.time)
         # and check is right answer
-        self.assertArrayEqual(records_a.nodes.time, [3, 2.2, 2, 0, 0])
+        self.assertArrayEqual(records_a.tables.nodes.time, [3, 2.2, 2, 0, 0])
 
     def test_simplify(self):
         # test that we get the same tree sequence by doing tree_sequence
@@ -258,14 +260,16 @@ class ExplicitTestCase(FtprimeTestCase):
         arg.update_times()
 
         arg_ids = {k:arg.node_ids[self.ids[k]] for k in self.ids}
-        self.assertEqual(arg.nodes.num_rows, len(self.ids))
+        self.assertEqual(arg.tables.nodes.num_rows, len(self.ids))
         self.assertEqual(arg.max_time, 5.0)
         for x in self.ids:
-            self.assertEqual(arg.nodes.time[arg_ids[x]], 5.0 - self.true_times[self.ids[x]])
+            self.assertEqual(arg.tables.nodes.time[arg_ids[x]],
+                             5.0 - self.true_times[self.ids[x]])
             if x in self.sample_ids:
-                self.assertEqual(arg.nodes.flags[arg_ids[x]], msprime.NODE_IS_SAMPLE)
+                self.assertEqual(arg.tables.nodes.flags[arg_ids[x]],
+                                 msprime.NODE_IS_SAMPLE)
             else:
-                self.assertEqual(arg.nodes.flags[arg_ids[x]], 0)
+                self.assertEqual(arg.tables.nodes.flags[arg_ids[x]], 0)
 
         tss = arg.tree_sequence(self.sample_input_ids)
 
@@ -296,11 +300,11 @@ class ExplicitTestCase(FtprimeTestCase):
         self.f(arg, 'g', 'h', 0.5, 'j', 5.0)
         self.f(arg, 'c', 'h', 0.4, 'k', 5.0)
         arg.update_times()
-        node_times = {u:arg.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
+        node_times = {u:arg.tables.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
         print(arg)
         arg.simplify(self.sample_input_ids)
         print(arg)
-        new_node_times = {u:arg.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
+        new_node_times = {u:arg.tables.nodes.time[arg.node_ids[u]] for u in arg.node_ids}
         for u in self.sample_input_ids:
             self.assertEqual(node_times[u], new_node_times[u])
 

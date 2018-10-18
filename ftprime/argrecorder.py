@@ -55,8 +55,7 @@ class ARGrecorder(object):
 
     '''
 
-    def __init__(self, node_ids=None, nodes=None, edges=None, sites=None, 
-                 mutations=None, migrations=None, ts=None, time=0.0,
+    def __init__(self, node_ids=None, tables=None, ts=None, time=0.0,
                  sequence_length=None, timings=None):
         """
         The tables passed in define history before the simulation begins.  If
@@ -67,11 +66,8 @@ class ARGrecorder(object):
             ``node_ids[k]`` is the node ID of the node corresponding to sample
             ``k`` in the initial ``ts``.  Must specify this for every individual
             that may be a parent moving forward.
-        :param NodeTable nodes: A table describing prehistory of the simulation.
-        :param EdgeTable edges: A table describing prehistory of the simulation.
-        :param SiteTable sites: A table describing prehistory of the simulation.
-        :param MutationTable mutations: A table describing prehistory of the simulation.
-        :param MigrationTable migrations: A table describing prehistory of the simulation.
+        :param TableCollection tables: A collection of tables describing
+            prehistory of the simulation.
         :param TreeSequence ts: An alternative method to specifying past history.
         :param float time: The (forwards) time of the "present" at the start of
             the simulation.
@@ -95,28 +91,15 @@ class ARGrecorder(object):
             self.node_ids = dict(node_ids)
         # the actual tables that get updated
         #  DON'T actually store ts, just the tables:
-        if nodes is None:
-            nodes = msprime.NodeTable()
+        if ts is not None:
+            tables = ts.dump_tables()
+        elif tables is None:
+            tables = msprime.TableCollection(sequence_length=sequence_length)
             if ts is None:
                 for j, k in enumerate(sorted(self.node_ids.keys())):
                     assert j == self.node_ids[k]
-                    nodes.add_row(population=msprime.NULL_POPULATION, time=time)
-        if edges is None:
-            edges = msprime.EdgeTable()
-        if sites is None:
-            sites = msprime.SiteTable()
-        if mutations is None:
-            mutations = msprime.MutationTable()
-        if migrations is None:
-            migrations = msprime.MigrationTable()
-        if ts is not None:
-            ts.dump_tables(nodes=nodes, edges=edges, sites=sites,
-                           mutations=mutations, migrations=migrations)
-        self.nodes = nodes
-        self.edges = edges
-        self.sites = sites
-        self.mutations = mutations
-        self.migrations = migrations
+                    tables.nodes.add_row(population=msprime.NULL_POPULATION, time=time)
+        self.tables = tables
         if sequence_length is not None:
             if ts is not None:
                 if sequence_length != ts.sequence_length:
@@ -134,10 +117,10 @@ class ARGrecorder(object):
         # last (forwards) time we updated node times
         self.last_update_time = time  # T_0
         # number of nodes that have the time right
-        self.last_update_node = self.nodes.num_rows
+        self.last_update_node = self.tables.nodes.num_rows
         # list of site positions, maintained as site tables don't have
         #   efficient checking for membership
-        self.site_positions = {p:k for k, p in enumerate(self.sites.position)}
+        self.site_positions = {p:k for k, p in enumerate(self.tables.sites.position)}
         # for bookkeeping
         self.num_simplifies = 0
         if self.timings is not None:
@@ -151,17 +134,8 @@ class ARGrecorder(object):
         ret += str(self.last_update_time) + "\n"
         ret += "Node IDs:\n"
         ret += str(self.node_ids) + "\n"
-        ret += "Nodes:\n"
-        ret += str(self.nodes) + "\n"
-        ret += "Edges:\n"
-        ret += str(self.edges) + "\n"
-        ret += "Sites:\n"
-        ret += str(self.sites) + "\n"
-        ret += "Mutations:\n"
-        ret += str(self.mutations) + "\n"
-        ret += "Migrations:\n"
-        # ret += str(self.migrations) + "\n"
-        # ret += "\n---------\n"
+        ret += "Tables:\n"
+        ret += str(self.tables) + "\n"
         return ret
 
     def __call__(self, parent, time, population, child, left, right):
@@ -207,10 +181,16 @@ class ARGrecorder(object):
         :param population int: The population ID of birth of the indivdiual
             (may be omitted).  
         '''
+        if (population != msprime.NULL_POPULATION 
+                and population > self.tables.populations.num_rows):
+            if population < 0:
+                raise ValueError("Illegal population: " + str(population))
+            while self.tables.populations.num_rows <= population:
+                self.tables.populations.add_row()
         if input_id not in self.node_ids:
-            self.node_ids[input_id] = self.nodes.num_rows
-            self.nodes.add_row(flags=flags, population=population,
-                               time=time)
+            self.node_ids[input_id] = self.tables.nodes.num_rows
+            self.tables.nodes.add_row(flags=flags, population=population,
+                                      time=time)
             self.max_time = max(self.max_time, time)
         else:
             # nothing bad happens if we try to add an individual more than once,
@@ -236,10 +216,31 @@ class ARGrecorder(object):
         out_parent = self.node_ids[parent]
         out_children = tuple([self.node_ids[u] for u in children])
         for child in out_children:
-            self.edges.add_row(parent=out_parent,
-                               child=child,
-                               left=left,
-                               right=right)
+            self.tables.edges.add_row(parent=out_parent,
+                                      child=child,
+                                      left=left,
+                                      right=right)
+
+    def add_mutation(self, position, node, derived_state, ancestral_state):
+        """
+        Adds a new mutation to mutation table, and a new site if necessary as well.
+
+        :param float position: The chromosomal position of the mutation.
+        :param int node: The input ID of the individual on whose chromosome the
+            mutation occurred.
+        :param string derived_state: The allele resulting from the mutation.
+        :param string ancestral_state: The original allele that the mutation
+            replaces (only used if this is the first mutation at this position).
+        """
+        if position not in self.site_positions:
+            site = self.tables.sites.num_rows
+            self.tables.sites.add_row(position=position,
+                                      ancestral_state=ancestral_state)
+            self.site_positions[position] = site
+        else:
+            site = self.site_positions[position]
+        self.tables.mutations.add_row(site=site, node=self.node_ids[node],
+                                      derived_state=derived_state)
 
     def update_times(self):
         """
@@ -251,14 +252,14 @@ class ARGrecorder(object):
         since the last update.
         """
         dt = self.max_time - self.last_update_time
-        times = self.nodes.time
+        times = self.tables.nodes.time
         times[:self.last_update_node] = times[:self.last_update_node] + dt
         times[self.last_update_node:] = self.max_time - times[self.last_update_node:]
-        self.nodes.set_columns(flags=self.nodes.flags,
-                               population=self.nodes.population,
-                               time=times)
+        self.tables.nodes.set_columns(flags=self.tables.nodes.flags,
+                                      population=self.tables.nodes.population,
+                                      time=times)
         self.last_update_time = self.max_time
-        self.last_update_node = self.nodes.num_rows
+        self.last_update_node = self.tables.nodes.num_rows
 
     def simplify(self, samples):
         """
@@ -282,21 +283,15 @@ class ARGrecorder(object):
         sample_nodes = self.get_nodes(samples)
         if self.timings is not None:
             start = timer.process_time()
-        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
-                            sites=self.sites, mutations=self.mutations)
-        #                   migrations=self.migrations)
+        self.tables.sort()
         if self.timings is not None:
             start2 = timer.process_time()
             self.timings.time_sorting += start2 - start
-        msprime.simplify_tables(samples=sample_nodes, nodes=self.nodes, 
-                                edges=self.edges, sites=self.sites, 
-                                mutations=self.mutations, 
-                                sequence_length=self.sequence_length)
-        #                       migrations=self.migrations)
+        self.tables.simplify(sample_nodes)
         if self.timings is not None:
             self.timings.time_simplifying += timer.process_time() - start2
         # update the internal state
-        self.last_update_node = self.nodes.num_rows
+        self.last_update_node = self.tables.nodes.num_rows
         # update index map: sample[k] now maps to k
         self.node_ids = {k : v for v, k in enumerate(samples)}
         self.num_simplifies += 1
@@ -322,16 +317,11 @@ class ARGrecorder(object):
         self.update_times()
         if self.timings is not None:
             start = timer.process_time()
-        msprime.sort_tables(nodes=self.nodes, edges=self.edges,
-                            sites=self.sites, mutations=self.mutations)
-        #                   migrations=self.migrations)
+        self.tables.sort()
         self.mark_samples(samples)
         if self.timings is not None:
             self.timings.time_sorting += start - timer.process_time()
-        ts = msprime.load_tables(nodes=self.nodes, edges=self.edges,
-                                 sites=self.sites, mutations=self.mutations,
-                                 sequence_length=self.sequence_length)
-        #                        migrations=self.migrations)
+        ts = self.tables.tree_sequence()
         sample_nodes = self.get_nodes(samples)
         return ts.simplify(samples=sample_nodes)
 
@@ -342,7 +332,7 @@ class ARGrecorder(object):
 
         :return list: A list of input IDs.
         """
-        flags = self.nodes.flags
+        flags = self.tables.nodes.flags
         out = []
         for input_id in self.node_ids:
             j = self.node_ids[input_id]
@@ -362,8 +352,8 @@ class ARGrecorder(object):
         self.check_ids(samples)
         sample_nodes = self.get_nodes(samples)
         sample_flag = np.array(msprime.NODE_IS_SAMPLE, dtype='uint32')
-        new_flags = self.nodes.flags & ~sample_flag
+        new_flags = self.tables.nodes.flags & ~sample_flag
         new_flags[sample_nodes] |= sample_flag
-        self.nodes.set_columns(time=self.nodes.time,
-                               population=self.nodes.population,
-                               flags=new_flags)
+        self.tables.nodes.set_columns(time=self.tables.nodes.time,
+                                      population=self.tables.nodes.population,
+                                      flags=new_flags)

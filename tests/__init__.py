@@ -34,6 +34,11 @@ class FtprimeTestCase(unittest.TestCase):
                 self.assertEqual(ta.mrca(u,v), tb.mrca(u,v))
         return True
 
+    def check_haplotypes(self, tsa, tsb):
+        self.assertEqual(tsa.num_sites, tsb.num_sites)
+        for hap_a, hap_b in zip(tsa.haplotypes(), tsb.haplotypes()):
+            self.assertEqual(hap_a, hap_b)
+
     def assertArrayEqual(self, x, y):
         self.assertEqual(len(x), len(y))
         for k in range(len(x)):

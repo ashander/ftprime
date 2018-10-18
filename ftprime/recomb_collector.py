@@ -201,12 +201,16 @@ class RecombCollector:
         :param list input_ids: A list of input diploid individual IDs.
         :param list locations: A list of population IDs.
         """
-        populations = self.args.nodes.population
+        populations = self.args.tables.nodes.population
+        max_loc = max(locations)
+        if max_loc > self.args.tables.populations.num_rows:
+            while self.args.tables.populations.num_rows <= max_loc:
+                self.args.tables.populations.add_row()
         for i, loc in zip([int(j) for j in input_ids], locations):
             for p in (0,1):
                 h = self.i2c(i, p)
                 node_id = self.args.node_ids[h]
                 populations[node_id] = int(loc)
-        self.args.nodes.set_columns(flags=self.args.nodes.flags,
-                                    time=self.args.nodes.time,
-                                    population=populations)
+        self.args.tables.nodes.set_columns(flags=self.args.tables.nodes.flags,
+                                           time=self.args.tables.nodes.time,
+                                           population=populations)

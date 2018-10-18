@@ -145,21 +145,7 @@ logfile.write("----------\n")
 logfile.flush()
 
 rng = msprime.RandomGenerator(mut_seed)
-nodes = msprime.NodeTable()
-edges = msprime.EdgeTable()
-sites = msprime.SiteTable()
-mutations = msprime.MutationTable()
-minimal_ts.dump_tables(nodes=nodes, edges=edges)
-mutgen = msprime.MutationGenerator(rng, args.mut_rate)
-mutgen.generate(nodes, edges, sites, mutations)
-
-# print(nodes, file=logfile)
-# print(edges, file=logfile)
-# print(sites, file=logfile)
-# print(mutations, file=logfile)
-
-mutated_ts = msprime.load_tables(
-    nodes=nodes, edges=edges, sites=sites, mutations=mutations)
+mutated_ts = msprime.mutate(minimal_ts, rate=args.mut_rate, random_seed=mut_seed)
 
 del minimal_ts
 
