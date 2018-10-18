@@ -105,4 +105,3 @@ class WfTestCase(FtprimeTestCase):
 
         for t in ts.trees():
             print(t)
-

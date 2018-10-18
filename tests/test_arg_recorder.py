@@ -27,7 +27,7 @@ class BasicTestCase(FtprimeTestCase):
         records = ftprime.ARGrecorder(ts=self.init_ts, node_ids=self.init_map)
         for input_id in self.init_map:
             node_id = self.init_map[input_id]
-            self.assertEqual(records.tables.nodes.time[node_id], 
+            self.assertEqual(records.tables.nodes.time[node_id],
                              self.init_ts.node(node_id).time)
             self.assertEqual(records.node_ids[input_id], node_id)
             self.assertEqual(records.tables.edges.num_rows, self.init_ts.num_edges)
@@ -71,10 +71,12 @@ class BasicTestCase(FtprimeTestCase):
             r.add_record(0.5, 1.0, 0, (4,))
         records_a.update_times()
         records_b.update_times()
-        self.assertArrayEqual(records_a.tables.nodes.time, records_b.tables.nodes.time)
+        self.assertArrayEqual(records_a.tables.nodes.time,
+                              records_b.tables.nodes.time)
         # check update_times is idempotent
         records_b.update_times()
-        self.assertArrayEqual(records_a.tables.nodes.time, records_b.tables.nodes.time)
+        self.assertArrayEqual(records_a.tables.nodes.time,
+                              records_b.tables.nodes.time)
         # and check is right answer
         self.assertArrayEqual(records_a.tables.nodes.time, [3, 2.2, 2, 0, 0])
 
@@ -261,9 +263,11 @@ class ExplicitTestCase(FtprimeTestCase):
         self.assertEqual(arg.tables.nodes.num_rows, len(self.ids))
         self.assertEqual(arg.max_time, 5.0)
         for x in self.ids:
-            self.assertEqual(arg.tables.nodes.time[arg_ids[x]], 5.0 - self.true_times[self.ids[x]])
+            self.assertEqual(arg.tables.nodes.time[arg_ids[x]],
+                             5.0 - self.true_times[self.ids[x]])
             if x in self.sample_ids:
-                self.assertEqual(arg.tables.nodes.flags[arg_ids[x]], msprime.NODE_IS_SAMPLE)
+                self.assertEqual(arg.tables.nodes.flags[arg_ids[x]],
+                                 msprime.NODE_IS_SAMPLE)
             else:
                 self.assertEqual(arg.tables.nodes.flags[arg_ids[x]], 0)
 
